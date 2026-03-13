@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io' show Platform;
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -274,17 +275,28 @@ CapturedImage captureScreenshotImpl(
   return CapturedImage(pngData: pngData, width: w, height: h);
 }
 
-CapturedFrame? _getNextFrameImpl(int streamId, int timeoutMs) {
+/// Returns JSON string from native (sendable for Isolate.run). Caller parses.
+String? _getNextFrameJson(int streamId, int timeoutMs) {
   final ptr = _streamGetNextFrame(streamId, timeoutMs);
   if (ptr == nullptr) {
     return null;
   }
-  String jsonStr;
   try {
-    jsonStr = ptr.toDartString();
+    return ptr.toDartString();
   } finally {
     malloc.free(ptr);
   }
+}
+
+/// Top-level entry for Isolate.run to avoid closure over-capture of Stream.
+var _isolateStreamId = 0;
+var _isolateTimeoutMs = 500;
+
+String? _isolateGetNextFrameEntry() {
+  return _getNextFrameJson(_isolateStreamId, _isolateTimeoutMs);
+}
+
+CapturedFrame? _parseFrameJson(String jsonStr) {
   final json = jsonDecode(jsonStr) as Map<String, dynamic>;
   if (json['error'] == true) {
     return null;
@@ -335,15 +347,28 @@ Stream<CapturedFrame> startCaptureStreamImpl(
         if (!controller.hasListener) {
           return;
         }
-        // Blocking call; runs on main isolate. Consider running in a separate
-        // isolate for UI apps.
-        final frame = _getNextFrameImpl(streamId, 500);
-        if (frame != null && controller.hasListener) {
-          controller.add(frame);
-        }
-        if (controller.hasListener) {
-          scheduleMicrotask(poll);
-        }
+        // Run blocking FFI call in a separate isolate to avoid blocking the
+        // main thread (which can cause objc_release SEGV with SCStream).
+        // Use top-level entry to avoid closure over-capture of Stream.
+        _isolateStreamId = streamId;
+        _isolateTimeoutMs = 500;
+        unawaited(
+          Isolate.run(_isolateGetNextFrameEntry).then((jsonStr) {
+            if (jsonStr != null && controller.hasListener) {
+              final frame = _parseFrameJson(jsonStr);
+              if (frame != null) {
+                controller.add(frame);
+              }
+            }
+            if (controller.hasListener) {
+              scheduleMicrotask(poll);
+            }
+          }).catchError((Object e, StackTrace st) {
+            if (controller.hasListener) {
+              controller.addError(e, st);
+            }
+          }),
+        );
       }
       unawaited(Future.microtask(poll));
     },
