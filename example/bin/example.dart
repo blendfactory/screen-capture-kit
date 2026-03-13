@@ -7,6 +7,16 @@ void main() async {
     print('Displays: ${content.displays.length}');
     print('Applications: ${content.applications.length}');
     print('Windows: ${content.windows.length}');
+
+    // Create a window filter for the first available window
+    if (content.windows.isNotEmpty) {
+      final window = content.windows.first;
+      print('\nCreating filter for window: ${window.title ?? window.windowId}');
+      final filterHandle = await kit.createWindowFilter(window);
+      print('Filter created: ${filterHandle.filterId}');
+      kit.releaseFilter(filterHandle);
+      print('Filter released.');
+    }
   } on UnsupportedError catch (e) {
     print('Unsupported: $e');
   } on ScreenCaptureKitException catch (e) {

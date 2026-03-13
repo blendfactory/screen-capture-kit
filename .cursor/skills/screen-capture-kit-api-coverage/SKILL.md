@@ -36,10 +36,10 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 | API | Status | Notes |
 |-----|--------|-------|
-| SCContentFilter(desktopIndependentWindow:) | ❌ | Window capture |
-| SCContentFilter(display:excludingApplications:exceptingWindows:) | ❌ | Display capture |
-| SCContentFilter(display:excludingWindows:) | ❌ | |
-| SCContentFilter.contentRect | ❌ | Region capture |
+| SCContentFilter(desktopIndependentWindow:) | ✅ | Dart API + Objective-C bridge, createWindowFilter |
+| SCContentFilter(display:excludingApplications:exceptingWindows:) | 🚧 | Dart model only |
+| SCContentFilter(display:excludingWindows:) | 🚧 | Dart model only |
+| SCContentFilter.contentRect | 🚧 | Dart model ContentFilter.region only |
 
 ### Stream
 

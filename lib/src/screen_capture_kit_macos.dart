@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 
 import 'package:ffi/ffi.dart';
 
+import 'package:screen_capture_kit/src/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/running_application.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
@@ -19,6 +20,19 @@ external Pointer<Utf8> _getShareableContentJson(
   int excludeDesktopWindows,
   int onScreenWindowsOnly,
 );
+
+/// Creates native SCContentFilter for a window. Returns filter id; 0 on error.
+@Native<Int64 Function(Int64)>(
+  symbol: 'create_content_filter_for_window',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external int _createContentFilterForWindow(int windowId);
+
+@Native<Void Function(Int64)>(
+  symbol: 'release_content_filter',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external void _releaseContentFilter(int filterId);
 
 ShareableContent getShareableContentImpl({
   bool excludeDesktopWindows = false,
@@ -152,4 +166,27 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
     applications: applications,
     windows: windows,
   );
+}
+
+ContentFilterHandle createWindowFilterImpl(Window window) {
+  if (!Platform.isMacOS) {
+    throw UnsupportedError(
+      'screen_capture_kit only supports macOS. '
+      'Current platform: ${Platform.operatingSystem}',
+    );
+  }
+
+  final filterId = _createContentFilterForWindow(window.windowId);
+  if (filterId <= 0) {
+    throw ScreenCaptureKitException(
+      'Failed to create content filter for window ${window.windowId}. '
+      'The window may no longer exist or may not be capturable.',
+    );
+  }
+  return ContentFilterHandle(filterId);
+}
+
+void releaseFilterImpl(ContentFilterHandle handle) {
+  if (!Platform.isMacOS) return;
+  _releaseContentFilter(handle.filterId);
 }

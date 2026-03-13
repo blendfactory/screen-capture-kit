@@ -6,10 +6,14 @@ library;
 
 import 'dart:isolate';
 
+import 'package:screen_capture_kit/src/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_stub.dart'
-    if (dart.library.io) 'src/screen_capture_kit_macos.dart';
+    if (dart.library.io) 'package:screen_capture_kit/src/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
+import 'package:screen_capture_kit/src/window.dart';
 
+export 'src/content_filter.dart';
+export 'src/content_filter_handle.dart';
 export 'src/display.dart';
 export 'src/running_application.dart';
 export 'src/screen_capture_kit_exception.dart';
@@ -43,5 +47,23 @@ class ScreenCaptureKit {
         onScreenWindowsOnly: onScreenWindowsOnly,
       ),
     );
+  }
+
+  /// Creates a native content filter for capturing the given window.
+  ///
+  /// Returns a [ContentFilterHandle] that must be released with [releaseFilter]
+  /// when no longer needed. The handle will be used when implementing capture
+  /// streams.
+  ///
+  /// Requires Screen Recording permission.
+  ///
+  /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944912-init
+  Future<ContentFilterHandle> createWindowFilter(Window window) {
+    return Isolate.run(() => createWindowFilterImpl(window));
+  }
+
+  /// Releases a content filter created by [createWindowFilter].
+  void releaseFilter(ContentFilterHandle handle) {
+    releaseFilterImpl(handle);
   }
 }

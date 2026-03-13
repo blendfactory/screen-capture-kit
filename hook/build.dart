@@ -15,8 +15,8 @@ void main(List<String> args) async {
           name: packageName,
           packageName: packageName,
           assetName: '$packageName.dart',
-          sources: ['native/shareable_content.m'],
-          frameworks: ['ScreenCaptureKit', 'Foundation'],
+          sources: ['native/shareable_content.m', 'native/content_filter.m'],
+          frameworks: ['ScreenCaptureKit', 'Foundation', 'CoreGraphics'],
           language: Language.objectiveC,
           flags: ['-mmacosx-version-min=12.3'],
         );
