@@ -28,6 +28,7 @@ void main(List<String> args) async {
             'ImageIO',
             'CoreMedia',
             'CoreVideo',
+            'IOSurface',
           ],
           language: Language.objectiveC,
           flags: ['-mmacosx-version-min=12.3'],

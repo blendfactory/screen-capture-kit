@@ -3,6 +3,7 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import <CoreMedia/CoreMedia.h>
 #import <CoreVideo/CoreVideo.h>
+#import <IOSurface/IOSurface.h>
 #include <string.h>
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED < 120300
@@ -51,7 +52,7 @@ static void ensureCoreGraphicsInit(void) {
     NSNumber* statusNum = dict[SCStreamFrameInfoStatus];
     if (statusNum) {
       SCFrameStatus status = (SCFrameStatus)[statusNum integerValue];
-      if (status != SCFrameStatusComplete && status != SCFrameStatusStarted) {
+      if (status != SCFrameStatusComplete) {
         return;
       }
     }
@@ -62,16 +63,43 @@ static void ensureCoreGraphicsInit(void) {
     return;
   }
 
-  CVPixelBufferLockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-  void* baseAddress = CVPixelBufferGetBaseAddress(imageBuffer);
   size_t width = CVPixelBufferGetWidth(imageBuffer);
   size_t height = CVPixelBufferGetHeight(imageBuffer);
   size_t bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer);
   size_t dataSize = bytesPerRow * height;
+  void* baseAddress = NULL;
 
-  if (baseAddress && dataSize > 0) {
+  CVPixelBufferLockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
+  baseAddress = CVPixelBufferGetBaseAddress(imageBuffer);
+
+  // ScreenCaptureKit uses IOSurface-backed CVPixelBuffers; baseAddress is often
+  // NULL. Fall back to IOSurface for CPU access.
+  if (!baseAddress) {
+    IOSurfaceRef surfaceRef = CVPixelBufferGetIOSurface(imageBuffer);
+    if (surfaceRef) {
+      IOSurfaceLock((IOSurfaceRef)surfaceRef, kIOSurfaceLockReadOnly, NULL);
+      baseAddress = IOSurfaceGetBaseAddress((IOSurfaceRef)surfaceRef);
+      if (baseAddress && dataSize > 0) {
+        NSMutableData* frameData =
+            [NSMutableData dataWithBytes:baseAddress length:dataSize];
+        IOSurfaceUnlock((IOSurfaceRef)surfaceRef, kIOSurfaceLockReadOnly, NULL);
+        CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
+        @synchronized(self) {
+          _latestFrame = frameData;
+          _frameWidth = (int)width;
+          _frameHeight = (int)height;
+          _bytesPerRow = (int)bytesPerRow;
+        }
+        dispatch_semaphore_signal(_frameSemaphore);
+        return;
+      }
+      IOSurfaceUnlock((IOSurfaceRef)surfaceRef, kIOSurfaceLockReadOnly, NULL);
+    }
+    CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
+  } else if (dataSize > 0) {
     NSMutableData* frameData =
         [NSMutableData dataWithBytes:baseAddress length:dataSize];
+    CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
     @synchronized(self) {
       _latestFrame = frameData;
       _frameWidth = (int)width;
@@ -79,8 +107,9 @@ static void ensureCoreGraphicsInit(void) {
       _bytesPerRow = (int)bytesPerRow;
     }
     dispatch_semaphore_signal(_frameSemaphore);
+  } else {
+    CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
   }
-  CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
 }
 @end
 
@@ -121,8 +150,9 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height) {
                              delegate:nil];
 
   NSError* addError = nil;
-  dispatch_queue_t queue =
-      dispatch_queue_create("com.screencapturekit.frame", DISPATCH_QUEUE_SERIAL);
+  // Main queue: SCStreamOutput may require main run loop. Blocking FFI runs
+  // in a Dart isolate, so main thread stays free for callbacks.
+  dispatch_queue_t queue = dispatch_get_main_queue();
   [stream addStreamOutput:handler
                     type:SCStreamOutputTypeScreen
         sampleHandlerQueue:queue
