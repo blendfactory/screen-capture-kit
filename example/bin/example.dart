@@ -2,6 +2,56 @@ import 'dart:async';
 
 import 'package:screen_capture_kit/screen_capture_kit.dart';
 
+/// Runs stream capture for the given filter and returns frame count.
+Future<int> runStreamCapture(
+  ScreenCaptureKit kit,
+  ContentFilterHandle filterHandle, {
+  required int width,
+  required int height,
+  required String label,
+  Duration timeout = const Duration(seconds: 5),
+}) async {
+  print('\n--- $label ---');
+  var frameCount = 0;
+  final stopwatch = Stopwatch()..start();
+  final completer = Completer<void>();
+  final stream = kit.startCaptureStream(
+    filterHandle,
+    width: width,
+    height: height,
+  );
+  final subscription = stream.listen(
+    (frame) {
+      frameCount++;
+      if (frameCount <= 3) {
+        print('Frame $frameCount: ${frame.width}x${frame.height}');
+      }
+      if (frameCount >= 10 && !completer.isCompleted) {
+        completer.complete();
+      }
+    },
+    onError: (Object e, StackTrace st) {
+      print('Stream error: $e');
+      if (!completer.isCompleted) completer.complete();
+    },
+    onDone: () {
+      if (!completer.isCompleted) completer.complete();
+    },
+  );
+  unawaited(
+    Future.delayed(timeout, () {
+      if (!completer.isCompleted) {
+        unawaited(subscription.cancel());
+        completer.complete();
+      }
+    }),
+  );
+  await completer.future;
+  await subscription.cancel();
+  print('$label: $frameCount frames in ${stopwatch.elapsedMilliseconds}ms');
+  return frameCount;
+}
+
 void main() async {
   final kit = ScreenCaptureKit();
   try {
@@ -10,91 +60,76 @@ void main() async {
     print('Applications: ${content.applications.length}');
     print('Windows: ${content.windows.length}');
 
-    // Create a window filter and capture a screenshot
+    // 1. Display filter: capture entire display
+    if (content.displays.isNotEmpty) {
+      final display = content.displays.first;
+      print('\n=== Display capture (displayId: ${display.displayId}) ===');
+      final displayFilter = await kit.createDisplayFilter(display);
+      print('Display filter created: ${displayFilter.filterId}');
+      try {
+        final image = await kit.captureScreenshot(displayFilter);
+        print('Screenshot: ${image.width}x${image.height}, ${image.pngData.length} bytes');
+      } on ScreenCaptureKitException catch (e) {
+        if (e.message.contains('macOS 14')) {
+          print('Screenshot requires macOS 14+');
+        } else {
+          rethrow;
+        }
+      }
+      final displayFrames = await runStreamCapture(
+        kit,
+        displayFilter,
+        width: display.width,
+        height: display.height,
+        label: 'Display stream',
+      );
+      kit.releaseFilter(displayFilter);
+      print('Display filter released.');
+    }
+
+    // 2. Window filter: capture single window
     if (content.windows.isNotEmpty) {
-      ContentFilterHandle? filterHandle;
+      ContentFilterHandle? windowFilter;
       Window? window;
       for (final w in content.windows) {
         try {
-          filterHandle = await kit.createWindowFilter(w);
+          windowFilter = await kit.createWindowFilter(w);
           window = w;
           break;
         } on ScreenCaptureKitException catch (_) {
           continue;
         }
       }
-      if (filterHandle == null || window == null) {
-        print(
-          'No capturable window found. '
-          'Try granting Screen Recording permission.',
-        );
-        return;
-      }
-      print('\nCreating filter for window: ${window.title ?? window.windowId}');
-      print('Filter created: ${filterHandle.filterId}');
-      try {
-        final image = await kit.captureScreenshot(filterHandle);
-        final size = '${image.width}x${image.height}';
-        final bytes = image.pngData.length;
-        print(
-          'Screenshot captured: $size, $bytes bytes PNG',
-        );
-      } on ScreenCaptureKitException catch (e) {
-        if (e.message.contains('macOS 14')) {
-          print('Screenshot requires macOS 14+ (current: ${e.message})');
-        } else {
-          rethrow;
+      if (windowFilter != null && window != null) {
+        print('\n=== Window capture (${window.title ?? window.windowId}) ===');
+        print('Window filter created: ${windowFilter.filterId}');
+        try {
+          final image = await kit.captureScreenshot(windowFilter);
+          print('Screenshot: ${image.width}x${image.height}, ${image.pngData.length} bytes');
+        } on ScreenCaptureKitException catch (e) {
+          if (e.message.contains('macOS 14')) {
+            print('Screenshot requires macOS 14+');
+          } else {
+            rethrow;
+          }
         }
-      }
+        final w = window.frame.width.toInt();
+        final h = window.frame.height.toInt();
+        final windowFrames = await runStreamCapture(
+          kit,
+          windowFilter,
+          width: w,
+          height: h,
+          label: 'Window stream',
+        );
+        kit.releaseFilter(windowFilter);
+        print('Window filter released.');
 
-      // Stream capture (blocking FFI runs in isolate)
-      print('Starting stream capture...');
-      var frameCount = 0;
-      final stopwatch = Stopwatch()..start();
-      final completer = Completer<void>();
-      final w = window.frame.width.toInt();
-      final h = window.frame.height.toInt();
-      final stream = kit.startCaptureStream(filterHandle, width: w, height: h);
-      final subscription = stream.listen(
-        (frame) {
-          frameCount++;
-          if (frameCount <= 3) {
-            print('Frame $frameCount: ${frame.width}x${frame.height}');
-          }
-          if (frameCount >= 10 && !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-        onError: (Object e, StackTrace st) {
-          print('Stream error: $e');
-          if (!completer.isCompleted) {
-            completer.complete();
-          }
-        },
-        onDone: () {
-          if (!completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-      unawaited(
-        Future.delayed(
-          const Duration(seconds: 5),
-          () {
-            if (!completer.isCompleted) {
-              unawaited(subscription.cancel());
-              completer.complete();
-            }
-          },
-        ),
-      );
-      await completer.future;
-      await subscription.cancel();
-      final msg = 'Stream captured $frameCount frames in '
-          '${stopwatch.elapsedMilliseconds}ms.';
-      print(msg);
-      kit.releaseFilter(filterHandle);
-      print('Filter released.');
+        print('\n=== Comparison ===');
+        print('Display vs Window stream frames: see above');
+      } else {
+        print('\nNo capturable window found.');
+      }
     }
   } on UnsupportedError catch (e) {
     print('Unsupported: $e');
