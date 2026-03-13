@@ -24,7 +24,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 | API | Status | Notes |
 |-----|--------|-------|
-| SCShareableContent.getExcludingDesktopWindows | 🚧 | Dart API + stub; native bridge pending |
+| SCShareableContent.getExcludingDesktopWindows | ✅ | Dart API + Objective-C bridge + FFI |
 | SCShareableContent.displays | ✅ | Dart model `Display` |
 | SCShareableContent.windows | ✅ | Dart model `Window` |
 | SCShareableContent.applications | ✅ | Dart model `RunningApplication` |

@@ -8,7 +8,11 @@ issue_tracker: https://github.com/blendfactory/screen-capture-kit/issues
 environment:
   sdk: ">=3.0.0 <4.0.0"
 
-dependencies: {}
+dependencies:
+  code_assets: ^1.0.0
+  ffi: ^2.1.0
+  hooks: ^1.0.0
+  native_toolchain_c: ^0.17.0
 
 dev_dependencies:
   lints: ^4.0.0

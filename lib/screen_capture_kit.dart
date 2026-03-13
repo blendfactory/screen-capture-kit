@@ -11,6 +11,7 @@ import 'src/screen_capture_kit_stub.dart'
 export 'src/display.dart';
 export 'src/running_application.dart';
 export 'src/shareable_content.dart';
+export 'src/screen_capture_kit_exception.dart';
 export 'src/window.dart';
 
 /// Retrieves the shareable content (displays, apps, windows) available for

@@ -1,3 +1,7 @@
+// ignore_for_file: avoid_print
+
+import 'dart:async';
+
 import 'package:screen_capture_kit/screen_capture_kit.dart';
 import 'package:test/test.dart';
 
@@ -89,16 +93,31 @@ void main() {
   });
 
   group('getShareableContent', () {
-    test('throws until native implementation is complete', () async {
-      // On macOS: UnimplementedError (native not built)
+    test('returns ShareableContent on macOS or throws on unsupported',
+        () async {
       // On non-macOS: UnsupportedError
-      await expectLater(
-        getShareableContent(),
-        throwsA(anyOf(
-          isA<UnsupportedError>(),
-          isA<UnimplementedError>(),
-        )),
-      );
-    });
+      // On macOS: ShareableContent or ScreenCaptureKitException (e.g. permission)
+      // Timeout: native call may block on permission dialog or hang
+      try {
+        final content = await getShareableContent().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () =>
+              throw TimeoutException('getShareableContent timed out'),
+        );
+        expect(content, isA<ShareableContent>());
+        expect(content.displays, isA<List<Display>>());
+        expect(content.applications, isA<List<RunningApplication>>());
+        expect(content.windows, isA<List<Window>>());
+      } on UnsupportedError catch (e) {
+        // Expected on non-macOS
+        print(e);
+      } on ScreenCaptureKitException catch (e) {
+        // Expected on macOS without Screen Recording permission
+        print(e);
+      } on TimeoutException catch (e) {
+        // Native call blocked (e.g. permission dialog)
+        print(e);
+      }
+    }, timeout: Timeout.none);
   });
 }

@@ -8,7 +8,7 @@ void main() async {
     print('Windows: ${content.windows.length}');
   } on UnsupportedError catch (e) {
     print('Unsupported: $e');
-  } on UnimplementedError catch (e) {
-    print('Not yet implemented: $e');
+  } on ScreenCaptureKitException catch (e) {
+    print('ScreenCaptureKit error: $e');
   }
 }
