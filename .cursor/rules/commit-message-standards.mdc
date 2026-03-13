@@ -44,6 +44,7 @@ alwaysApply: false
 - Use the body when additional context or reasoning is helpful.
 - Explain **why** the change was made, or non-obvious details.
 - Use English prose, separated from the summary by a blank line.
+- **Include reference links** when applicable (e.g. official docs, specs, related issues, or external resources that informed the change).
 
 ## Examples
 
@@ -58,5 +59,7 @@ feat(native): add display capture API
 
 Expose a new API to start display capture using ScreenCaptureKit
 and stream frames to Dart.
+
+Ref: https://developer.apple.com/documentation/screencapturekit
 ```
 
