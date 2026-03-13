@@ -1,0 +1,6 @@
+include: ../analysis_options.yaml
+
+linter:
+  rules:
+    # getShareableContent throws UnsupportedError on non-macOS; test must catch it.
+    avoid_catching_errors: false
