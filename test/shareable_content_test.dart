@@ -160,22 +160,20 @@ void main() {
       'creates filter on macOS or throws on unsupported',
       () async {
         try {
-          final content = await ScreenCaptureKit()
-              .getShareableContent()
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () =>
-                    throw TimeoutException('getShareableContent timed out'),
-              );
+          final content =
+              await ScreenCaptureKit().getShareableContent().timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('getShareableContent timed out'),
+                  );
           if (content.windows.isEmpty) return;
           final window = content.windows.first;
-          final handle = await ScreenCaptureKit()
-              .createWindowFilter(window)
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () =>
-                    throw TimeoutException('createWindowFilter timed out'),
-              );
+          final handle =
+              await ScreenCaptureKit().createWindowFilter(window).timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('createWindowFilter timed out'),
+                  );
           expect(handle, isA<ContentFilterHandle>());
           expect(handle.filterId, greaterThan(0));
           ScreenCaptureKit().releaseFilter(handle);
@@ -200,11 +198,12 @@ void main() {
         // (e.g. permission)
         // Timeout: native call may block on permission dialog or hang
         try {
-          final content = await ScreenCaptureKit().getShareableContent().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () =>
-                throw TimeoutException('getShareableContent timed out'),
-          );
+          final content =
+              await ScreenCaptureKit().getShareableContent().timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('getShareableContent timed out'),
+                  );
           expect(content, isA<ShareableContent>());
           expect(content.displays, isA<List<Display>>());
           expect(content.applications, isA<List<RunningApplication>>());

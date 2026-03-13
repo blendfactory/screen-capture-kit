@@ -8,7 +8,8 @@ import 'package:meta/meta.dart';
 /// This handle will be used when implementing capture streams.
 @immutable
 class ContentFilterHandle {
-  ContentFilterHandle(this._filterId) : assert(_filterId > 0, 'Invalid filter id');
+  ContentFilterHandle(this._filterId)
+      : assert(_filterId > 0, 'Invalid filter id');
 
   final int _filterId;
 

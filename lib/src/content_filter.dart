@@ -53,7 +53,8 @@ sealed class ContentFilter {
   /// captures a region of the main display.
   ///
   /// Maps to `SCContentFilter.contentRect`.
-  factory ContentFilter.region(({double x, double y, double width, double height}) rect) =
+  factory ContentFilter.region(
+          ({double x, double y, double width, double height}) rect) =
       _RegionContentFilter;
 }
 
@@ -100,8 +101,8 @@ final class _DisplayContentFilter extends ContentFilter {
           _listEquals(exceptingWindows, other.exceptingWindows);
 
   @override
-  int get hashCode =>
-      Object.hash(display, Object.hashAll(excludingApplications), Object.hashAll(exceptingWindows));
+  int get hashCode => Object.hash(display,
+      Object.hashAll(excludingApplications), Object.hashAll(exceptingWindows));
 
   @override
   String toString() =>
