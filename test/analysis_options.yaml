@@ -4,3 +4,6 @@ linter:
   rules:
     # getShareableContent throws UnsupportedError on non-macOS; test must catch it.
     avoid_catching_errors: false
+
+    # Tests may print caught exceptions for visibility when run.
+    avoid_print: false
