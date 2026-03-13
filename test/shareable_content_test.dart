@@ -1,3 +1,4 @@
+// Tests intentionally print caught exceptions for visibility when run.
 // ignore_for_file: avoid_print
 
 import 'dart:async';
