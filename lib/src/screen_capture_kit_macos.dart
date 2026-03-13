@@ -88,10 +88,10 @@ String _buildNativeErrorMessage({
   }
 
   if (isPermissionIssue) {
-    return 'Screen Recording permission is required to access shareable content. '
-        'Grant permission in System Settings > Privacy & Security > '
-        'Screen Recording, then restart the app and retry. '
-        '[native: $domain ($code) $description]';
+    return 'Screen Recording permission is required to access '
+        'shareable content. Grant permission in System Settings > '
+        'Privacy & Security > Screen Recording, then restart the '
+        'app and retry. [native: $domain ($code) $description]';
   }
 
   return 'Failed to retrieve shareable content. '

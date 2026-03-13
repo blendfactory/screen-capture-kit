@@ -97,7 +97,8 @@ void main() {
       'returns ShareableContent on macOS or throws on unsupported',
       () async {
         // On non-macOS: UnsupportedError
-        // On macOS: ShareableContent or ScreenCaptureKitException (e.g. permission)
+        // On macOS: ShareableContent or ScreenCaptureKitException
+        // (e.g. permission)
         // Timeout: native call may block on permission dialog or hang
         try {
           final content = await getShareableContent().timeout(
