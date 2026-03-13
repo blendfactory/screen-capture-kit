@@ -26,7 +26,7 @@ export 'src/window.dart';
 Future<ShareableContent> getShareableContent({
   bool excludeDesktopWindows = false,
   bool onScreenWindowsOnly = true,
-}) async {
+}) {
   return Isolate.run(
     () => getShareableContentImpl(
       excludeDesktopWindows: excludeDesktopWindows,
