@@ -1,8 +1,10 @@
+import 'package:meta/meta.dart';
 import 'package:screen_capture_kit/src/running_application.dart';
 
 /// An onscreen window available for capture.
 ///
 /// Maps to [SCWindow](https://developer.apple.com/documentation/screencapturekit/scwindow).
+@immutable
 class Window {
   /// Creates a [Window] with the given properties.
   const Window({

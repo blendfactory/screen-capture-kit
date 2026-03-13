@@ -1,6 +1,9 @@
+import 'package:meta/meta.dart';
+
 /// A display device available for capture.
 ///
 /// Maps to [SCDisplay](https://developer.apple.com/documentation/screencapturekit/scdisplay).
+@immutable
 class Display {
   /// Creates a [Display] with the given properties.
   const Display({

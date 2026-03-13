@@ -1,6 +1,9 @@
+import 'package:meta/meta.dart';
+
 /// A running application available for capture.
 ///
 /// Maps to [SCRunningApplication](https://developer.apple.com/documentation/screencapturekit/scrunningapplication).
+@immutable
 class RunningApplication {
   /// Creates a [RunningApplication] with the given properties.
   const RunningApplication({
