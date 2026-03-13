@@ -37,7 +37,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | API | Status | Notes |
 |-----|--------|-------|
 | SCContentFilter(desktopIndependentWindow:) | ✅ | Dart API + Objective-C bridge, createWindowFilter |
-| SCContentFilter(display:excludingApplications:exceptingWindows:) | 🚧 | Dart model only |
+| SCContentFilter(display:excludingApplications:exceptingWindows:) | ✅ | createDisplayFilter (empty exclusions for full display) |
 | SCContentFilter(display:excludingWindows:) | 🚧 | Dart model only |
 | SCContentFilter.contentRect | 🚧 | Dart model ContentFilter.region only |
 
