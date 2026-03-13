@@ -6,12 +6,14 @@ library;
 
 import 'dart:isolate';
 
+import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_stub.dart'
     if (dart.library.io) 'package:screen_capture_kit/src/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
 import 'package:screen_capture_kit/src/window.dart';
 
+export 'src/captured_image.dart';
 export 'src/content_filter.dart';
 export 'src/content_filter_handle.dart';
 export 'src/display.dart';
@@ -65,5 +67,27 @@ class ScreenCaptureKit {
   /// Releases a content filter created by [createWindowFilter].
   void releaseFilter(ContentFilterHandle handle) {
     releaseFilterImpl(handle);
+  }
+
+  /// Captures a single screenshot using the given content filter.
+  ///
+  /// Returns PNG-encoded image data. Requires macOS 14.0 or newer.
+  /// On older macOS, throws [ScreenCaptureKitException].
+  ///
+  /// [width] and [height] optionally specify output dimensions; 0 uses default.
+  ///
+  /// Ref: https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager/captureimage(contentfilter:configuration:completionhandler:)
+  Future<CapturedImage> captureScreenshot(
+    ContentFilterHandle filterHandle, {
+    int width = 0,
+    int height = 0,
+  }) {
+    return Isolate.run(
+      () => captureScreenshotImpl(
+        filterHandle,
+        width: width,
+        height: height,
+      ),
+    );
   }
 }

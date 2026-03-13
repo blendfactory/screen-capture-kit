@@ -1,5 +1,4 @@
-#import <Foundation/Foundation.h>
-#import <ScreenCaptureKit/ScreenCaptureKit.h>
+#import "content_filter.h"
 #import <CoreGraphics/CoreGraphics.h>
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED < 120300
@@ -66,6 +65,14 @@ int64_t create_content_filter_for_window(int64_t window_id) {
   dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, timeoutNsec));
 
   return filterId;
+}
+
+/// Returns the SCContentFilter for the given filter id, or nil if not found.
+SCContentFilter* get_content_filter(int64_t filter_id) {
+  if (filter_id <= 0 || _filterRegistry == nil) {
+    return nil;
+  }
+  return _filterRegistry[@(filter_id)];
 }
 
 /// Releases a content filter created by create_content_filter_for_window.

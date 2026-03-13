@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io' show Platform;
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
+import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/running_application.dart';
@@ -33,6 +35,13 @@ external int _createContentFilterForWindow(int windowId);
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
 external void _releaseContentFilter(int filterId);
+
+/// Captures a screenshot. Returns malloc'd JSON. Caller must free.
+@Native<Pointer<Utf8> Function(Int64, Int32, Int32)>(
+  symbol: 'capture_screenshot',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external Pointer<Utf8> _captureScreenshot(int filterId, int width, int height);
 
 ShareableContent getShareableContentImpl({
   bool excludeDesktopWindows = false,
@@ -191,4 +200,56 @@ void releaseFilterImpl(ContentFilterHandle handle) {
     return;
   }
   _releaseContentFilter(handle.filterId);
+}
+
+CapturedImage captureScreenshotImpl(
+  ContentFilterHandle filterHandle, {
+  int width = 0,
+  int height = 0,
+}) {
+  if (!Platform.isMacOS) {
+    throw UnsupportedError(
+      'screen_capture_kit only supports macOS. '
+      'Current platform: ${Platform.operatingSystem}',
+    );
+  }
+
+  final ptr = _captureScreenshot(
+    filterHandle.filterId,
+    width,
+    height,
+  );
+  if (ptr == nullptr) {
+    throw const ScreenCaptureKitException(
+      'Failed to capture screenshot from native bridge.',
+    );
+  }
+
+  String jsonStr;
+  try {
+    jsonStr = ptr.toDartString();
+  } finally {
+    malloc.free(ptr);
+  }
+
+  final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+
+  if (json['error'] == true) {
+    final domain = json['domain'] as String? ?? '';
+    final code = json['code'] as int? ?? 0;
+    final desc = json['localizedDescription'] as String? ?? '';
+    final message = code == -3
+        ? 'Screenshot capture requires macOS 14.0 or newer.'
+        : 'Failed to capture screenshot. [native: $domain ($code) $desc]';
+    throw ScreenCaptureKitException(message, domain: domain, code: code);
+  }
+
+  final base64 = json['pngBase64'] as String? ?? '';
+  final pngData = base64.isNotEmpty
+      ? Uint8List.fromList(base64Decode(base64))
+      : Uint8List(0);
+  final w = (json['width'] as num?)?.toInt() ?? 0;
+  final h = (json['height'] as num?)?.toInt() ?? 0;
+
+  return CapturedImage(pngData: pngData, width: w, height: h);
 }

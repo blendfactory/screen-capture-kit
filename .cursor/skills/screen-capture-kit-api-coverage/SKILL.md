@@ -71,8 +71,8 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 | API | Status | Notes |
 |-----|--------|-------|
-| SCScreenshotManager.captureImage | ❌ | |
-| SCScreenshotConfiguration | ❌ | |
+| SCScreenshotManager.captureImage | ✅ | captureScreenshot, macOS 14+ |
+| SCScreenshotConfiguration | ✅ | width/height via captureScreenshot |
 
 ### System picker
 

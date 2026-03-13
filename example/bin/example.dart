@@ -8,12 +8,23 @@ void main() async {
     print('Applications: ${content.applications.length}');
     print('Windows: ${content.windows.length}');
 
-    // Create a window filter for the first available window
+    // Create a window filter and capture a screenshot
     if (content.windows.isNotEmpty) {
       final window = content.windows.first;
       print('\nCreating filter for window: ${window.title ?? window.windowId}');
       final filterHandle = await kit.createWindowFilter(window);
       print('Filter created: ${filterHandle.filterId}');
+      try {
+        final image = await kit.captureScreenshot(filterHandle);
+        print('Screenshot captured: ${image.width}x${image.height}, '
+            '${image.pngData.length} bytes PNG');
+      } on ScreenCaptureKitException catch (e) {
+        if (e.message?.contains('macOS 14') ?? false) {
+          print('Screenshot requires macOS 14+ (current: ${e.message})');
+        } else {
+          rethrow;
+        }
+      }
       kit.releaseFilter(filterHandle);
       print('Filter released.');
     }
