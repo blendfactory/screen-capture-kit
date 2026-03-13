@@ -4,6 +4,8 @@
 /// screen, window, and display capture on macOS 12.3+.
 library screen_capture_kit;
 
+import 'dart:isolate';
+
 import 'src/shareable_content.dart';
 import 'src/screen_capture_kit_stub.dart'
     if (dart.library.io) 'src/screen_capture_kit_macos.dart';
@@ -25,8 +27,8 @@ Future<ShareableContent> getShareableContent({
   bool excludeDesktopWindows = false,
   bool onScreenWindowsOnly = true,
 }) async {
-  return Future.value(getShareableContentImpl(
-    excludeDesktopWindows: excludeDesktopWindows,
-    onScreenWindowsOnly: onScreenWindowsOnly,
-  ));
+  return Isolate.run(() => getShareableContentImpl(
+        excludeDesktopWindows: excludeDesktopWindows,
+        onScreenWindowsOnly: onScreenWindowsOnly,
+      ));
 }

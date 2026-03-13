@@ -12,6 +12,7 @@
 /// Returns NULL on error.
 char* get_shareable_content_json(int exclude_desktop_windows, int on_screen_windows_only) {
   __block char* result = NULL;
+  // ARC manages dispatch_semaphore_t lifecycle; no manual dispatch_release needed.
   dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
   [SCShareableContent getShareableContentExcludingDesktopWindows:(BOOL)exclude_desktop_windows
