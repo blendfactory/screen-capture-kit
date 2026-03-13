@@ -9,7 +9,8 @@ import 'package:screen_capture_kit/src/window.dart';
 ///
 /// Use [ContentFilter.window] for single-window capture,
 /// [ContentFilter.display] for display capture with optional exclusions,
-/// or [ContentFilter.displayExcludingWindows] for display minus specific windows.
+/// or [ContentFilter.displayExcludingWindows] for display minus specific
+/// windows.
 @immutable
 sealed class ContentFilter {
   const ContentFilter._();
@@ -26,7 +27,8 @@ sealed class ContentFilter {
   ///
   /// [excludingApplications] excludes these apps from capture.
   /// [exceptingWindows] includes these windows even if their app is excluded.
-  /// Maps to `SCContentFilter(display:excludingApplications:exceptingWindows:)`.
+  /// Maps to
+  /// `SCContentFilter(display:excludingApplications:exceptingWindows:)`.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944911-init
   const factory ContentFilter.display(
@@ -109,15 +111,17 @@ final class _DisplayContentFilter extends ContentFilter {
 
   @override
   String toString() =>
-      'ContentFilter.display($display, excluding: ${excludingApplications.length}, excepting: ${exceptingWindows.length})';
+      'ContentFilter.display($display, excluding: '
+      '${excludingApplications.length}, excepting: ${exceptingWindows.length})';
 }
 
 /// Filter for display capture excluding specific windows.
 @immutable
 final class _DisplayExcludingWindowsContentFilter extends ContentFilter {
   const _DisplayExcludingWindowsContentFilter(
-      this.display, this.excludingWindows)
-      : super._();
+    this.display,
+    this.excludingWindows,
+  ) : super._();
 
   final Display display;
   final List<Window> excludingWindows;
@@ -134,7 +138,8 @@ final class _DisplayExcludingWindowsContentFilter extends ContentFilter {
 
   @override
   String toString() =>
-      'ContentFilter.displayExcludingWindows($display, ${excludingWindows.length} windows)';
+      'ContentFilter.displayExcludingWindows($display, '
+      '${excludingWindows.length} windows)';
 }
 
 /// Filter for rectangular region capture.
@@ -161,9 +166,13 @@ final class _RegionContentFilter extends ContentFilter {
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {
-  if (a.length != b.length) return false;
+  if (a.length != b.length) {
+    return false;
+  }
   for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
+    if (a[i] != b[i]) {
+      return false;
+    }
   }
   return true;
 }
