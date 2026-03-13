@@ -1,0 +1,105 @@
+---
+name: screen-capture-kit-api-coverage
+description: >-
+  Tracks ScreenCaptureKit API coverage in the screen-capture-kit package. Use when
+  planning features, identifying implementation gaps, or updating the roadmap.
+---
+
+# ScreenCaptureKit API Coverage
+
+Checklist for tracking which ScreenCaptureKit APIs are implemented in the Dart package.
+
+## When to use
+
+- Before adding a new feature (check what's missing)
+- When updating README Roadmap
+- During release planning
+- When reviewing PRs for completeness
+
+## Coverage checklist
+
+Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | ❌ Not started
+
+### Shareable content
+
+| API | Status | Notes |
+|-----|--------|-------|
+| SCShareableContent.getExcludingDesktopWindows | ❌ | |
+| SCShareableContent.displays | ❌ | |
+| SCShareableContent.windows | ❌ | |
+| SCShareableContent.applications | ❌ | |
+| SCDisplay | ❌ | |
+| SCRunningApplication | ❌ | |
+| SCWindow | ❌ | |
+
+### Content filter
+
+| API | Status | Notes |
+|-----|--------|-------|
+| SCContentFilter(desktopIndependentWindow:) | ❌ | Window capture |
+| SCContentFilter(display:excludingApplications:exceptingWindows:) | ❌ | Display capture |
+| SCContentFilter(display:excludingWindows:) | ❌ | |
+| SCContentFilter.contentRect | ❌ | Region capture |
+
+### Stream
+
+| API | Status | Notes |
+|-----|--------|-------|
+| SCStream init | ❌ | |
+| SCStream.addStreamOutput (screen) | ❌ | |
+| SCStream.addStreamOutput (audio) | ❌ | |
+| SCStream.addStreamOutput (microphone) | ❌ | |
+| SCStream.startCapture | ❌ | |
+| SCStream.stopCapture | ❌ | |
+| SCStream.updateConfiguration | ❌ | |
+| SCStream.updateContentFilter | ❌ | |
+
+### Stream configuration
+
+| Property | Status | Notes |
+|----------|--------|-------|
+| width, height | ❌ | |
+| minimumFrameInterval | ❌ | Frame rate |
+| queueDepth | ❌ | |
+| showsCursor | ❌ | Cursor capture |
+| capturesAudio | ❌ | |
+| excludesCurrentProcessAudio | ❌ | |
+| captureMicrophone | ❌ | |
+| pixelFormat, colorSpaceName | ❌ | |
+
+### Screenshot
+
+| API | Status | Notes |
+|-----|--------|-------|
+| SCScreenshotManager.captureImage | ❌ | |
+| SCScreenshotConfiguration | ❌ | |
+
+### System picker
+
+| API | Status | Notes |
+|-----|--------|-------|
+| SCContentSharingPicker | ❌ | |
+| SCContentSharingPickerConfiguration | ❌ | |
+
+### Errors
+
+| API | Status | Notes |
+|-----|--------|-------|
+| SCStreamError handling | ❌ | |
+
+## README Roadmap alignment
+
+| Roadmap item | Coverage target |
+|--------------|-----------------|
+| Window capture | SCContentFilter(desktopIndependentWindow:), SCWindow |
+| Region capture | SCContentFilter.contentRect |
+| Cursor capture | SCStreamConfiguration.showsCursor |
+| Audio capture | capturesAudio, addStreamOutput(.audio) |
+| Frame rate configuration | minimumFrameInterval |
+| Multi-display capture | SCDisplay, filter by display |
+
+## Usage
+
+1. Before implementing: identify which checklist items the feature touches
+2. After implementing: update Status to ✅ and add Notes
+3. Sync README Roadmap when major items are done
