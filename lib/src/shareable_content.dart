@@ -1,6 +1,6 @@
-import 'display.dart';
-import 'running_application.dart';
-import 'window.dart';
+import 'package:screen_capture_kit/src/display.dart';
+import 'package:screen_capture_kit/src/running_application.dart';
+import 'package:screen_capture_kit/src/window.dart';
 
 /// Shareable content (displays, apps, windows) available for capture.
 ///
@@ -23,7 +23,6 @@ class ShareableContent {
   final List<Window> windows;
 
   @override
-  String toString() =>
-      'ShareableContent(displays: ${displays.length}, '
+  String toString() => 'ShareableContent(displays: ${displays.length}, '
       'applications: ${applications.length}, windows: ${windows.length})';
 }

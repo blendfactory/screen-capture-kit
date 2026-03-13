@@ -93,31 +93,34 @@ void main() {
   });
 
   group('getShareableContent', () {
-    test('returns ShareableContent on macOS or throws on unsupported',
-        () async {
-      // On non-macOS: UnsupportedError
-      // On macOS: ShareableContent or ScreenCaptureKitException (e.g. permission)
-      // Timeout: native call may block on permission dialog or hang
-      try {
-        final content = await getShareableContent().timeout(
-          const Duration(seconds: 5),
-          onTimeout: () =>
-              throw TimeoutException('getShareableContent timed out'),
-        );
-        expect(content, isA<ShareableContent>());
-        expect(content.displays, isA<List<Display>>());
-        expect(content.applications, isA<List<RunningApplication>>());
-        expect(content.windows, isA<List<Window>>());
-      } on UnsupportedError catch (e) {
-        // Expected on non-macOS
-        print(e);
-      } on ScreenCaptureKitException catch (e) {
-        // Expected on macOS without Screen Recording permission
-        print(e);
-      } on TimeoutException catch (e) {
-        // Native call blocked (e.g. permission dialog)
-        print(e);
-      }
-    }, timeout: Timeout.none);
+    test(
+      'returns ShareableContent on macOS or throws on unsupported',
+      () async {
+        // On non-macOS: UnsupportedError
+        // On macOS: ShareableContent or ScreenCaptureKitException (e.g. permission)
+        // Timeout: native call may block on permission dialog or hang
+        try {
+          final content = await getShareableContent().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () =>
+                throw TimeoutException('getShareableContent timed out'),
+          );
+          expect(content, isA<ShareableContent>());
+          expect(content.displays, isA<List<Display>>());
+          expect(content.applications, isA<List<RunningApplication>>());
+          expect(content.windows, isA<List<Window>>());
+        } on UnsupportedError catch (e) {
+          // Expected on non-macOS
+          print(e);
+        } on ScreenCaptureKitException catch (e) {
+          // Expected on macOS without Screen Recording permission
+          print(e);
+        } on TimeoutException catch (e) {
+          // Native call blocked (e.g. permission dialog)
+          print(e);
+        }
+      },
+      timeout: Timeout.none,
+    );
   });
 }

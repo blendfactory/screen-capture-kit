@@ -1,6 +1,6 @@
 import 'dart:io' show Platform;
 
-import 'shareable_content.dart';
+import 'package:screen_capture_kit/src/shareable_content.dart';
 
 /// Stub implementation that throws on unsupported platforms.
 ShareableContent getShareableContentImpl({

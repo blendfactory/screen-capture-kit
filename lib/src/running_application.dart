@@ -28,8 +28,7 @@ class RunningApplication {
           processId == other.processId;
 
   @override
-  int get hashCode =>
-      Object.hash(bundleIdentifier, applicationName, processId);
+  int get hashCode => Object.hash(bundleIdentifier, applicationName, processId);
 
   @override
   String toString() =>

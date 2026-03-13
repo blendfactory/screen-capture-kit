@@ -4,18 +4,21 @@ import 'dart:io' show Platform;
 
 import 'package:ffi/ffi.dart';
 
-import 'display.dart';
-import 'running_application.dart';
-import 'screen_capture_kit_exception.dart';
-import 'shareable_content.dart';
-import 'window.dart';
+import 'package:screen_capture_kit/src/display.dart';
+import 'package:screen_capture_kit/src/running_application.dart';
+import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
+import 'package:screen_capture_kit/src/shareable_content.dart';
+import 'package:screen_capture_kit/src/window.dart';
 
 /// C function returning malloc'd JSON string. Caller must free.
 @Native<Pointer<Utf8> Function(Int32, Int32)>(
   symbol: 'get_shareable_content_json',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
-external Pointer<Utf8> _getShareableContentJson(int excludeDesktopWindows, int onScreenWindowsOnly);
+external Pointer<Utf8> _getShareableContentJson(
+  int excludeDesktopWindows,
+  int onScreenWindowsOnly,
+);
 
 ShareableContent getShareableContentImpl({
   bool excludeDesktopWindows = false,
@@ -99,21 +102,25 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
   final displays = <Display>[];
   for (final d in json['displays'] as List<dynamic>? ?? []) {
     final m = d as Map<String, dynamic>;
-    displays.add(Display(
-      displayId: (m['displayId'] as num).toInt(),
-      width: (m['width'] as num).toInt(),
-      height: (m['height'] as num).toInt(),
-    ));
+    displays.add(
+      Display(
+        displayId: (m['displayId'] as num).toInt(),
+        width: (m['width'] as num).toInt(),
+        height: (m['height'] as num).toInt(),
+      ),
+    );
   }
 
   final applications = <RunningApplication>[];
   for (final a in json['applications'] as List<dynamic>? ?? []) {
     final m = a as Map<String, dynamic>;
-    applications.add(RunningApplication(
-      bundleIdentifier: m['bundleIdentifier'] as String? ?? '',
-      applicationName: m['applicationName'] as String? ?? '',
-      processId: (m['processId'] as num).toInt(),
-    ));
+    applications.add(
+      RunningApplication(
+        bundleIdentifier: m['bundleIdentifier'] as String? ?? '',
+        applicationName: m['applicationName'] as String? ?? '',
+        processId: (m['processId'] as num).toInt(),
+      ),
+    );
   }
 
   final windows = <Window>[];
@@ -121,21 +128,23 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
     final m = w as Map<String, dynamic>;
     final appJson = m['owningApplication'] as Map<String, dynamic>? ?? {};
     final frameJson = m['frame'] as Map<String, dynamic>? ?? {};
-    windows.add(Window(
-      windowId: (m['windowId'] as num).toInt(),
-      frame: (
-        x: (frameJson['x'] as num?)?.toDouble() ?? 0,
-        y: (frameJson['y'] as num?)?.toDouble() ?? 0,
-        width: (frameJson['width'] as num?)?.toDouble() ?? 0,
-        height: (frameJson['height'] as num?)?.toDouble() ?? 0,
+    windows.add(
+      Window(
+        windowId: (m['windowId'] as num).toInt(),
+        frame: (
+          x: (frameJson['x'] as num?)?.toDouble() ?? 0,
+          y: (frameJson['y'] as num?)?.toDouble() ?? 0,
+          width: (frameJson['width'] as num?)?.toDouble() ?? 0,
+          height: (frameJson['height'] as num?)?.toDouble() ?? 0,
+        ),
+        owningApplication: RunningApplication(
+          bundleIdentifier: appJson['bundleIdentifier'] as String? ?? '',
+          applicationName: appJson['applicationName'] as String? ?? '',
+          processId: (appJson['processId'] as num?)?.toInt() ?? 0,
+        ),
+        title: m['title'] as String?,
       ),
-      owningApplication: RunningApplication(
-        bundleIdentifier: appJson['bundleIdentifier'] as String? ?? '',
-        applicationName: appJson['applicationName'] as String? ?? '',
-        processId: (appJson['processId'] as num?)?.toInt() ?? 0,
-      ),
-      title: m['title'] as String?,
-    ));
+    );
   }
 
   return ShareableContent(
@@ -144,4 +153,3 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
     windows: windows,
   );
 }
-
