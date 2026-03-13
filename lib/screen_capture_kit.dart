@@ -9,11 +9,11 @@ import 'dart:isolate';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_stub.dart'
     if (dart.library.io) 'package:screen_capture_kit/src/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
-import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/window.dart';
 
 export 'src/captured_frame.dart';

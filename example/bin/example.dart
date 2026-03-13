@@ -32,10 +32,14 @@ Future<int> runStreamCapture(
     },
     onError: (Object e, StackTrace st) {
       print('Stream error: $e');
-      if (!completer.isCompleted) completer.complete();
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
     },
     onDone: () {
-      if (!completer.isCompleted) completer.complete();
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
     },
   );
   unawaited(
@@ -68,7 +72,10 @@ void main() async {
       print('Display filter created: ${displayFilter.filterId}');
       try {
         final image = await kit.captureScreenshot(displayFilter);
-        print('Screenshot: ${image.width}x${image.height}, ${image.pngData.length} bytes');
+        print(
+          'Screenshot: ${image.width}x${image.height}, '
+          '${image.pngData.length} bytes',
+        );
       } on ScreenCaptureKitException catch (e) {
         if (e.message.contains('macOS 14')) {
           print('Screenshot requires macOS 14+');
@@ -76,7 +83,7 @@ void main() async {
           rethrow;
         }
       }
-      final displayFrames = await runStreamCapture(
+      await runStreamCapture(
         kit,
         displayFilter,
         width: display.width,
@@ -105,7 +112,10 @@ void main() async {
         print('Window filter created: ${windowFilter.filterId}');
         try {
           final image = await kit.captureScreenshot(windowFilter);
-          print('Screenshot: ${image.width}x${image.height}, ${image.pngData.length} bytes');
+          print(
+          'Screenshot: ${image.width}x${image.height}, '
+          '${image.pngData.length} bytes',
+        );
         } on ScreenCaptureKitException catch (e) {
           if (e.message.contains('macOS 14')) {
             print('Screenshot requires macOS 14+');
@@ -115,7 +125,7 @@ void main() async {
         }
         final w = window.frame.width.toInt();
         final h = window.frame.height.toInt();
-        final windowFrames = await runStreamCapture(
+        await runStreamCapture(
           kit,
           windowFilter,
           width: w,
