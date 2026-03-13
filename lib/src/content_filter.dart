@@ -20,7 +20,7 @@ sealed class ContentFilter {
   /// Maps to `SCContentFilter(desktopIndependentWindow:)`.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944912-init
-  factory ContentFilter.window(Window window) = _WindowContentFilter;
+  const factory ContentFilter.window(Window window) = _WindowContentFilter;
 
   /// Creates a filter for capturing a display with optional exclusions.
   ///
@@ -29,7 +29,7 @@ sealed class ContentFilter {
   /// Maps to `SCContentFilter(display:excludingApplications:exceptingWindows:)`.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944911-init
-  factory ContentFilter.display(
+  const factory ContentFilter.display(
     Display display, {
     List<RunningApplication>? excludingApplications,
     List<Window>? exceptingWindows,
@@ -40,7 +40,7 @@ sealed class ContentFilter {
   /// Maps to `SCContentFilter(display:excludingWindows:)`.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944910-init
-  factory ContentFilter.displayExcludingWindows(
+  const factory ContentFilter.displayExcludingWindows(
     Display display,
     List<Window> excludingWindows,
   ) = _DisplayExcludingWindowsContentFilter;
@@ -53,15 +53,15 @@ sealed class ContentFilter {
   /// captures a region of the main display.
   ///
   /// Maps to `SCContentFilter.contentRect`.
-  factory ContentFilter.region(
-          ({double x, double y, double width, double height}) rect) =
-      _RegionContentFilter;
+  const factory ContentFilter.region(
+    ({double x, double y, double width, double height}) rect,
+  ) = _RegionContentFilter;
 }
 
 /// Filter for single-window capture.
 @immutable
 final class _WindowContentFilter extends ContentFilter {
-  _WindowContentFilter(this.window) : super._();
+  const _WindowContentFilter(this.window) : super._();
 
   final Window window;
 
@@ -80,7 +80,7 @@ final class _WindowContentFilter extends ContentFilter {
 /// Filter for display capture with app/window exclusions.
 @immutable
 final class _DisplayContentFilter extends ContentFilter {
-  _DisplayContentFilter(
+  const _DisplayContentFilter(
     this.display, {
     List<RunningApplication>? excludingApplications,
     List<Window>? exceptingWindows,
@@ -101,8 +101,11 @@ final class _DisplayContentFilter extends ContentFilter {
           _listEquals(exceptingWindows, other.exceptingWindows);
 
   @override
-  int get hashCode => Object.hash(display,
-      Object.hashAll(excludingApplications), Object.hashAll(exceptingWindows));
+  int get hashCode => Object.hash(
+        display,
+        Object.hashAll(excludingApplications),
+        Object.hashAll(exceptingWindows),
+      );
 
   @override
   String toString() =>
@@ -112,7 +115,8 @@ final class _DisplayContentFilter extends ContentFilter {
 /// Filter for display capture excluding specific windows.
 @immutable
 final class _DisplayExcludingWindowsContentFilter extends ContentFilter {
-  _DisplayExcludingWindowsContentFilter(this.display, this.excludingWindows)
+  const _DisplayExcludingWindowsContentFilter(
+      this.display, this.excludingWindows)
       : super._();
 
   final Display display;
@@ -136,7 +140,7 @@ final class _DisplayExcludingWindowsContentFilter extends ContentFilter {
 /// Filter for rectangular region capture.
 @immutable
 final class _RegionContentFilter extends ContentFilter {
-  _RegionContentFilter(this.rect) : super._();
+  const _RegionContentFilter(this.rect) : super._();
 
   final ({double x, double y, double width, double height}) rect;
 

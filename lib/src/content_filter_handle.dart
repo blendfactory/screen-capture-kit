@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:screen_capture_kit/screen_capture_kit.dart' show ScreenCaptureKit;
 
 /// Opaque handle to a native SCContentFilter.
 ///
@@ -8,7 +9,7 @@ import 'package:meta/meta.dart';
 /// This handle will be used when implementing capture streams.
 @immutable
 class ContentFilterHandle {
-  ContentFilterHandle(this._filterId)
+  const ContentFilterHandle(this._filterId)
       : assert(_filterId > 0, 'Invalid filter id');
 
   final int _filterId;

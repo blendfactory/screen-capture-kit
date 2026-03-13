@@ -16,7 +16,7 @@ void main() {
         frame: (x: 0, y: 0, width: 800, height: 600),
         owningApplication: app,
       );
-      final filter = ContentFilter.window(window);
+      const filter = ContentFilter.window(window);
       expect(filter, isA<ContentFilter>());
       expect(filter.toString(), contains('window'));
     });
@@ -27,7 +27,7 @@ void main() {
         width: 1920,
         height: 1080,
       );
-      final filter = ContentFilter.display(display);
+      const filter = ContentFilter.display(display);
       expect(filter, isA<ContentFilter>());
       expect(filter.toString(), contains('display'));
     });
@@ -49,13 +49,13 @@ void main() {
         frame: (x: 0, y: 0, width: 100, height: 100),
         owningApplication: app,
       );
-      final filter = ContentFilter.displayExcludingWindows(display, [window]);
+      const filter = ContentFilter.displayExcludingWindows(display, [window]);
       expect(filter, isA<ContentFilter>());
       expect(filter.toString(), contains('displayExcludingWindows'));
     });
 
     test('ContentFilter.region creates with rect', () {
-      final filter = ContentFilter.region(
+      const filter = ContentFilter.region(
         (x: 10, y: 20, width: 400, height: 300),
       );
       expect(filter, isA<ContentFilter>());
@@ -65,7 +65,7 @@ void main() {
 
   group('ContentFilterHandle', () {
     test('creates with positive filter id', () {
-      final handle = ContentFilterHandle(1);
+      const handle = ContentFilterHandle(1);
       expect(handle.filterId, 1);
     });
   });
