@@ -148,8 +148,16 @@ static void ensureStreamRegistry(void) {
 }
 
 /// Creates and starts a capture stream.
+/// frame_rate: target fps; 0 or invalid uses 60.
+/// src_x, src_y, src_width, src_height: source rect in content points; if
+/// src_width > 0 and src_height > 0, config.sourceRect is set for region capture.
+/// shows_cursor: 1 to include cursor in capture, 0 to hide.
 /// Returns stream_id on success, 0 on error.
-int64_t stream_create_and_start(int64_t filter_id, int width, int height) {
+int64_t stream_create_and_start(int64_t filter_id, int width, int height,
+                                int frame_rate,
+                                double src_x, double src_y,
+                                double src_width, double src_height,
+                                int shows_cursor) {
   ensureCoreGraphicsInit();
   ensureStreamRegistry();
 
@@ -158,12 +166,17 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height) {
     return 0;
   }
 
+  int fps = (frame_rate > 0 && frame_rate <= 120) ? frame_rate : 60;
   SCStreamConfiguration* config = [[SCStreamConfiguration alloc] init];
   if (width > 0 && height > 0) {
     config.width = width;
     config.height = height;
   }
-  config.minimumFrameInterval = CMTimeMake(1, 60);
+  if (src_width > 0 && src_height > 0) {
+    config.sourceRect = CGRectMake(src_x, src_y, src_width, src_height);
+  }
+  config.showsCursor = (shows_cursor != 0);
+  config.minimumFrameInterval = CMTimeMake(1, fps);
   config.queueDepth = 5;
 
   StreamFrameHandler* handler = [[StreamFrameHandler alloc] init];

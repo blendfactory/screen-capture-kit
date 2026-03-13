@@ -9,6 +9,7 @@ Future<int> runStreamCapture(
   required int width,
   required int height,
   required String label,
+  ({double x, double y, double width, double height})? sourceRect,
   Duration timeout = const Duration(seconds: 5),
 }) async {
   print('\n--- $label ---');
@@ -19,6 +20,7 @@ Future<int> runStreamCapture(
     filterHandle,
     width: width,
     height: height,
+    sourceRect: sourceRect,
   );
   final subscription = stream.listen(
     (frame) {
@@ -90,6 +92,22 @@ void main() async {
         height: display.height,
         label: 'Display stream',
       );
+
+      // Region capture: center 400x400 via sourceRect (reuses display filter)
+      final regionW = 400.0;
+      final regionH = 400.0;
+      final regionX = (display.width - regionW) / 2;
+      final regionY = (display.height - regionH) / 2;
+      print('\n=== Region capture (center ${regionW.toInt()}x${regionH.toInt()}) ===');
+      await runStreamCapture(
+        kit,
+        displayFilter,
+        width: regionW.toInt(),
+        height: regionH.toInt(),
+        sourceRect: (x: regionX, y: regionY, width: regionW, height: regionH),
+        label: 'Region stream',
+      );
+
       kit.releaseFilter(displayFilter);
       print('Display filter released.');
     }

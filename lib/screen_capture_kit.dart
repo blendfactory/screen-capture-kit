@@ -110,6 +110,10 @@ class ScreenCaptureKit {
 
   /// Starts a capture stream yielding [CapturedFrame]s (BGRA pixel data).
   ///
+  /// [frameRate] sets the target fps (1–120); 0 or invalid uses 60.
+  /// [sourceRect] optionally crops to a region (x, y, width, height) in screen
+  /// points. Use with display filter for region capture.
+  /// [showsCursor] includes the system cursor in capture when true (default).
   /// Cancel the stream subscription to stop capture.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
@@ -117,11 +121,17 @@ class ScreenCaptureKit {
     ContentFilterHandle filterHandle, {
     int width = 0,
     int height = 0,
+    int frameRate = 60,
+    ({double x, double y, double width, double height})? sourceRect,
+    bool showsCursor = true,
   }) {
     return startCaptureStreamImpl(
       filterHandle,
       width: width,
       height: height,
+      frameRate: frameRate,
+      sourceRect: sourceRect,
+      showsCursor: showsCursor,
     );
   }
 }

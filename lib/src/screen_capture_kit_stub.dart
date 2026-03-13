@@ -79,6 +79,9 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   ContentFilterHandle filterHandle, {
   int width = 0,
   int height = 0,
+  int frameRate = 60,
+  ({double x, double y, double width, double height})? sourceRect,
+  bool showsCursor = true,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(

@@ -52,11 +52,21 @@ external void _releaseContentFilter(int filterId);
 )
 external Pointer<Utf8> _captureScreenshot(int filterId, int width, int height);
 
-@Native<Int64 Function(Int64, Int32, Int32)>(
+@Native<Int64 Function(Int64, Int32, Int32, Int32, Float, Float, Float, Float, Int32)>(
   symbol: 'stream_create_and_start',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
-external int _streamCreateAndStart(int filterId, int width, int height);
+external int _streamCreateAndStart(
+  int filterId,
+  int width,
+  int height,
+  int frameRate,
+  double srcX,
+  double srcY,
+  double srcWidth,
+  double srcHeight,
+  int showsCursor,
+);
 
 @Native<Pointer<Utf8> Function(Int64, Int64)>(
   symbol: 'stream_get_next_frame',
@@ -337,6 +347,9 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   ContentFilterHandle filterHandle, {
   int width = 0,
   int height = 0,
+  int frameRate = 60,
+  ({double x, double y, double width, double height})? sourceRect,
+  bool showsCursor = true,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -345,10 +358,17 @@ Stream<CapturedFrame> startCaptureStreamImpl(
     );
   }
 
+  final src = sourceRect;
   final streamId = _streamCreateAndStart(
     filterHandle.filterId,
     width,
     height,
+    frameRate,
+    src?.x ?? 0,
+    src?.y ?? 0,
+    src?.width ?? 0,
+    src?.height ?? 0,
+    showsCursor ? 1 : 0,
   );
   if (streamId <= 0) {
     throw const ScreenCaptureKitException(
