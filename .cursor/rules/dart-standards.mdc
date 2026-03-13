@@ -1,0 +1,77 @@
+---
+description: Dart coding standards for this pure Dart package, adapted from official Flutter/Dart AI rules. Applies when working with Dart files.
+globs: "**/*.dart"
+alwaysApply: false
+---
+
+# Dart Standards
+
+Adapted from [Flutter/Dart AI rules](https://docs.flutter.dev/ai/ai-rules). This project is **pure Dart** (no Flutter); Flutter-specific rules are omitted.
+
+Ref: https://raw.githubusercontent.com/flutter/flutter/refs/heads/main/docs/rules/rules.md
+
+## Package Management
+
+- **Minimize dependencies:** Avoid adding external packages unless strictly necessary. Prefer Dart SDK and standard libraries.
+- Use `dart pub add <package>` for dependencies.
+- Use `dart pub add dev: <package>` for dev dependencies.
+- Use `dart pub remove <package>` to remove dependencies.
+
+## Code Quality
+
+- **Naming:** `PascalCase` for classes, `camelCase` for members/variables/functions, `snake_case` for files.
+- **Line length:** 80 characters or fewer.
+- **Functions:** Keep short, single purpose; aim for under 20 lines.
+- **Error handling:** Anticipate and handle errors; avoid silent failures.
+- **Logging:** Use `log` from `dart:developer` instead of `print`.
+
+## Dart Best Practices
+
+- **Effective Dart:** Follow https://dart.dev/effective-dart
+- **Null safety:** Write soundly null-safe code. Avoid `!` unless the value is guaranteed non-null.
+- **Async:** Use `Future`/`async`/`await` for async operations; use `Stream` for sequences of async events.
+- **Pattern matching:** Use where it simplifies code.
+- **Records:** Use records to return multiple values when a full class is overkill.
+- **Switch:** Prefer exhaustive `switch` statements or expressions.
+- **Arrow functions:** Use arrow syntax for simple one-line functions.
+
+## API Design
+
+- Design from the user's perspective; APIs should be intuitive.
+- Documentation is part of good API design; keep it clear with examples.
+
+## API Documentation
+
+- Add `///` doc comments to all public APIs (classes, constructors, methods, top-level functions).
+- First sentence: concise, user-centric summary ending with a period.
+- Add blank line after summary for tooling.
+- Include code samples where helpful.
+- Explain parameters, return values, and exceptions.
+
+## Lint Rules
+
+Use `package:dart_lints` in `analysis_options.yaml`:
+
+```yaml
+include: package:dart_lints/dart.yaml
+
+linter:
+  rules:
+    # Add project-specific rules
+```
+
+## Testing
+
+- Use `package:test` for unit tests.
+- Follow Arrange-Act-Assert (Given-When-Then).
+- Prefer fakes/stubs over mocks; use `mocktail` when mocks are needed.
+- Run: `dart test`
+
+## Commands
+
+| Command | Purpose |
+|--------|---------|
+| `dart pub get` | Fetch dependencies |
+| `dart analyze` | Run static analysis |
+| `dart format .` | Format code |
+| `dart test` | Run tests |
