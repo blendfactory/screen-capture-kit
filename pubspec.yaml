@@ -11,8 +11,8 @@ environment:
 dependencies:
   code_assets: ^1.0.0
   ffi: ^2.1.0
-  meta: ^1.11.0
   hooks: ^1.0.0
+  meta: ^1.11.0
   native_toolchain_c: ^0.17.0
 
 dev_dependencies:
