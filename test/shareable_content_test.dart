@@ -195,7 +195,7 @@ void main() {
           // Expected on non-macOS
         } on ScreenCaptureKitException catch (e) {
           // Expected on macOS without permission or macOS < 14
-          if (!(e.message?.contains('macOS 14') ?? false)) {
+          if (!e.message.contains('macOS 14')) {
             print(e);
           }
         } on TimeoutException {

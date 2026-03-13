@@ -19,7 +19,7 @@ void main() async {
         print('Screenshot captured: ${image.width}x${image.height}, '
             '${image.pngData.length} bytes PNG');
       } on ScreenCaptureKitException catch (e) {
-        if (e.message?.contains('macOS 14') ?? false) {
+        if (e.message.contains('macOS 14')) {
           print('Screenshot requires macOS 14+ (current: ${e.message})');
         } else {
           rethrow;
