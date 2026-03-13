@@ -1,8 +1,9 @@
 import 'package:screen_capture_kit/screen_capture_kit.dart';
 
 void main() async {
+  final kit = ScreenCaptureKit();
   try {
-    final content = await getShareableContent();
+    final content = await kit.getShareableContent();
     print('Displays: ${content.displays.length}');
     print('Applications: ${content.applications.length}');
     print('Windows: ${content.windows.length}');

@@ -90,7 +90,7 @@ void main() {
     });
   });
 
-  group('getShareableContent', () {
+  group('ScreenCaptureKit.getShareableContent', () {
     test(
       'returns ShareableContent on macOS or throws on unsupported',
       () async {
@@ -99,7 +99,7 @@ void main() {
         // (e.g. permission)
         // Timeout: native call may block on permission dialog or hang
         try {
-          final content = await getShareableContent().timeout(
+          final content = await ScreenCaptureKit().getShareableContent().timeout(
             const Duration(seconds: 5),
             onTimeout: () =>
                 throw TimeoutException('getShareableContent timed out'),

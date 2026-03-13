@@ -16,21 +16,32 @@ export 'src/screen_capture_kit_exception.dart';
 export 'src/shareable_content.dart';
 export 'src/window.dart';
 
-/// Retrieves the shareable content (displays, apps, windows) available for
-/// capture.
+/// Client for macOS ScreenCaptureKit API.
 ///
-/// Requires Screen Recording permission. On non-macOS platforms, throws
-/// [UnsupportedError].
+/// Use this class for dependency injection to enable mocking in tests.
 ///
-/// Ref: https://developer.apple.com/documentation/screencapturekit/scshareablecontent
-Future<ShareableContent> getShareableContent({
-  bool excludeDesktopWindows = false,
-  bool onScreenWindowsOnly = true,
-}) {
-  return Isolate.run(
-    () => getShareableContentImpl(
-      excludeDesktopWindows: excludeDesktopWindows,
-      onScreenWindowsOnly: onScreenWindowsOnly,
-    ),
-  );
+/// Example:
+/// ```dart
+/// final kit = ScreenCaptureKit();
+/// final content = await kit.getShareableContent();
+/// ```
+class ScreenCaptureKit {
+  /// Retrieves the shareable content (displays, apps, windows) available for
+  /// capture.
+  ///
+  /// Requires Screen Recording permission. On non-macOS platforms, throws
+  /// [UnsupportedError].
+  ///
+  /// Ref: https://developer.apple.com/documentation/screencapturekit/scshareablecontent
+  Future<ShareableContent> getShareableContent({
+    bool excludeDesktopWindows = false,
+    bool onScreenWindowsOnly = true,
+  }) {
+    return Isolate.run(
+      () => getShareableContentImpl(
+        excludeDesktopWindows: excludeDesktopWindows,
+        onScreenWindowsOnly: onScreenWindowsOnly,
+      ),
+    );
+  }
 }
