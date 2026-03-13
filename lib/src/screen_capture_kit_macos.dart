@@ -6,8 +6,8 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
-import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
+import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/running_application.dart';
@@ -322,7 +322,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
     height,
   );
   if (streamId <= 0) {
-    throw ScreenCaptureKitException(
+    throw const ScreenCaptureKitException(
       'Failed to start capture stream. '
       'Check Screen Recording permission.',
     );
@@ -345,10 +345,11 @@ Stream<CapturedFrame> startCaptureStreamImpl(
           scheduleMicrotask(poll);
         }
       }
-      Future.microtask(poll);
+      unawaited(Future.microtask(poll));
     },
     onCancel: () {
       _streamStopAndRelease(streamId);
+      unawaited(controller.close());
     },
   );
   return controller.stream;
