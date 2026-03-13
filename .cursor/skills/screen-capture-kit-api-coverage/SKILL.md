@@ -45,12 +45,12 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 | API | Status | Notes |
 |-----|--------|-------|
-| SCStream init | 🚧 | stream.m, startCaptureStream (experimental) |
-| SCStream.addStreamOutput (screen) | 🚧 | |
+| SCStream init | ✅ | stream.m, startCaptureStream; display stable |
+| SCStream.addStreamOutput (screen) | ✅ | custom queue, BGRA frames |
 | SCStream.addStreamOutput (audio) | ❌ | |
 | SCStream.addStreamOutput (microphone) | ❌ | |
-| SCStream.startCapture | 🚧 | |
-| SCStream.stopCapture | 🚧 | |
+| SCStream.startCapture | ✅ | |
+| SCStream.stopCapture | ✅ | |
 | SCStream.updateConfiguration | ❌ | |
 | SCStream.updateContentFilter | ❌ | |
 
@@ -58,9 +58,9 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 | Property | Status | Notes |
 |----------|--------|-------|
-| width, height | 🚧 | via startCaptureStream |
-| minimumFrameInterval | ❌ | Frame rate |
-| queueDepth | ❌ | |
+| width, height | ✅ | via startCaptureStream |
+| minimumFrameInterval | 🚧 | hardcoded 60fps in native |
+| queueDepth | 🚧 | hardcoded 5 in native |
 | showsCursor | ❌ | Cursor capture |
 | capturesAudio | ❌ | |
 | excludesCurrentProcessAudio | ❌ | |
@@ -96,7 +96,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | Cursor capture | SCStreamConfiguration.showsCursor |
 | Audio capture | capturesAudio, addStreamOutput(.audio) |
 | Frame rate configuration | minimumFrameInterval |
-| Multi-display capture | SCDisplay, filter by display |
+| Multi-display capture | SCDisplay, createDisplayFilter ✅ |
 
 ## Usage
 
