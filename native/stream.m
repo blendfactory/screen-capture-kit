@@ -4,7 +4,10 @@
 #import <CoreMedia/CoreMedia.h>
 #import <CoreVideo/CoreVideo.h>
 #import <IOSurface/IOSurface.h>
+#include <stdio.h>
 #include <string.h>
+
+#define STREAM_DEBUG 0
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED < 120300
 #error "ScreenCaptureKit requires macOS 12.3 or newer"
@@ -15,12 +18,10 @@ static void ensureCoreGraphicsInit(void) {
 }
 
 @interface StreamFrameHandler : NSObject <SCStreamOutput>
-@property (nonatomic, strong) NSMutableData* latestFrame;
-@property (nonatomic, assign) int frameWidth;
-@property (nonatomic, assign) int frameHeight;
-@property (nonatomic, assign) int bytesPerRow;
+@property (nonatomic, strong) NSString* latestFrameJson;
 @property (nonatomic, strong) dispatch_semaphore_t frameSemaphore;
 @property (nonatomic, assign) BOOL stopped;
+@property (nonatomic, strong) NSLock* lock;
 @end
 
 @implementation StreamFrameHandler
@@ -29,6 +30,7 @@ static void ensureCoreGraphicsInit(void) {
   if (self) {
     _frameSemaphore = dispatch_semaphore_create(0);
     _stopped = NO;
+    _lock = [[NSLock alloc] init];
   }
   return self;
 }
@@ -36,10 +38,12 @@ static void ensureCoreGraphicsInit(void) {
 - (void)stream:(SCStream*)stream
     didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                    ofType:(SCStreamOutputType)type {
+  if (STREAM_DEBUG) fprintf(stderr, "[SCStream] callback type=%d stopped=%d\n", (int)type, _stopped);
   if (type != SCStreamOutputTypeScreen || _stopped) {
     return;
   }
   if (!CMSampleBufferIsValid(sampleBuffer)) {
+    if (STREAM_DEBUG) fprintf(stderr, "[SCStream] sample buffer invalid\n");
     return;
   }
 
@@ -52,7 +56,9 @@ static void ensureCoreGraphicsInit(void) {
     NSNumber* statusNum = dict[SCStreamFrameInfoStatus];
     if (statusNum) {
       SCFrameStatus status = (SCFrameStatus)[statusNum integerValue];
-      if (status != SCFrameStatusComplete) {
+      if (STREAM_DEBUG) fprintf(stderr, "[SCStream] status=%ld\n", (long)[statusNum integerValue]);
+      // Accept both Complete and Started (first frame after stream start).
+      if (status != SCFrameStatusComplete && status != SCFrameStatusStarted) {
         return;
       }
     }
@@ -71,6 +77,8 @@ static void ensureCoreGraphicsInit(void) {
 
   CVPixelBufferLockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
   baseAddress = CVPixelBufferGetBaseAddress(imageBuffer);
+  if (STREAM_DEBUG) fprintf(stderr, "[SCStream] %zux%zu bpr=%zu baseAddr=%p\n",
+      width, height, bytesPerRow, baseAddress);
 
   // ScreenCaptureKit uses IOSurface-backed CVPixelBuffers; baseAddress is often
   // NULL. Fall back to IOSurface for CPU access.
@@ -84,12 +92,19 @@ static void ensureCoreGraphicsInit(void) {
             [NSMutableData dataWithBytes:baseAddress length:dataSize];
         IOSurfaceUnlock((IOSurfaceRef)surfaceRef, kIOSurfaceLockReadOnly, NULL);
         CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-        @synchronized(self) {
-          _latestFrame = frameData;
-          _frameWidth = (int)width;
-          _frameHeight = (int)height;
-          _bytesPerRow = (int)bytesPerRow;
-        }
+        NSString* base64 = [frameData base64EncodedStringWithOptions:0];
+        NSDictionary* root = @{
+          @"error" : @NO,
+          @"bgraBase64" : base64 ?: @"",
+          @"width" : @((int)width),
+          @"height" : @((int)height),
+          @"bytesPerRow" : @((int)bytesPerRow)
+        };
+        NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
+        NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        [_lock lock];
+        _latestFrameJson = jsonStr;
+        [_lock unlock];
         dispatch_semaphore_signal(_frameSemaphore);
         return;
       }
@@ -100,12 +115,20 @@ static void ensureCoreGraphicsInit(void) {
     NSMutableData* frameData =
         [NSMutableData dataWithBytes:baseAddress length:dataSize];
     CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-    @synchronized(self) {
-      _latestFrame = frameData;
-      _frameWidth = (int)width;
-      _frameHeight = (int)height;
-      _bytesPerRow = (int)bytesPerRow;
-    }
+    NSString* base64 = [frameData base64EncodedStringWithOptions:0];
+    NSDictionary* root = @{
+      @"error" : @NO,
+      @"bgraBase64" : base64 ?: @"",
+      @"width" : @((int)width),
+      @"height" : @((int)height),
+      @"bytesPerRow" : @((int)bytesPerRow)
+    };
+    NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
+    NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    [_lock lock];
+    _latestFrameJson = jsonStr;
+    [_lock unlock];
+    if (STREAM_DEBUG) fprintf(stderr, "[SCStream] SIGNAL semaphore\n");
     dispatch_semaphore_signal(_frameSemaphore);
   } else {
     CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
@@ -150,9 +173,11 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height) {
                              delegate:nil];
 
   NSError* addError = nil;
-  // Main queue: SCStreamOutput may require main run loop. Blocking FFI runs
-  // in a Dart isolate, so main thread stays free for callbacks.
-  dispatch_queue_t queue = dispatch_get_main_queue();
+  // Use a dedicated serial queue. Dart CLI does not pump the main run loop,
+  // so dispatch_get_main_queue() callbacks never run. A custom queue has its
+  // own thread and does not depend on the main thread.
+  dispatch_queue_t queue =
+      dispatch_queue_create("com.screencapturekit.frame", DISPATCH_QUEUE_SERIAL);
   [stream addStreamOutput:handler
                     type:SCStreamOutputTypeScreen
         sampleHandlerQueue:queue
@@ -186,52 +211,39 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height) {
 /// "width":N,"height":N,"bytesPerRow":N}. On error: {"error":true,...}.
 /// Caller must free. Blocks until frame available or timeout.
 char* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
+  if (STREAM_DEBUG) fprintf(stderr, "[SCStream] get_next_frame stream_id=%lld\n", (long long)stream_id);
   if (stream_id <= 0 || _handlerRegistry == nil) {
     return NULL;
   }
 
   StreamFrameHandler* handler = _handlerRegistry[@(stream_id)];
   if (!handler) {
+    if (STREAM_DEBUG) fprintf(stderr, "[SCStream] handler not found\n");
     return NULL;
   }
 
+  if (STREAM_DEBUG) fprintf(stderr, "[SCStream] waiting on semaphore...\n");
   int64_t timeoutNsec = (timeout_ms > 0 ? timeout_ms : 5000) * NSEC_PER_MSEC;
   long waitResult = dispatch_semaphore_wait(
       handler.frameSemaphore,
       dispatch_time(DISPATCH_TIME_NOW, timeoutNsec));
 
   if (waitResult != 0) {
+    if (STREAM_DEBUG) fprintf(stderr, "[SCStream] wait timeout\n");
     return NULL;
   }
 
-  NSMutableData* frameData = nil;
-  int frameWidth = 0, frameHeight = 0, bytesPerRow = 0;
-  @synchronized(handler) {
-    frameData = handler.latestFrame;
-    frameWidth = handler.frameWidth;
-    frameHeight = handler.frameHeight;
-    bytesPerRow = handler.bytesPerRow;
-    handler.latestFrame = nil;
-  }
+  if (STREAM_DEBUG) fprintf(stderr, "[SCStream] got frame from semaphore\n");
+  NSString* jsonStr = nil;
+  [handler.lock lock];
+  jsonStr = handler.latestFrameJson;
+  handler.latestFrameJson = nil;
+  [handler.lock unlock];
 
-  if (!frameData || frameData.length == 0) {
+  if (!jsonStr || jsonStr.length == 0) {
     return NULL;
   }
-
-  NSString* base64 = [frameData base64EncodedStringWithOptions:0];
-  NSDictionary* root = @{
-    @"error" : @NO,
-    @"bgraBase64" : base64 ?: @"",
-    @"width" : @(frameWidth),
-    @"height" : @(frameHeight),
-    @"bytesPerRow" : @(bytesPerRow)
-  };
-  NSData* data = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
-  if (!data) {
-    return NULL;
-  }
-  NSString* str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-  return strdup(str.UTF8String);
+  return strdup(jsonStr.UTF8String);
 }
 
 /// Stops and releases a stream.

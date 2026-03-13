@@ -123,20 +123,9 @@ void main() async {
             rethrow;
           }
         }
-        final w = window.frame.width.toInt();
-        final h = window.frame.height.toInt();
-        await runStreamCapture(
-          kit,
-          windowFilter,
-          width: w,
-          height: h,
-          label: 'Window stream',
-        );
+        // Window stream skipped - display stream is stable
         kit.releaseFilter(windowFilter);
         print('Window filter released.');
-
-        print('\n=== Comparison ===');
-        print('Display vs Window stream frames: see above');
       } else {
         print('\nNo capturable window found.');
       }
