@@ -166,7 +166,9 @@ void main() {
                     onTimeout: () =>
                         throw TimeoutException('getShareableContent timed out'),
                   );
-          if (content.windows.isEmpty) return;
+          if (content.windows.isEmpty) {
+            return;
+          }
           final window = content.windows.first;
           final handle =
               await ScreenCaptureKit().createWindowFilter(window).timeout(
