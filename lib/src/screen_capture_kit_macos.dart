@@ -187,6 +187,8 @@ ContentFilterHandle createWindowFilterImpl(Window window) {
 }
 
 void releaseFilterImpl(ContentFilterHandle handle) {
-  if (!Platform.isMacOS) return;
+  if (!Platform.isMacOS) {
+    return;
+  }
   _releaseContentFilter(handle.filterId);
 }
