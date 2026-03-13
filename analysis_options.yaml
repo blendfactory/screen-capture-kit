@@ -77,3 +77,39 @@ linter:
     use_decorated_box: false
     use_full_hex_values_for_flutter_colors: false
     use_key_in_widget_constructors: false
+
+    # Conflicts with enabling `avoid_types_on_closure_parameters`, `omit_local_variable_types`, `omit_obvious_local_variable_types`, `omit_obvious_property_types`.
+    always_specify_types: false
+
+    # Conflicts with enabling `strict-raw-types`.
+    avoid_annotating_with_dynamic: false
+
+    # There are cases that are warned but not fixed by `dart fix`.
+    cascade_invocations: false
+
+    # May add more methods later.
+    one_member_abstracts: false
+
+    # Conflicts with enabling `prefer_single_quotes`.
+    prefer_double_quotes: false
+
+    # Using `=>` sometimes reduces readability.
+    prefer_expression_function_bodies: false
+
+    # Conflicts with enabling `avoid_final_parameters`.
+    prefer_final_parameters: false
+
+    # Conflicts with enabling `always_use_package_imports`.
+    prefer_relative_imports: false
+
+    # Don't often develop package.
+    public_member_api_docs: false
+
+    # Conflicts with enabling `omit_local_variable_types`.
+    specify_nonobvious_local_variable_types: false
+
+    # Conflicts with enabling `prefer_final_locals`.
+    unnecessary_final: false
+
+    # Don't trigger warnings with methods for simple state updates, among other things.
+    use_setters_to_change_properties: false
