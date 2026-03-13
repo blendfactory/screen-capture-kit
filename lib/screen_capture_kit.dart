@@ -13,6 +13,7 @@ import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_stub.dart'
     if (dart.library.io) 'package:screen_capture_kit/src/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
+import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/window.dart';
 
 export 'src/captured_frame.dart';
@@ -67,7 +68,20 @@ class ScreenCaptureKit {
     return Isolate.run(() => createWindowFilterImpl(window));
   }
 
-  /// Releases a content filter created by [createWindowFilter].
+  /// Creates a native content filter for capturing the entire display.
+  ///
+  /// Returns a [ContentFilterHandle] that must be released with [releaseFilter]
+  /// when no longer needed.
+  ///
+  /// Requires Screen Recording permission.
+  ///
+  /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944911-init
+  Future<ContentFilterHandle> createDisplayFilter(Display display) {
+    return Isolate.run(() => createDisplayFilterImpl(display));
+  }
+
+  /// Releases a content filter created by [createWindowFilter] or
+  /// [createDisplayFilter].
   void releaseFilter(ContentFilterHandle handle) {
     releaseFilterImpl(handle);
   }

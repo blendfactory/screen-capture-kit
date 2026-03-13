@@ -33,6 +33,13 @@ external Pointer<Utf8> _getShareableContentJson(
 )
 external int _createContentFilterForWindow(int windowId);
 
+/// Creates native SCContentFilter for a display. Returns filter id; 0 on error.
+@Native<Int64 Function(Int64)>(
+  symbol: 'create_content_filter_for_display',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external int _createContentFilterForDisplay(int displayId);
+
 @Native<Void Function(Int64)>(
   symbol: 'release_content_filter',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
@@ -211,6 +218,24 @@ ContentFilterHandle createWindowFilterImpl(Window window) {
     throw ScreenCaptureKitException(
       'Failed to create content filter for window ${window.windowId}. '
       'The window may no longer exist or may not be capturable.',
+    );
+  }
+  return ContentFilterHandle(filterId);
+}
+
+ContentFilterHandle createDisplayFilterImpl(Display display) {
+  if (!Platform.isMacOS) {
+    throw UnsupportedError(
+      'screen_capture_kit only supports macOS. '
+      'Current platform: ${Platform.operatingSystem}',
+    );
+  }
+
+  final filterId = _createContentFilterForDisplay(display.displayId);
+  if (filterId <= 0) {
+    throw ScreenCaptureKitException(
+      'Failed to create content filter for display ${display.displayId}. '
+      'The display may not exist or may not be capturable.',
     );
   }
   return ContentFilterHandle(filterId);

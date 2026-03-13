@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
 import 'package:screen_capture_kit/src/window.dart';
 
@@ -25,6 +26,19 @@ ShareableContent getShareableContentImpl({
 }
 
 ContentFilterHandle createWindowFilterImpl(Window window) {
+  if (!Platform.isMacOS) {
+    throw UnsupportedError(
+      'screen_capture_kit only supports macOS. '
+      'Current platform: ${Platform.operatingSystem}',
+    );
+  }
+  throw UnimplementedError(
+    'Native implementation not yet loaded. '
+    'Ensure the native library is built.',
+  );
+}
+
+ContentFilterHandle createDisplayFilterImpl(Display display) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
       'screen_capture_kit only supports macOS. '
