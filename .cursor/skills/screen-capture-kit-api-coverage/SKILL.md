@@ -45,12 +45,12 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 | API | Status | Notes |
 |-----|--------|-------|
-| SCStream init | ❌ | |
-| SCStream.addStreamOutput (screen) | ❌ | |
+| SCStream init | 🚧 | stream.m, startCaptureStream (experimental) |
+| SCStream.addStreamOutput (screen) | 🚧 | |
 | SCStream.addStreamOutput (audio) | ❌ | |
 | SCStream.addStreamOutput (microphone) | ❌ | |
-| SCStream.startCapture | ❌ | |
-| SCStream.stopCapture | ❌ | |
+| SCStream.startCapture | 🚧 | |
+| SCStream.stopCapture | 🚧 | |
 | SCStream.updateConfiguration | ❌ | |
 | SCStream.updateContentFilter | ❌ | |
 
@@ -58,7 +58,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 | Property | Status | Notes |
 |----------|--------|-------|
-| width, height | ❌ | |
+| width, height | 🚧 | via startCaptureStream |
 | minimumFrameInterval | ❌ | Frame rate |
 | queueDepth | ❌ | |
 | showsCursor | ❌ | Cursor capture |

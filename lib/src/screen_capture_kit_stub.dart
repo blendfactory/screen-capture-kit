@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
@@ -43,6 +45,23 @@ void releaseFilterImpl(ContentFilterHandle handle) {
 }
 
 CapturedImage captureScreenshotImpl(
+  ContentFilterHandle filterHandle, {
+  int width = 0,
+  int height = 0,
+}) {
+  if (!Platform.isMacOS) {
+    throw UnsupportedError(
+      'screen_capture_kit only supports macOS. '
+      'Current platform: ${Platform.operatingSystem}',
+    );
+  }
+  throw UnimplementedError(
+    'Native implementation not yet loaded. '
+    'Ensure the native library is built.',
+  );
+}
+
+Stream<CapturedFrame> startCaptureStreamImpl(
   ContentFilterHandle filterHandle, {
   int width = 0,
   int height = 0,

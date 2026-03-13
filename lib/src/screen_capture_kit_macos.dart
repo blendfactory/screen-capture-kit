@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io' show Platform;
@@ -6,6 +7,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 
 import 'package:screen_capture_kit/src/captured_image.dart';
+import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/running_application.dart';
@@ -42,6 +44,24 @@ external void _releaseContentFilter(int filterId);
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
 external Pointer<Utf8> _captureScreenshot(int filterId, int width, int height);
+
+@Native<Int64 Function(Int64, Int32, Int32)>(
+  symbol: 'stream_create_and_start',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external int _streamCreateAndStart(int filterId, int width, int height);
+
+@Native<Pointer<Utf8> Function(Int64, Int64)>(
+  symbol: 'stream_get_next_frame',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external Pointer<Utf8> _streamGetNextFrame(int streamId, int timeoutMs);
+
+@Native<Void Function(Int64)>(
+  symbol: 'stream_stop_and_release',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external void _streamStopAndRelease(int streamId);
 
 ShareableContent getShareableContentImpl({
   bool excludeDesktopWindows = false,
@@ -252,4 +272,84 @@ CapturedImage captureScreenshotImpl(
   final h = (json['height'] as num?)?.toInt() ?? 0;
 
   return CapturedImage(pngData: pngData, width: w, height: h);
+}
+
+CapturedFrame? _getNextFrameImpl(int streamId, int timeoutMs) {
+  final ptr = _streamGetNextFrame(streamId, timeoutMs);
+  if (ptr == nullptr) {
+    return null;
+  }
+  String jsonStr;
+  try {
+    jsonStr = ptr.toDartString();
+  } finally {
+    malloc.free(ptr);
+  }
+  final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+  if (json['error'] == true) {
+    return null;
+  }
+  final base64 = json['bgraBase64'] as String? ?? '';
+  final bgraData = base64.isNotEmpty
+      ? Uint8List.fromList(base64Decode(base64))
+      : Uint8List(0);
+  final w = (json['width'] as num?)?.toInt() ?? 0;
+  final h = (json['height'] as num?)?.toInt() ?? 0;
+  final bpr = (json['bytesPerRow'] as num?)?.toInt() ?? 0;
+  return CapturedFrame(
+    bgraData: bgraData,
+    width: w,
+    height: h,
+    bytesPerRow: bpr,
+  );
+}
+
+Stream<CapturedFrame> startCaptureStreamImpl(
+  ContentFilterHandle filterHandle, {
+  int width = 0,
+  int height = 0,
+}) {
+  if (!Platform.isMacOS) {
+    throw UnsupportedError(
+      'screen_capture_kit only supports macOS. '
+      'Current platform: ${Platform.operatingSystem}',
+    );
+  }
+
+  final streamId = _streamCreateAndStart(
+    filterHandle.filterId,
+    width,
+    height,
+  );
+  if (streamId <= 0) {
+    throw ScreenCaptureKitException(
+      'Failed to start capture stream. '
+      'Check Screen Recording permission.',
+    );
+  }
+
+  late final StreamController<CapturedFrame> controller;
+  controller = StreamController<CapturedFrame>(
+    onListen: () {
+      void poll() {
+        if (!controller.hasListener) {
+          return;
+        }
+        // Blocking call; runs on main isolate. Consider running in a separate
+        // isolate for UI apps.
+        final frame = _getNextFrameImpl(streamId, 500);
+        if (frame != null && controller.hasListener) {
+          controller.add(frame);
+        }
+        if (controller.hasListener) {
+          scheduleMicrotask(poll);
+        }
+      }
+      Future.microtask(poll);
+    },
+    onCancel: () {
+      _streamStopAndRelease(streamId);
+    },
+  );
+  return controller.stream;
 }

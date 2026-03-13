@@ -25,6 +25,9 @@ void main() async {
           rethrow;
         }
       }
+
+      // Stream capture (experimental - may crash; use captureScreenshot for now)
+      // await for (final frame in kit.startCaptureStream(filterHandle)) { ... }
       kit.releaseFilter(filterHandle);
       print('Filter released.');
     }

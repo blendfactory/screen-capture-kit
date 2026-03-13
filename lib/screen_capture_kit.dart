@@ -6,6 +6,7 @@ library;
 
 import 'dart:isolate';
 
+import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
@@ -14,6 +15,7 @@ import 'package:screen_capture_kit/src/screen_capture_kit_stub.dart'
 import 'package:screen_capture_kit/src/shareable_content.dart';
 import 'package:screen_capture_kit/src/window.dart';
 
+export 'src/captured_frame.dart';
 export 'src/captured_image.dart';
 export 'src/content_filter.dart';
 export 'src/content_filter_handle.dart';
@@ -89,6 +91,23 @@ class ScreenCaptureKit {
         width: width,
         height: height,
       ),
+    );
+  }
+
+  /// Starts a capture stream yielding [CapturedFrame]s (BGRA pixel data).
+  ///
+  /// Cancel the stream subscription to stop capture.
+  ///
+  /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
+  Stream<CapturedFrame> startCaptureStream(
+    ContentFilterHandle filterHandle, {
+    int width = 0,
+    int height = 0,
+  }) {
+    return startCaptureStreamImpl(
+      filterHandle,
+      width: width,
+      height: height,
     );
   }
 }
