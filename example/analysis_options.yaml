@@ -3,3 +3,6 @@ include: ../analysis_options.yaml
 linter:
   rules:
     avoid_print: false
+
+    # Allow catching errors in main function for example.
+    avoid_catching_errors: false
