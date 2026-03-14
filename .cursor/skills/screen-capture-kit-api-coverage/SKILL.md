@@ -86,7 +86,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 | API | Status | Notes |
 |-----|--------|-------|
-| SCStreamError handling | ❌ | |
+| SCStreamError handling | ✅ | stream_get_last_error + ScreenCaptureKitException(domain, code) on start failure |
 
 ## README Roadmap alignment
 
