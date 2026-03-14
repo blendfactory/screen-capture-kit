@@ -141,6 +141,12 @@ external int _streamUpdateConfiguration(
   int queueDepth,
 );
 
+@Native<Int32 Function(Int64, Int64)>(
+  symbol: 'stream_update_content_filter',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external int _streamUpdateContentFilter(int streamId, int filterId);
+
 ShareableContent getShareableContentImpl({
   bool excludeDesktopWindows = false,
   bool onScreenWindowsOnly = true,
@@ -587,6 +593,42 @@ void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
   }
 }
 
+void streamUpdateContentFilterImpl(
+  int streamId,
+  ContentFilterHandle handle,
+) {
+  final result = _streamUpdateContentFilter(streamId, handle.filterId);
+  if (result != 0) {
+    final ptr = _streamGetLastError();
+    if (ptr != nullptr) {
+      try {
+        final jsonStr = ptr.toDartString();
+        final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+        if (json['error'] == true) {
+          final domain = json['domain'] as String? ?? '';
+          final code = (json['code'] as num?)?.toInt() ?? 0;
+          final desc = json['localizedDescription'] as String? ?? '';
+          final message = _buildStreamErrorMessage(
+            domain: domain,
+            code: code,
+            description: desc,
+          );
+          throw ScreenCaptureKitException(
+            message,
+            domain: domain,
+            code: code,
+          );
+        }
+      } finally {
+        malloc.free(ptr);
+      }
+    }
+    throw const ScreenCaptureKitException(
+      'Failed to update stream content filter.',
+    );
+  }
+}
+
 CaptureStream startCaptureStreamWithUpdaterImpl(
   ContentFilterHandle filterHandle, {
   int width = 0,
@@ -679,5 +721,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
     stream: controller.stream,
     updateConfiguration: (options) =>
         streamUpdateConfigurationImpl(streamId, options),
+    updateContentFilter: (handle) =>
+        streamUpdateContentFilterImpl(streamId, handle),
   );
 }

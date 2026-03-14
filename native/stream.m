@@ -345,6 +345,46 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
   return 0;
 }
 
+/// Updates content filter of a running stream. Returns 0 on success, -1 on error.
+int stream_update_content_filter(int64_t stream_id, int64_t filter_id) {
+  if (stream_id <= 0 || _streamRegistry == nil) {
+    setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
+                                  @"Invalid stream id.");
+    return -1;
+  }
+
+  SCStream* stream = _streamRegistry[@(stream_id)];
+  if (!stream) {
+    setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
+                                  @"Stream not found or already stopped.");
+    return -1;
+  }
+
+  SCContentFilter* filter = get_content_filter(filter_id);
+  if (!filter) {
+    setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
+                                  @"Invalid or released content filter.");
+    return -1;
+  }
+
+  __block BOOL success = NO;
+  __block NSError* updateError = nil;
+  dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+  [stream updateContentFilter:filter
+          completionHandler:^(NSError* _Nullable error) {
+    success = (error == nil);
+    updateError = error;
+    dispatch_semaphore_signal(sem);
+  }];
+  dispatch_semaphore_wait(sem,
+                         dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  if (!success) {
+    setLastStreamError(updateError);
+    return -1;
+  }
+  return 0;
+}
+
 /// Returns malloc'd JSON string. On success: {"error":false,"bgraBase64":"...",
 /// "width":N,"height":N,"bytesPerRow":N}. On error: {"error":true,...}.
 /// Caller must free. Blocks until frame available or timeout.
