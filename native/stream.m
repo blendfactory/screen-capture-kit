@@ -293,6 +293,58 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
   return streamId;
 }
 
+/// Updates configuration of a running stream. Params same as stream_create_and_start.
+/// Returns 0 on success, -1 on error (sets last stream error).
+int stream_update_configuration(int64_t stream_id, int width, int height,
+                                int frame_rate,
+                                double src_x, double src_y,
+                                double src_width, double src_height,
+                                int shows_cursor, int queue_depth) {
+  if (stream_id <= 0 || _streamRegistry == nil) {
+    setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
+                                  @"Invalid stream id.");
+    return -1;
+  }
+
+  SCStream* stream = _streamRegistry[@(stream_id)];
+  if (!stream) {
+    setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
+                                  @"Stream not found or already stopped.");
+    return -1;
+  }
+
+  int fps = (frame_rate > 0 && frame_rate <= 120) ? frame_rate : 60;
+  int depth = (queue_depth >= 1 && queue_depth <= 8) ? queue_depth : 5;
+  SCStreamConfiguration* config = [[SCStreamConfiguration alloc] init];
+  if (width > 0 && height > 0) {
+    config.width = width;
+    config.height = height;
+  }
+  if (src_width > 0 && src_height > 0) {
+    config.sourceRect = CGRectMake(src_x, src_y, src_width, src_height);
+  }
+  config.showsCursor = (shows_cursor != 0);
+  config.minimumFrameInterval = CMTimeMake(1, fps);
+  config.queueDepth = depth;
+
+  __block BOOL success = NO;
+  __block NSError* updateError = nil;
+  dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+  [stream updateConfiguration:config
+          completionHandler:^(NSError* _Nullable error) {
+    success = (error == nil);
+    updateError = error;
+    dispatch_semaphore_signal(sem);
+  }];
+  dispatch_semaphore_wait(sem,
+                         dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  if (!success) {
+    setLastStreamError(updateError);
+    return -1;
+  }
+  return 0;
+}
+
 /// Returns malloc'd JSON string. On success: {"error":false,"bgraBase64":"...",
 /// "width":N,"height":N,"bytesPerRow":N}. On error: {"error":true,...}.
 /// Caller must free. Blocks until frame available or timeout.

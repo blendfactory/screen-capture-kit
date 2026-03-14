@@ -5,7 +5,7 @@ import 'dart:io' show Platform;
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-
+import 'package:screen_capture_kit/src/capture_stream.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
@@ -110,6 +110,36 @@ external void _streamStopAndRelease(int streamId);
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
 external Pointer<Utf8> _streamGetLastError();
+
+/// Updates running stream config. Returns 0 on success, -1 on error.
+@Native<
+    Int32 Function(
+      Int64,
+      Int32,
+      Int32,
+      Int32,
+      Float,
+      Float,
+      Float,
+      Float,
+      Int32,
+      Int32,
+    )>(
+  symbol: 'stream_update_configuration',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external int _streamUpdateConfiguration(
+  int streamId,
+  int width,
+  int height,
+  int frameRate,
+  double srcX,
+  double srcY,
+  double srcWidth,
+  double srcHeight,
+  int showsCursor,
+  int queueDepth,
+);
 
 ShareableContent getShareableContentImpl({
   bool excludeDesktopWindows = false,
@@ -509,4 +539,145 @@ Stream<CapturedFrame> startCaptureStreamImpl(
     },
   );
   return controller.stream;
+}
+
+void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
+  final src = options.sourceRect;
+  final depth = options.queueDepth.clamp(1, 8);
+  final result = _streamUpdateConfiguration(
+    streamId,
+    options.width,
+    options.height,
+    options.frameRate,
+    src?.x ?? 0,
+    src?.y ?? 0,
+    src?.width ?? 0,
+    src?.height ?? 0,
+    options.showsCursor ? 1 : 0,
+    depth,
+  );
+  if (result != 0) {
+    final ptr = _streamGetLastError();
+    if (ptr != nullptr) {
+      try {
+        final jsonStr = ptr.toDartString();
+        final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+        if (json['error'] == true) {
+          final domain = json['domain'] as String? ?? '';
+          final code = (json['code'] as num?)?.toInt() ?? 0;
+          final desc = json['localizedDescription'] as String? ?? '';
+          final message = _buildStreamErrorMessage(
+            domain: domain,
+            code: code,
+            description: desc,
+          );
+          throw ScreenCaptureKitException(
+            message,
+            domain: domain,
+            code: code,
+          );
+        }
+      } finally {
+        malloc.free(ptr);
+      }
+    }
+    throw const ScreenCaptureKitException(
+      'Failed to update stream configuration.',
+    );
+  }
+}
+
+CaptureStream startCaptureStreamWithUpdaterImpl(
+  ContentFilterHandle filterHandle, {
+  int width = 0,
+  int height = 0,
+  int frameRate = 60,
+  ({double x, double y, double width, double height})? sourceRect,
+  bool showsCursor = true,
+  int queueDepth = 5,
+}) {
+  if (!Platform.isMacOS) {
+    throw UnsupportedError(
+      'screen_capture_kit only supports macOS. '
+      'Current platform: ${Platform.operatingSystem}',
+    );
+  }
+
+  final src = sourceRect;
+  final depth = queueDepth.clamp(1, 8);
+  final streamId = _streamCreateAndStart(
+    filterHandle.filterId,
+    width,
+    height,
+    frameRate,
+    src?.x ?? 0,
+    src?.y ?? 0,
+    src?.width ?? 0,
+    src?.height ?? 0,
+    showsCursor ? 1 : 0,
+    depth,
+  );
+  if (streamId <= 0) {
+    final ptr = _streamGetLastError();
+    if (ptr != nullptr) {
+      try {
+        final jsonStr = ptr.toDartString();
+        final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+        if (json['error'] == true) {
+          final domain = json['domain'] as String? ?? '';
+          final code = (json['code'] as num?)?.toInt() ?? 0;
+          final desc = json['localizedDescription'] as String? ?? '';
+          final message = _buildStreamErrorMessage(
+            domain: domain,
+            code: code,
+            description: desc,
+          );
+          throw ScreenCaptureKitException(
+            message,
+            domain: domain,
+            code: code,
+          );
+        }
+      } finally {
+        malloc.free(ptr);
+      }
+    }
+    throw const ScreenCaptureKitException(
+      'Failed to start capture stream. '
+      'Check Screen Recording permission.',
+    );
+  }
+
+  late final StreamController<CapturedFrame> controller;
+  controller = StreamController<CapturedFrame>(
+    onListen: () {
+      void poll() {
+        if (!controller.hasListener) {
+          return;
+        }
+        final jsonStr = _getNextFrameJson(streamId, 100);
+        if (jsonStr != null && controller.hasListener) {
+          final frame = _parseFrameJson(jsonStr);
+          if (frame != null) {
+            controller.add(frame);
+          }
+        }
+        if (controller.hasListener) {
+          Future.delayed(const Duration(milliseconds: 1), poll);
+        }
+      }
+
+      Future.delayed(Duration.zero, poll);
+    },
+    onCancel: () {
+      _streamStopAndRelease(streamId);
+      unawaited(controller.close());
+    },
+  );
+
+  return CaptureStream(
+    stream: controller.stream,
+    updateConfiguration: (options) =>
+        streamUpdateConfigurationImpl(streamId, options),
+  );
 }

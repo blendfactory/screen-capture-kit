@@ -6,6 +6,7 @@ library;
 
 import 'dart:isolate';
 
+import 'package:screen_capture_kit/src/capture_stream.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
@@ -16,6 +17,7 @@ import 'package:screen_capture_kit/src/screen_capture_kit_stub.dart'
 import 'package:screen_capture_kit/src/shareable_content.dart';
 import 'package:screen_capture_kit/src/window.dart';
 
+export 'src/capture_stream.dart';
 export 'src/captured_frame.dart';
 export 'src/captured_image.dart';
 export 'src/content_filter.dart';
@@ -139,6 +141,31 @@ class ScreenCaptureKit {
     int queueDepth = 5,
   }) {
     return startCaptureStreamImpl(
+      filterHandle,
+      width: width,
+      height: height,
+      frameRate: frameRate,
+      sourceRect: sourceRect,
+      showsCursor: showsCursor,
+      queueDepth: queueDepth,
+    );
+  }
+
+  /// Starts a capture stream and returns a [CaptureStream] that supports
+  /// [CaptureStream.updateConfiguration] for changing config at runtime.
+  ///
+  /// Use [CaptureStream.stream] for frames; cancel the subscription to stop.
+  /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
+  CaptureStream startCaptureStreamWithUpdater(
+    ContentFilterHandle filterHandle, {
+    int width = 0,
+    int height = 0,
+    int frameRate = 60,
+    ({double x, double y, double width, double height})? sourceRect,
+    bool showsCursor = true,
+    int queueDepth = 5,
+  }) {
+    return startCaptureStreamWithUpdaterImpl(
       filterHandle,
       width: width,
       height: height,
