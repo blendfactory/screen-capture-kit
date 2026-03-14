@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
-import 'package:screen_capture_kit/screen_capture_kit.dart' show ScreenCaptureKit;
+import 'package:screen_capture_kit/screen_capture_kit.dart'
+    show ScreenCaptureKit;
 
 /// Opaque handle to a native SCContentFilter.
 ///

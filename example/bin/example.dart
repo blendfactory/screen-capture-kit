@@ -94,11 +94,14 @@ void main() async {
       );
 
       // Region capture: center 400x400 via sourceRect (reuses display filter)
-      final regionW = 400.0;
-      final regionH = 400.0;
+      const regionW = 400.0;
+      const regionH = 400.0;
       final regionX = (display.width - regionW) / 2;
       final regionY = (display.height - regionH) / 2;
-      print('\n=== Region capture (center ${regionW.toInt()}x${regionH.toInt()}) ===');
+      print(
+        '\n=== Region capture (center '
+        '${regionW.toInt()}x${regionH.toInt()}) ===',
+      );
       await runStreamCapture(
         kit,
         displayFilter,
@@ -131,9 +134,9 @@ void main() async {
         try {
           final image = await kit.captureScreenshot(windowFilter);
           print(
-          'Screenshot: ${image.width}x${image.height}, '
-          '${image.pngData.length} bytes',
-        );
+            'Screenshot: ${image.width}x${image.height}, '
+            '${image.pngData.length} bytes',
+          );
         } on ScreenCaptureKitException catch (e) {
           if (e.message.contains('macOS 14')) {
             print('Screenshot requires macOS 14+');

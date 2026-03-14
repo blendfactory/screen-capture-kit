@@ -160,13 +160,12 @@ void main() {
       'captures on macOS 14+ or throws on older/unsupported',
       () async {
         try {
-          final content = await ScreenCaptureKit()
-              .getShareableContent()
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () =>
-                    throw TimeoutException('getShareableContent timed out'),
-              );
+          final content =
+              await ScreenCaptureKit().getShareableContent().timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('getShareableContent timed out'),
+                  );
           if (content.windows.isEmpty) {
             return;
           }
@@ -178,13 +177,12 @@ void main() {
                     throw TimeoutException('createWindowFilter timed out'),
               );
           try {
-            final image = await ScreenCaptureKit()
-                .captureScreenshot(handle)
-                .timeout(
-                  const Duration(seconds: 10),
-                  onTimeout: () =>
-                      throw TimeoutException('captureScreenshot timed out'),
-                );
+            final image =
+                await ScreenCaptureKit().captureScreenshot(handle).timeout(
+                      const Duration(seconds: 10),
+                      onTimeout: () =>
+                          throw TimeoutException('captureScreenshot timed out'),
+                    );
             expect(image.pngData, isNotEmpty);
             expect(image.width, greaterThan(0));
             expect(image.height, greaterThan(0));

@@ -52,7 +52,18 @@ external void _releaseContentFilter(int filterId);
 )
 external Pointer<Utf8> _captureScreenshot(int filterId, int width, int height);
 
-@Native<Int64 Function(Int64, Int32, Int32, Int32, Float, Float, Float, Float, Int32)>(
+@Native<
+    Int64 Function(
+      Int64,
+      Int32,
+      Int32,
+      Int32,
+      Float,
+      Float,
+      Float,
+      Float,
+      Int32,
+    )>(
   symbol: 'stream_create_and_start',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
@@ -322,7 +333,6 @@ String? _getNextFrameJson(int streamId, int timeoutMs) {
   }
 }
 
-
 CapturedFrame? _parseFrameJson(String jsonStr) {
   final json = jsonDecode(jsonStr) as Map<String, dynamic>;
   if (json['error'] == true) {
@@ -397,6 +407,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
           Future.delayed(const Duration(milliseconds: 1), poll);
         }
       }
+
       Future.delayed(Duration.zero, poll);
     },
     onCancel: () {

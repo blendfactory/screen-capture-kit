@@ -110,8 +110,7 @@ final class _DisplayContentFilter extends ContentFilter {
       );
 
   @override
-  String toString() =>
-      'ContentFilter.display($display, excluding: '
+  String toString() => 'ContentFilter.display($display, excluding: '
       '${excludingApplications.length}, excepting: ${exceptingWindows.length})';
 }
 
@@ -137,8 +136,7 @@ final class _DisplayExcludingWindowsContentFilter extends ContentFilter {
   int get hashCode => Object.hash(display, Object.hashAll(excludingWindows));
 
   @override
-  String toString() =>
-      'ContentFilter.displayExcludingWindows($display, '
+  String toString() => 'ContentFilter.displayExcludingWindows($display, '
       '${excludingWindows.length} windows)';
 }
 
