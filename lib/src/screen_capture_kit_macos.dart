@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:screen_capture_kit/src/capture_stream.dart';
+import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
@@ -75,6 +76,9 @@ external Pointer<Utf8> _captureScreenshot(int filterId, int width, int height);
       Float,
       Int32,
       Int32,
+      Int32,
+      Int32,
+      Int32,
     )>(
   symbol: 'stream_create_and_start',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
@@ -90,6 +94,9 @@ external int _streamCreateAndStart(
   double srcHeight,
   int showsCursor,
   int queueDepth,
+  int capturesAudio,
+  int excludesCurrentProcessAudio,
+  int captureMicrophone,
 );
 
 @Native<Pointer<Utf8> Function(Int64, Int64)>(
@@ -97,6 +104,12 @@ external int _streamCreateAndStart(
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
 external Pointer<Utf8> _streamGetNextFrame(int streamId, int timeoutMs);
+
+@Native<Pointer<Utf8> Function(Int64, Int64)>(
+  symbol: 'stream_get_next_audio',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external Pointer<Utf8> _streamGetNextAudio(int streamId, int timeoutMs);
 
 @Native<Void Function(Int64)>(
   symbol: 'stream_stop_and_release',
@@ -124,6 +137,9 @@ external Pointer<Utf8> _streamGetLastError();
       Float,
       Int32,
       Int32,
+      Int32,
+      Int32,
+      Int32,
     )>(
   symbol: 'stream_update_configuration',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
@@ -139,6 +155,9 @@ external int _streamUpdateConfiguration(
   double srcHeight,
   int showsCursor,
   int queueDepth,
+  int capturesAudio,
+  int excludesCurrentProcessAudio,
+  int captureMicrophone,
 );
 
 @Native<Int32 Function(Int64, Int64)>(
@@ -455,6 +474,38 @@ CapturedFrame? _parseFrameJson(String jsonStr) {
   );
 }
 
+String? _getNextAudioJson(int streamId, int timeoutMs) {
+  final ptr = _streamGetNextAudio(streamId, timeoutMs);
+  if (ptr == nullptr) {
+    return null;
+  }
+  try {
+    return ptr.toDartString();
+  } finally {
+    malloc.free(ptr);
+  }
+}
+
+CapturedAudio? _parseAudioJson(String jsonStr) {
+  final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+  if (json['error'] == true) {
+    return null;
+  }
+  final base64 = json['pcmBase64'] as String? ?? '';
+  final pcmData = base64.isNotEmpty
+      ? Uint8List.fromList(base64Decode(base64))
+      : Uint8List(0);
+  final sampleRate = (json['sampleRate'] as num?)?.toDouble() ?? 0.0;
+  final channelCount = (json['channelCount'] as num?)?.toInt() ?? 0;
+  final format = json['format'] as String? ?? 'raw';
+  return CapturedAudio(
+    pcmData: pcmData,
+    sampleRate: sampleRate,
+    channelCount: channelCount,
+    format: format,
+  );
+}
+
 Stream<CapturedFrame> startCaptureStreamImpl(
   ContentFilterHandle filterHandle, {
   int width = 0,
@@ -463,6 +514,9 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   ({double x, double y, double width, double height})? sourceRect,
   bool showsCursor = true,
   int queueDepth = 5,
+  bool capturesAudio = false,
+  bool excludesCurrentProcessAudio = false,
+  bool captureMicrophone = false,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -484,6 +538,9 @@ Stream<CapturedFrame> startCaptureStreamImpl(
     src?.height ?? 0,
     showsCursor ? 1 : 0,
     depth,
+    capturesAudio ? 1 : 0,
+    excludesCurrentProcessAudio ? 1 : 0,
+    captureMicrophone ? 1 : 0,
   );
   if (streamId <= 0) {
     final ptr = _streamGetLastError();
@@ -561,6 +618,9 @@ void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
     src?.height ?? 0,
     options.showsCursor ? 1 : 0,
     depth,
+    options.capturesAudio ? 1 : 0,
+    options.excludesCurrentProcessAudio ? 1 : 0,
+    options.captureMicrophone ? 1 : 0,
   );
   if (result != 0) {
     final ptr = _streamGetLastError();
@@ -637,6 +697,9 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   ({double x, double y, double width, double height})? sourceRect,
   bool showsCursor = true,
   int queueDepth = 5,
+  bool capturesAudio = false,
+  bool excludesCurrentProcessAudio = false,
+  bool captureMicrophone = false,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -658,6 +721,9 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
     src?.height ?? 0,
     showsCursor ? 1 : 0,
     depth,
+    capturesAudio ? 1 : 0,
+    excludesCurrentProcessAudio ? 1 : 0,
+    captureMicrophone ? 1 : 0,
   );
   if (streamId <= 0) {
     final ptr = _streamGetLastError();
@@ -690,6 +756,35 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
     );
   }
 
+  StreamController<CapturedAudio>? audioController;
+  if (capturesAudio) {
+    // Closed in onCancel when stream subscription is cancelled.
+    // ignore: close_sinks
+    late final StreamController<CapturedAudio> ac;
+    ac = StreamController<CapturedAudio>(
+      onListen: () {
+        void pollAudio() {
+          if (!ac.hasListener) {
+            return;
+          }
+          final jsonStr = _getNextAudioJson(streamId, 100);
+          if (jsonStr != null && ac.hasListener) {
+            final audio = _parseAudioJson(jsonStr);
+            if (audio != null) {
+              ac.add(audio);
+            }
+          }
+          if (ac.hasListener) {
+            Future.delayed(const Duration(milliseconds: 1), pollAudio);
+          }
+        }
+
+        Future.delayed(Duration.zero, pollAudio);
+      },
+    );
+    audioController = ac;
+  }
+
   late final StreamController<CapturedFrame> controller;
   controller = StreamController<CapturedFrame>(
     onListen: () {
@@ -714,11 +809,16 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
     onCancel: () {
       _streamStopAndRelease(streamId);
       unawaited(controller.close());
+      final ac = audioController;
+      if (ac != null) {
+        unawaited(ac.close());
+      }
     },
   );
 
   return CaptureStream(
     stream: controller.stream,
+    audioStream: audioController?.stream,
     updateConfiguration: (options) =>
         streamUpdateConfigurationImpl(streamId, options),
     updateContentFilter: (handle) =>

@@ -1,10 +1,12 @@
+import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
 
 /// A capture stream that supports updating configuration and filter at runtime.
 ///
 /// Create via the library's startCaptureStreamWithUpdater method. Listen to
-/// [stream] for frames; call [updateConfiguration] or [updateContentFilter]
+/// [stream] for frames; when audio capture was enabled, listen to [audioStream]
+/// for system audio. Call [updateConfiguration] or [updateContentFilter]
 /// to change without stopping the stream.
 ///
 /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
@@ -13,10 +15,15 @@ class CaptureStream {
     required this.stream,
     required this.updateConfiguration,
     required this.updateContentFilter,
+    this.audioStream,
   });
 
   /// The stream of captured frames. Cancel the subscription to stop capture.
   final Stream<CapturedFrame> stream;
+
+  /// Optional stream of captured audio buffers. Non-null when started with
+  /// [StreamConfiguration.capturesAudio] set to true.
+  final Stream<CapturedAudio>? audioStream;
 
   /// Updates the stream configuration (e.g. width, height, frame rate).
   /// May block briefly; throws on error.
@@ -37,6 +44,9 @@ class StreamConfiguration {
     this.sourceRect,
     this.showsCursor = true,
     this.queueDepth = 5,
+    this.capturesAudio = false,
+    this.excludesCurrentProcessAudio = false,
+    this.captureMicrophone = false,
   });
 
   final int width;
@@ -45,4 +55,14 @@ class StreamConfiguration {
   final ({double x, double y, double width, double height})? sourceRect;
   final bool showsCursor;
   final int queueDepth;
+
+  /// When true, system audio is captured and available on
+  /// [CaptureStream.audioStream].
+  final bool capturesAudio;
+
+  /// When true, this application's audio is excluded from capture.
+  final bool excludesCurrentProcessAudio;
+
+  /// When true, microphone input is included in the audio capture.
+  final bool captureMicrophone;
 }

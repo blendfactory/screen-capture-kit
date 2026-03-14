@@ -136,6 +136,21 @@ void main() {
     });
   });
 
+  group('CapturedAudio', () {
+    test('creates with required fields', () {
+      final audio = CapturedAudio(
+        pcmData: Uint8List.fromList([0, 1, 2, 3, 4, 5, 6, 7]),
+        sampleRate: 48000,
+        channelCount: 2,
+        format: 'f32',
+      );
+      expect(audio.pcmData.length, 8);
+      expect(audio.sampleRate, 48000.0);
+      expect(audio.channelCount, 2);
+      expect(audio.format, 'f32');
+    });
+  });
+
   group('StreamConfiguration', () {
     test('creates with defaults', () {
       const config = StreamConfiguration();
@@ -145,6 +160,9 @@ void main() {
       expect(config.sourceRect, isNull);
       expect(config.showsCursor, isTrue);
       expect(config.queueDepth, 5);
+      expect(config.capturesAudio, isFalse);
+      expect(config.excludesCurrentProcessAudio, isFalse);
+      expect(config.captureMicrophone, isFalse);
     });
 
     test('creates with custom values', () {
@@ -162,6 +180,19 @@ void main() {
       expect(config.sourceRect?.width, 320);
       expect(config.showsCursor, isFalse);
       expect(config.queueDepth, 8);
+    });
+
+    test('creates with custom audio values', () {
+      const config = StreamConfiguration(
+        width: 320,
+        height: 240,
+        capturesAudio: true,
+        excludesCurrentProcessAudio: true,
+        captureMicrophone: true,
+      );
+      expect(config.capturesAudio, isTrue);
+      expect(config.excludesCurrentProcessAudio, isTrue);
+      expect(config.captureMicrophone, isTrue);
     });
   });
 
@@ -197,6 +228,31 @@ void main() {
       expect(passedHandle, equals(handle));
       expect(passedHandle?.filterId, 42);
       await controller.close();
+    });
+
+    test('audioStream is null when not provided', () async {
+      final controller = StreamController<CapturedFrame>.broadcast();
+      final capture = CaptureStream(
+        stream: controller.stream,
+        updateConfiguration: (_) {},
+        updateContentFilter: (_) {},
+      );
+      expect(capture.audioStream, isNull);
+      await controller.close();
+    });
+
+    test('holds audioStream when provided', () async {
+      final videoController = StreamController<CapturedFrame>.broadcast();
+      final audioController = StreamController<CapturedAudio>.broadcast();
+      final capture = CaptureStream(
+        stream: videoController.stream,
+        audioStream: audioController.stream,
+        updateConfiguration: (_) {},
+        updateContentFilter: (_) {},
+      );
+      expect(capture.audioStream, equals(audioController.stream));
+      await videoController.close();
+      await audioController.close();
     });
   });
 
@@ -527,6 +583,62 @@ void main() {
             } finally {
               await sub.cancel();
             }
+          } finally {
+            ScreenCaptureKit().releaseFilter(handle);
+          }
+        } on UnsupportedError catch (e) {
+          print(e);
+        } on ScreenCaptureKitException catch (e) {
+          print(e);
+        } on TimeoutException catch (e) {
+          print(e);
+        }
+      },
+      timeout: Timeout.none,
+    );
+    test(
+      'capturesAudio true provides audioStream on macOS',
+      () async {
+        try {
+          final content =
+              await ScreenCaptureKit().getShareableContent().timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('getShareableContent timed out'),
+                  );
+          if (content.displays.isEmpty) {
+            return;
+          }
+          final handle = await ScreenCaptureKit()
+              .createDisplayFilter(content.displays.first)
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('createDisplayFilter timed out'),
+              );
+          try {
+            final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
+              handle,
+              width: 64,
+              height: 64,
+              frameRate: 10,
+              queueDepth: 3,
+              capturesAudio: true,
+            );
+            expect(capture.audioStream, isNotNull);
+            final videoSub = capture.stream.listen(
+              (_) {},
+              onError: (_) {},
+              cancelOnError: true,
+            );
+            final audioSub = capture.audioStream?.listen(
+              (_) {},
+              onError: (_) {},
+              cancelOnError: true,
+            );
+            await Future<void>.delayed(const Duration(milliseconds: 200));
+            await videoSub.cancel();
+            await audioSub?.cancel();
           } finally {
             ScreenCaptureKit().releaseFilter(handle);
           }

@@ -87,6 +87,9 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   ({double x, double y, double width, double height})? sourceRect,
   bool showsCursor = true,
   int queueDepth = 5,
+  bool capturesAudio = false,
+  bool excludesCurrentProcessAudio = false,
+  bool captureMicrophone = false,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -108,6 +111,9 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   ({double x, double y, double width, double height})? sourceRect,
   bool showsCursor = true,
   int queueDepth = 5,
+  bool capturesAudio = false,
+  bool excludesCurrentProcessAudio = false,
+  bool captureMicrophone = false,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(

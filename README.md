@@ -79,7 +79,7 @@ This design allows low-latency frame capture while keeping the Dart API simple.
 * [x] Window capture
 * [x] Region capture
 * [x] Cursor capture
-* [ ] Audio capture
+* [x] Audio capture (system audio; macOS 13+, optional microphone macOS 15+)
 * [x] Frame rate configuration
 * [x] Multi-display capture
 

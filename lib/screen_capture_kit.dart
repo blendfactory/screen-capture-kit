@@ -7,6 +7,7 @@ library;
 import 'dart:isolate';
 
 import 'package:screen_capture_kit/src/capture_stream.dart';
+import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
@@ -18,6 +19,7 @@ import 'package:screen_capture_kit/src/shareable_content.dart';
 import 'package:screen_capture_kit/src/window.dart';
 
 export 'src/capture_stream.dart';
+export 'src/captured_audio.dart';
 export 'src/captured_frame.dart';
 export 'src/captured_image.dart';
 export 'src/content_filter.dart';
@@ -128,6 +130,10 @@ class ScreenCaptureKit {
   /// points. Use with display filter for region capture.
   /// [showsCursor] includes the system cursor in capture when true (default).
   /// [queueDepth] sets the frame queue depth (1–8); default 5.
+  /// [capturesAudio] when true, system audio is captured (use with
+  /// [startCaptureStreamWithUpdater] to get [CaptureStream.audioStream]).
+  /// [excludesCurrentProcessAudio] excludes this app's audio from capture.
+  /// [captureMicrophone] includes microphone in the audio capture.
   /// Cancel the stream subscription to stop capture.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
@@ -139,6 +145,9 @@ class ScreenCaptureKit {
     ({double x, double y, double width, double height})? sourceRect,
     bool showsCursor = true,
     int queueDepth = 5,
+    bool capturesAudio = false,
+    bool excludesCurrentProcessAudio = false,
+    bool captureMicrophone = false,
   }) {
     return startCaptureStreamImpl(
       filterHandle,
@@ -148,13 +157,19 @@ class ScreenCaptureKit {
       sourceRect: sourceRect,
       showsCursor: showsCursor,
       queueDepth: queueDepth,
+      capturesAudio: capturesAudio,
+      excludesCurrentProcessAudio: excludesCurrentProcessAudio,
+      captureMicrophone: captureMicrophone,
     );
   }
 
   /// Starts a capture stream and returns a [CaptureStream] that supports
   /// [CaptureStream.updateConfiguration] for changing config at runtime.
   ///
-  /// Use [CaptureStream.stream] for frames; cancel the subscription to stop.
+  /// Use [CaptureStream.stream] for frames. When [capturesAudio] is true,
+  /// [CaptureStream.audioStream] yields [CapturedAudio] buffers. Cancel the
+  /// video subscription to stop capture.
+  ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
   CaptureStream startCaptureStreamWithUpdater(
     ContentFilterHandle filterHandle, {
@@ -164,6 +179,9 @@ class ScreenCaptureKit {
     ({double x, double y, double width, double height})? sourceRect,
     bool showsCursor = true,
     int queueDepth = 5,
+    bool capturesAudio = false,
+    bool excludesCurrentProcessAudio = false,
+    bool captureMicrophone = false,
   }) {
     return startCaptureStreamWithUpdaterImpl(
       filterHandle,
@@ -173,6 +191,9 @@ class ScreenCaptureKit {
       sourceRect: sourceRect,
       showsCursor: showsCursor,
       queueDepth: queueDepth,
+      capturesAudio: capturesAudio,
+      excludesCurrentProcessAudio: excludesCurrentProcessAudio,
+      captureMicrophone: captureMicrophone,
     );
   }
 }
