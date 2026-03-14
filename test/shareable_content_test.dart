@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:screen_capture_kit/screen_capture_kit.dart';
 import 'package:test/test.dart';
@@ -69,6 +70,72 @@ void main() {
       expect(handle.filterId, 1);
     });
   });
+
+  group('ScreenCaptureKitException', () {
+    test('creates with message only', () {
+      const e = ScreenCaptureKitException('Something failed.');
+      expect(e.message, 'Something failed.');
+      expect(e.domain, isNull);
+      expect(e.code, isNull);
+    });
+
+    test('creates with domain and code', () {
+      const e = ScreenCaptureKitException(
+        'Stream failed.',
+        domain: 'com.apple.ScreenCaptureKit',
+        code: 1,
+      );
+      expect(e.message, 'Stream failed.');
+      expect(e.domain, 'com.apple.ScreenCaptureKit');
+      expect(e.code, 1);
+    });
+
+    test('toString includes message when no domain/code', () {
+      const e = ScreenCaptureKitException('Failed');
+      expect(e.toString(), contains('Failed'));
+      expect(e.toString(), contains('ScreenCaptureKitException'));
+    });
+
+    test('toString includes domain and code when set', () {
+      const e = ScreenCaptureKitException(
+        'Failed',
+        domain: 'test.domain',
+        code: 42,
+      );
+      expect(e.toString(), contains('Failed'));
+      expect(e.toString(), contains('test.domain'));
+      expect(e.toString(), contains('42'));
+    });
+  });
+
+  group('CapturedFrame', () {
+    test('creates with required fields', () {
+      final frame = CapturedFrame(
+        bgraData: Uint8List.fromList([1, 2, 3, 4]),
+        width: 10,
+        height: 5,
+        bytesPerRow: 40,
+      );
+      expect(frame.bgraData.length, 4);
+      expect(frame.width, 10);
+      expect(frame.height, 5);
+      expect(frame.bytesPerRow, 40);
+    });
+  });
+
+  group('CapturedImage', () {
+    test('creates with required fields', () {
+      final image = CapturedImage(
+        pngData: Uint8List.fromList([0x89, 0x50, 0x4e]),
+        width: 100,
+        height: 50,
+      );
+      expect(image.pngData.length, 3);
+      expect(image.width, 100);
+      expect(image.height, 50);
+    });
+  });
+
   group('ShareableContent', () {
     test('creates with empty lists', () {
       const content = ShareableContent(
@@ -228,6 +295,114 @@ void main() {
           expect(handle, isA<ContentFilterHandle>());
           expect(handle.filterId, greaterThan(0));
           ScreenCaptureKit().releaseFilter(handle);
+        } on UnsupportedError catch (e) {
+          print(e);
+        } on ScreenCaptureKitException catch (e) {
+          print(e);
+        } on TimeoutException catch (e) {
+          print(e);
+        }
+      },
+      timeout: Timeout.none,
+    );
+  });
+
+  group('ScreenCaptureKit.createDisplayFilter', () {
+    test(
+      'creates display filter with or without excludingWindows on macOS',
+      () async {
+        try {
+          final content =
+              await ScreenCaptureKit().getShareableContent().timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('getShareableContent timed out'),
+                  );
+          if (content.displays.isEmpty) {
+            return;
+          }
+          final display = content.displays.first;
+          final handle =
+              await ScreenCaptureKit().createDisplayFilter(display).timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('createDisplayFilter timed out'),
+                  );
+          expect(handle, isA<ContentFilterHandle>());
+          expect(handle.filterId, greaterThan(0));
+          ScreenCaptureKit().releaseFilter(handle);
+
+          if (content.windows.isNotEmpty) {
+            final handleExcluding = await ScreenCaptureKit()
+                .createDisplayFilter(display, excludingWindows: content.windows)
+                .timeout(
+                  const Duration(seconds: 5),
+                  onTimeout: () => throw TimeoutException(
+                    'createDisplayFilter(excludingWindows) timed out',
+                  ),
+                );
+            expect(handleExcluding.filterId, greaterThan(0));
+            ScreenCaptureKit().releaseFilter(handleExcluding);
+          }
+        } on UnsupportedError catch (e) {
+          print(e);
+        } on ScreenCaptureKitException catch (e) {
+          print(e);
+        } on TimeoutException catch (e) {
+          print(e);
+        }
+      },
+      timeout: Timeout.none,
+    );
+  });
+
+  group('ScreenCaptureKit.startCaptureStream', () {
+    test(
+      'accepts queueDepth parameter on macOS',
+      () async {
+        try {
+          final content =
+              await ScreenCaptureKit().getShareableContent().timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('getShareableContent timed out'),
+                  );
+          if (content.displays.isEmpty) {
+            return;
+          }
+          final handle = await ScreenCaptureKit()
+              .createDisplayFilter(content.displays.first)
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('createDisplayFilter timed out'),
+              );
+          try {
+            final stream = ScreenCaptureKit().startCaptureStream(
+              handle,
+              width: 64,
+              height: 64,
+              frameRate: 10,
+              queueDepth: 3,
+            );
+            final sub = stream
+                .timeout(
+                  const Duration(seconds: 3),
+                  onTimeout: (sink) => sink.close(),
+                )
+                .listen(
+                  (_) {},
+                  onError: (_) {},
+                  cancelOnError: true,
+                );
+            try {
+              await sub.asFuture<void>().catchError((_) {});
+            } finally {
+              await sub.cancel();
+            }
+          } finally {
+            ScreenCaptureKit().releaseFilter(handle);
+          }
         } on UnsupportedError catch (e) {
           print(e);
         } on ScreenCaptureKitException catch (e) {
