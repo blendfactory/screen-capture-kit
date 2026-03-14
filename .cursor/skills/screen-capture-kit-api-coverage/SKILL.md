@@ -48,7 +48,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | SCStream init | ✅ | stream.m, startCaptureStream; display stable |
 | SCStream.addStreamOutput (screen) | ✅ | custom queue, BGRA frames |
 | SCStream.addStreamOutput (audio) | ✅ | Dart API + native handler, PCM via stream_get_next_audio; macOS 13+ |
-| SCStream.addStreamOutput (microphone) | ❌ | config.captureMicrophone captures mic into audio stream; separate type not used |
+| SCStream.addStreamOutput (microphone) | ✅ | Dart API + native StreamMicrophoneHandler, stream_get_next_microphone; macOS 15+, CaptureStream.microphoneStream |
 | SCStream.startCapture | ✅ | |
 | SCStream.stopCapture | ✅ | |
 | SCStream.updateConfiguration | ✅ | startCaptureStreamWithUpdater + CaptureStream.updateConfiguration |

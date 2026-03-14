@@ -115,6 +115,12 @@ external Pointer<Utf8> _streamGetNextFrame(int streamId, int timeoutMs);
 )
 external Pointer<Utf8> _streamGetNextAudio(int streamId, int timeoutMs);
 
+@Native<Pointer<Utf8> Function(Int64, Int64)>(
+  symbol: 'stream_get_next_microphone',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external Pointer<Utf8> _streamGetNextMicrophone(int streamId, int timeoutMs);
+
 @Native<Void Function(Int64)>(
   symbol: 'stream_stop_and_release',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
@@ -494,6 +500,18 @@ String? _getNextAudioJson(int streamId, int timeoutMs) {
   }
 }
 
+String? _getNextMicrophoneJson(int streamId, int timeoutMs) {
+  final ptr = _streamGetNextMicrophone(streamId, timeoutMs);
+  if (ptr == nullptr) {
+    return null;
+  }
+  try {
+    return ptr.toDartString();
+  } finally {
+    malloc.free(ptr);
+  }
+}
+
 CapturedAudio? _parseAudioJson(String jsonStr) {
   final json = jsonDecode(jsonStr) as Map<String, dynamic>;
   if (json['error'] == true) {
@@ -839,6 +857,34 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
     audioController = ac;
   }
 
+  StreamController<CapturedAudio>? microphoneController;
+  if (captureMicrophone) {
+    // Closed in onCancel when stream subscription is cancelled.
+    late final StreamController<CapturedAudio> mc; // ignore: close_sinks
+    mc = StreamController<CapturedAudio>(
+      onListen: () {
+        void pollMic() {
+          if (!mc.hasListener) {
+            return;
+          }
+          final jsonStr = _getNextMicrophoneJson(streamId, 100);
+          if (jsonStr != null && mc.hasListener) {
+            final audio = _parseAudioJson(jsonStr);
+            if (audio != null) {
+              mc.add(audio);
+            }
+          }
+          if (mc.hasListener) {
+            Future.delayed(const Duration(milliseconds: 1), pollMic);
+          }
+        }
+
+        Future.delayed(Duration.zero, pollMic);
+      },
+    );
+    microphoneController = mc;
+  }
+
   late final StreamController<CapturedFrame> controller;
   controller = StreamController<CapturedFrame>(
     onListen: () {
@@ -867,12 +913,17 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
       if (ac != null) {
         unawaited(ac.close());
       }
+      final mc = microphoneController;
+      if (mc != null) {
+        unawaited(mc.close());
+      }
     },
   );
 
   return CaptureStream(
     stream: controller.stream,
     audioStream: audioController?.stream,
+    microphoneStream: microphoneController?.stream,
     updateConfiguration: (options) =>
         streamUpdateConfigurationImpl(streamId, options),
     updateContentFilter: (handle) =>

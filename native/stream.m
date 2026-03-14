@@ -262,9 +262,135 @@ static void ensureCoreGraphicsInit(void) {
 }
 @end
 
+@interface StreamMicrophoneHandler : NSObject <SCStreamOutput>
+@property (nonatomic, strong) NSMutableArray<NSString*>* queue;
+@property (nonatomic, strong) NSLock* lock;
+@property (nonatomic, strong) dispatch_semaphore_t semaphore;
+@property (nonatomic, assign) BOOL stopped;
+@end
+
+@implementation StreamMicrophoneHandler
+- (instancetype)init {
+  self = [super init];
+  if (self) {
+    _queue = [NSMutableArray array];
+    _lock = [[NSLock alloc] init];
+    _semaphore = dispatch_semaphore_create(0);
+    _stopped = NO;
+  }
+  return self;
+}
+
+- (void)stream:(SCStream*)stream
+    didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
+                   ofType:(SCStreamOutputType)type {
+  if (@available(macos 15.0, *)) {
+    if (type != SCStreamOutputTypeMicrophone || _stopped) {
+      return;
+    }
+  } else {
+    return;
+  }
+  if (!CMSampleBufferIsValid(sampleBuffer)) {
+    return;
+  }
+
+  CMFormatDescriptionRef formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer);
+  if (!formatDesc) {
+    return;
+  }
+  const AudioStreamBasicDescription* asbd =
+      CMAudioFormatDescriptionGetStreamBasicDescription(formatDesc);
+  if (!asbd) {
+    return;
+  }
+
+  size_t bufferListSizeNeeded = 0;
+  OSStatus status = CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
+      sampleBuffer,
+      &bufferListSizeNeeded,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,
+      NULL);
+  if (status != noErr || bufferListSizeNeeded == 0) {
+    return;
+  }
+
+  char* bufferListBytes = (char*)malloc(bufferListSizeNeeded);
+  if (!bufferListBytes) {
+    return;
+  }
+  AudioBufferList* bufferList = (AudioBufferList*)bufferListBytes;
+  CMBlockBufferRef blockBuffer = NULL;
+
+  status = CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
+      sampleBuffer,
+      NULL,
+      bufferList,
+      bufferListSizeNeeded,
+      NULL,
+      NULL,
+      kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,
+      &blockBuffer);
+  if (status != noErr || !blockBuffer) {
+    free(bufferListBytes);
+    return;
+  }
+
+  NSMutableData* pcmData = nil;
+  UInt32 numChannels = asbd->mChannelsPerFrame;
+  Float64 sampleRate = asbd->mSampleRate;
+  NSString* formatId = @"raw";
+
+  if (bufferList->mNumberBuffers > 0) {
+    AudioBuffer buf = bufferList->mBuffers[0];
+    if (buf.mData && buf.mDataByteSize > 0) {
+      pcmData = [NSMutableData dataWithBytes:buf.mData length:buf.mDataByteSize];
+    }
+    if (asbd->mFormatID == kAudioFormatLinearPCM) {
+      if (asbd->mFormatFlags & kAudioFormatFlagIsFloat) {
+        formatId = @"f32";
+      } else if (asbd->mBitsPerChannel == 16) {
+        formatId = @"s16";
+      }
+    }
+  }
+
+  if (blockBuffer) {
+    CFRelease(blockBuffer);
+  }
+  free(bufferListBytes);
+
+  if (!pcmData || pcmData.length == 0) {
+    return;
+  }
+
+  NSString* base64 = [pcmData base64EncodedStringWithOptions:0];
+  NSDictionary* root = @{
+    @"error" : @NO,
+    @"pcmBase64" : base64 ?: @"",
+    @"sampleRate" : @(sampleRate),
+    @"channelCount" : @((int)numChannels),
+    @"format" : formatId ?: @"raw",
+    @"byteCount" : @((int)pcmData.length)
+  };
+  NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
+  NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+
+  [_lock lock];
+  [_queue addObject:jsonStr];
+  [_lock unlock];
+  dispatch_semaphore_signal(_semaphore);
+}
+@end
+
 static NSMutableDictionary<NSNumber*, SCStream*>* _streamRegistry = nil;
 static NSMutableDictionary<NSNumber*, StreamFrameHandler*>* _handlerRegistry = nil;
 static NSMutableDictionary<NSNumber*, StreamAudioHandler*>* _audioHandlerRegistry = nil;
+static NSMutableDictionary<NSNumber*, StreamMicrophoneHandler*>* _microphoneHandlerRegistry = nil;
 static int64_t _nextStreamId = 1;
 
 /// Last stream error (set when stream_create_and_start fails). Cleared when read.
@@ -337,6 +463,7 @@ static void ensureStreamRegistry(void) {
     _streamRegistry = [NSMutableDictionary dictionary];
     _handlerRegistry = [NSMutableDictionary dictionary];
     _audioHandlerRegistry = [NSMutableDictionary dictionary];
+    _microphoneHandlerRegistry = [NSMutableDictionary dictionary];
   }
 }
 
@@ -435,6 +562,23 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
     }
   }
 
+  StreamMicrophoneHandler* microphoneHandler = nil;
+  if (capture_microphone) {
+    if (@available(macos 15.0, *)) {
+      microphoneHandler = [[StreamMicrophoneHandler alloc] init];
+      dispatch_queue_t micQueue =
+          dispatch_queue_create("com.screencapturekit.microphone", DISPATCH_QUEUE_SERIAL);
+      [stream addStreamOutput:microphoneHandler
+                        type:SCStreamOutputTypeMicrophone
+            sampleHandlerQueue:micQueue
+                         error:&addError];
+      if (addError) {
+        setLastStreamError(addError);
+        return 0;
+      }
+    }
+  }
+
   __block BOOL startSuccess = NO;
   __block NSError* startError = nil;
   dispatch_semaphore_t sem = dispatch_semaphore_create(0);
@@ -457,6 +601,9 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
     _handlerRegistry[@(streamId)] = handler;
     if (audioHandler) {
       _audioHandlerRegistry[@(streamId)] = audioHandler;
+    }
+    if (microphoneHandler) {
+      _microphoneHandlerRegistry[@(streamId)] = microphoneHandler;
     }
   }
   return streamId;
@@ -648,6 +795,41 @@ char* stream_get_next_audio(int64_t stream_id, int64_t timeout_ms) {
   return strdup(jsonStr.UTF8String);
 }
 
+/// Returns malloc'd JSON string for next microphone buffer, or NULL on timeout/error.
+/// Same format as stream_get_next_audio. Caller must free.
+char* stream_get_next_microphone(int64_t stream_id, int64_t timeout_ms) {
+  if (stream_id <= 0 || _microphoneHandlerRegistry == nil) {
+    return NULL;
+  }
+
+  StreamMicrophoneHandler* handler = _microphoneHandlerRegistry[@(stream_id)];
+  if (!handler) {
+    return NULL;
+  }
+
+  int64_t timeoutNsec = (timeout_ms > 0 ? timeout_ms : 5000) * NSEC_PER_MSEC;
+  long waitResult = dispatch_semaphore_wait(
+      handler.semaphore,
+      dispatch_time(DISPATCH_TIME_NOW, timeoutNsec));
+
+  if (waitResult != 0) {
+    return NULL;
+  }
+
+  NSString* jsonStr = nil;
+  [handler.lock lock];
+  if (handler.queue.count > 0) {
+    jsonStr = handler.queue.firstObject;
+    [handler.queue removeObjectAtIndex:0];
+  }
+  [handler.lock unlock];
+
+  if (!jsonStr || jsonStr.length == 0) {
+    return NULL;
+  }
+  return strdup(jsonStr.UTF8String);
+}
+
 /// Stops and releases a stream.
 void stream_stop_and_release(int64_t stream_id) {
   if (stream_id <= 0 || _streamRegistry == nil) {
@@ -657,13 +839,16 @@ void stream_stop_and_release(int64_t stream_id) {
   SCStream* stream = nil;
   StreamFrameHandler* handler = nil;
   StreamAudioHandler* audioHandler = nil;
+  StreamMicrophoneHandler* microphoneHandler = nil;
   @synchronized(_streamRegistry) {
     stream = _streamRegistry[@(stream_id)];
     handler = _handlerRegistry[@(stream_id)];
     audioHandler = _audioHandlerRegistry[@(stream_id)];
+    microphoneHandler = _microphoneHandlerRegistry[@(stream_id)];
     [_streamRegistry removeObjectForKey:@(stream_id)];
     [_handlerRegistry removeObjectForKey:@(stream_id)];
     [_audioHandlerRegistry removeObjectForKey:@(stream_id)];
+    [_microphoneHandlerRegistry removeObjectForKey:@(stream_id)];
   }
 
   if (handler) {
@@ -671,6 +856,9 @@ void stream_stop_and_release(int64_t stream_id) {
   }
   if (audioHandler) {
     audioHandler.stopped = YES;
+  }
+  if (microphoneHandler) {
+    microphoneHandler.stopped = YES;
   }
   if (stream) {
     [stream stopCaptureWithCompletionHandler:^(NSError* _Nullable error){

@@ -263,6 +263,31 @@ void main() {
       await videoController.close();
       await audioController.close();
     });
+
+    test('microphoneStream is null when not provided', () async {
+      final controller = StreamController<CapturedFrame>.broadcast();
+      final capture = CaptureStream(
+        stream: controller.stream,
+        updateConfiguration: (_) {},
+        updateContentFilter: (_) {},
+      );
+      expect(capture.microphoneStream, isNull);
+      await controller.close();
+    });
+
+    test('holds microphoneStream when provided', () async {
+      final videoController = StreamController<CapturedFrame>.broadcast();
+      final microphoneController = StreamController<CapturedAudio>.broadcast();
+      final capture = CaptureStream(
+        stream: videoController.stream,
+        microphoneStream: microphoneController.stream,
+        updateConfiguration: (_) {},
+        updateContentFilter: (_) {},
+      );
+      expect(capture.microphoneStream, equals(microphoneController.stream));
+      await videoController.close();
+      await microphoneController.close();
+    });
   });
 
   group('ShareableContent', () {

@@ -16,6 +16,7 @@ class CaptureStream {
     required this.updateConfiguration,
     required this.updateContentFilter,
     this.audioStream,
+    this.microphoneStream,
   });
 
   /// The stream of captured frames. Cancel the subscription to stop capture.
@@ -24,6 +25,10 @@ class CaptureStream {
   /// Optional stream of captured audio buffers. Non-null when started with
   /// [StreamConfiguration.capturesAudio] set to true.
   final Stream<CapturedAudio>? audioStream;
+
+  /// Optional stream of microphone buffers. Non-null when started with
+  /// [StreamConfiguration.captureMicrophone] set to true (macOS 15+).
+  final Stream<CapturedAudio>? microphoneStream;
 
   /// Updates the stream configuration (e.g. width, height, frame rate).
   /// May block briefly; throws on error.
