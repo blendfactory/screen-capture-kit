@@ -136,6 +136,52 @@ void main() {
     });
   });
 
+  group('StreamConfiguration', () {
+    test('creates with defaults', () {
+      const config = StreamConfiguration();
+      expect(config.width, 0);
+      expect(config.height, 0);
+      expect(config.frameRate, 60);
+      expect(config.sourceRect, isNull);
+      expect(config.showsCursor, isTrue);
+      expect(config.queueDepth, 5);
+    });
+
+    test('creates with custom values', () {
+      const config = StreamConfiguration(
+        width: 320,
+        height: 240,
+        frameRate: 30,
+        sourceRect: (x: 0, y: 0, width: 320, height: 240),
+        showsCursor: false,
+        queueDepth: 8,
+      );
+      expect(config.width, 320);
+      expect(config.height, 240);
+      expect(config.frameRate, 30);
+      expect(config.sourceRect?.width, 320);
+      expect(config.showsCursor, isFalse);
+      expect(config.queueDepth, 8);
+    });
+  });
+
+  group('CaptureStream', () {
+    test('holds stream and invokes updateConfiguration', () async {
+      final controller = StreamController<CapturedFrame>.broadcast();
+      var updateCalled = false;
+      final capture = CaptureStream(
+        stream: controller.stream,
+        updateConfiguration: (_) {
+          updateCalled = true;
+        },
+      );
+      expect(capture.stream, equals(controller.stream));
+      capture.updateConfiguration(const StreamConfiguration(width: 100));
+      expect(updateCalled, isTrue);
+      await controller.close();
+    });
+  });
+
   group('ShareableContent', () {
     test('creates with empty lists', () {
       const content = ShareableContent(
@@ -395,6 +441,71 @@ void main() {
               // (Stream never completes; timeout resets on each frame so we
               // don't rely on it.)
               await Future<void>.delayed(const Duration(milliseconds: 300));
+            } finally {
+              await sub.cancel();
+            }
+          } finally {
+            ScreenCaptureKit().releaseFilter(handle);
+          }
+        } on UnsupportedError catch (e) {
+          print(e);
+        } on ScreenCaptureKitException catch (e) {
+          print(e);
+        } on TimeoutException catch (e) {
+          print(e);
+        }
+      },
+      timeout: Timeout.none,
+    );
+  });
+
+  group('ScreenCaptureKit.startCaptureStreamWithUpdater', () {
+    test(
+      'returns CaptureStream and updateConfiguration works on macOS',
+      () async {
+        try {
+          final content =
+              await ScreenCaptureKit().getShareableContent().timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('getShareableContent timed out'),
+                  );
+          if (content.displays.isEmpty) {
+            return;
+          }
+          final handle = await ScreenCaptureKit()
+              .createDisplayFilter(content.displays.first)
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('createDisplayFilter timed out'),
+              );
+          try {
+            final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
+              handle,
+              width: 64,
+              height: 64,
+              frameRate: 10,
+              queueDepth: 3,
+            );
+            expect(capture, isA<CaptureStream>());
+            expect(capture.stream, isA<Stream<CapturedFrame>>());
+
+            final sub = capture.stream.listen(
+              (_) {},
+              onError: (_) {},
+              cancelOnError: true,
+            );
+            try {
+              await Future<void>.delayed(const Duration(milliseconds: 200));
+              capture.updateConfiguration(
+                const StreamConfiguration(
+                  width: 128,
+                  height: 128,
+                  frameRate: 15,
+                ),
+              );
+              await Future<void>.delayed(const Duration(milliseconds: 100));
             } finally {
               await sub.cancel();
             }
