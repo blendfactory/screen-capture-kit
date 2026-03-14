@@ -1,5 +1,6 @@
 #import "content_filter.h"
 #import <CoreGraphics/CoreGraphics.h>
+#include <string.h>
 
 #if __MAC_OS_X_VERSION_MIN_REQUIRED < 120300
 #error "ScreenCaptureKit requires macOS 12.3 or newer"
@@ -101,6 +102,82 @@ int64_t create_content_filter_for_display(int64_t display_id) {
     SCContentFilter* filter = [[SCContentFilter alloc] initWithDisplay:targetDisplay
                                                    excludingApplications:@[]
                                                      exceptingWindows:@[]];
+    if (filter) {
+      @synchronized (_filterRegistry) {
+        filterId = _nextFilterId++;
+        _filterRegistry[@(filterId)] = filter;
+      }
+    }
+    dispatch_semaphore_signal(sem);
+  }];
+
+  const int64_t timeoutNsec = 5LL * NSEC_PER_SEC;
+  dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, timeoutNsec));
+
+  return filterId;
+}
+
+/// Creates an SCContentFilter for the given display excluding specific windows.
+/// window_ids_json: JSON array of window IDs, e.g. "[123, 456]".
+/// Returns a positive filter ID on success, 0 on error.
+int64_t create_content_filter_for_display_excluding_windows(int64_t display_id,
+                                                             const char* _Nullable window_ids_json) {
+  ensureCoreGraphicsInit();
+  ensureFilterRegistry();
+  if (!window_ids_json || window_ids_json[0] == '\0') {
+    return create_content_filter_for_display(display_id);
+  }
+
+  NSData* jsonData = [NSData dataWithBytes:window_ids_json length:strlen(window_ids_json)];
+  NSError* jsonError = nil;
+  id parsed = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&jsonError];
+  if (jsonError || ![parsed isKindOfClass:[NSArray class]]) {
+    return 0;
+  }
+  NSArray* idArray = (NSArray*)parsed;
+  NSMutableSet<NSNumber*>* excludeIds = [NSMutableSet setWithCapacity:idArray.count];
+  for (id obj in idArray) {
+    if ([obj isKindOfClass:[NSNumber class]]) {
+      [excludeIds addObject:(NSNumber*)obj];
+    }
+  }
+  if (excludeIds.count == 0) {
+    return create_content_filter_for_display(display_id);
+  }
+
+  __block int64_t filterId = 0;
+  dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+
+  [SCShareableContent getShareableContentExcludingDesktopWindows:YES
+                                             onScreenWindowsOnly:YES
+                                                completionHandler:^(SCShareableContent* _Nullable content, NSError* _Nullable error) {
+    if (error || !content) {
+      dispatch_semaphore_signal(sem);
+      return;
+    }
+
+    SCDisplay* targetDisplay = nil;
+    for (SCDisplay* d in content.displays) {
+      if ((int64_t)d.displayID == display_id) {
+        targetDisplay = d;
+        break;
+      }
+    }
+
+    if (!targetDisplay) {
+      dispatch_semaphore_signal(sem);
+      return;
+    }
+
+    NSMutableArray<SCWindow*>* windowsToExclude = [NSMutableArray array];
+    for (SCWindow* w in content.windows) {
+      if ([excludeIds containsObject:@((int64_t)w.windowID)]) {
+        [windowsToExclude addObject:w];
+      }
+    }
+
+    SCContentFilter* filter = [[SCContentFilter alloc] initWithDisplay:targetDisplay
+                                                     excludingWindows:windowsToExclude];
     if (filter) {
       @synchronized (_filterRegistry) {
         filterId = _nextFilterId++;

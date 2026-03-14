@@ -70,14 +70,25 @@ class ScreenCaptureKit {
 
   /// Creates a native content filter for capturing the entire display.
   ///
+  /// [excludingWindows] optionally excludes specific windows from capture.
+  /// Maps to `SCContentFilter(display:excludingWindows:)` when non-empty.
+  ///
   /// Returns a [ContentFilterHandle] that must be released with [releaseFilter]
   /// when no longer needed.
   ///
   /// Requires Screen Recording permission.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944911-init
-  Future<ContentFilterHandle> createDisplayFilter(Display display) {
-    return Isolate.run(() => createDisplayFilterImpl(display));
+  Future<ContentFilterHandle> createDisplayFilter(
+    Display display, {
+    List<Window>? excludingWindows,
+  }) {
+    return Isolate.run(
+      () => createDisplayFilterImpl(
+        display,
+        excludingWindows: excludingWindows,
+      ),
+    );
   }
 
   /// Releases a content filter created by [createWindowFilter] or

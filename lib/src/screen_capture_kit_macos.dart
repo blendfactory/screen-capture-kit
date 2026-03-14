@@ -39,6 +39,17 @@ external int _createContentFilterForWindow(int windowId);
 )
 external int _createContentFilterForDisplay(int displayId);
 
+/// Creates native SCContentFilter for display excluding given windows.
+/// windowIdsJson: JSON array of window IDs; caller frees ptr.
+@Native<Int64 Function(Int64, Pointer<Utf8>)>(
+  symbol: 'create_content_filter_for_display_excluding_windows',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external int _createContentFilterForDisplayExcludingWindows(
+  int displayId,
+  Pointer<Utf8> windowIdsJson,
+);
+
 @Native<Void Function(Int64)>(
   symbol: 'release_content_filter',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
@@ -243,7 +254,10 @@ ContentFilterHandle createWindowFilterImpl(Window window) {
   return ContentFilterHandle(filterId);
 }
 
-ContentFilterHandle createDisplayFilterImpl(Display display) {
+ContentFilterHandle createDisplayFilterImpl(
+  Display display, {
+  List<Window>? excludingWindows,
+}) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
       'screen_capture_kit only supports macOS. '
@@ -251,7 +265,28 @@ ContentFilterHandle createDisplayFilterImpl(Display display) {
     );
   }
 
-  final filterId = _createContentFilterForDisplay(display.displayId);
+  int filterId;
+  if (excludingWindows != null && excludingWindows.isNotEmpty) {
+    final windowIds = excludingWindows.map((w) => w.windowId).toList();
+    final jsonStr = jsonEncode(windowIds);
+    final units = utf8.encode(jsonStr);
+    final ptr = malloc<Uint8>(units.length + 1);
+    for (var i = 0; i < units.length; i++) {
+      ptr[i] = units[i];
+    }
+    ptr[units.length] = 0;
+    try {
+      filterId = _createContentFilterForDisplayExcludingWindows(
+        display.displayId,
+        ptr.cast<Utf8>(),
+      );
+    } finally {
+      malloc.free(ptr);
+    }
+  } else {
+    filterId = _createContentFilterForDisplay(display.displayId);
+  }
+
   if (filterId <= 0) {
     throw ScreenCaptureKitException(
       'Failed to create content filter for display ${display.displayId}. '

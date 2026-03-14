@@ -38,7 +38,10 @@ ContentFilterHandle createWindowFilterImpl(Window window) {
   );
 }
 
-ContentFilterHandle createDisplayFilterImpl(Display display) {
+ContentFilterHandle createDisplayFilterImpl(
+  Display display, {
+  List<Window>? excludingWindows,
+}) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
       'screen_capture_kit only supports macOS. '
