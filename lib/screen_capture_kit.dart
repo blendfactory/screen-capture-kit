@@ -25,6 +25,7 @@ export 'src/captured_frame.dart';
 export 'src/captured_image.dart';
 export 'src/content_filter.dart';
 export 'src/content_filter_handle.dart';
+export 'src/content_sharing_picker_configuration.dart';
 export 'src/content_sharing_picker_mode.dart';
 export 'src/display.dart';
 export 'src/running_application.dart';

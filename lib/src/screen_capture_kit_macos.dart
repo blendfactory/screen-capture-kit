@@ -10,6 +10,7 @@ import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/content_sharing_picker_configuration.dart';
 import 'package:screen_capture_kit/src/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/running_application.dart';
@@ -200,6 +201,15 @@ external int _pickerIsActive();
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
 external int _pickerMaximumStreamCount();
+
+@Native<Int32 Function(Int64, Pointer<Utf8>)>(
+  symbol: 'stream_set_picker_configuration',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external int _streamSetPickerConfiguration(
+  int streamId,
+  Pointer<Utf8> configJson,
+);
 
 ShareableContent getShareableContentImpl({
   bool excludeDesktopWindows = false,
@@ -553,6 +563,54 @@ int contentSharingPickerMaximumStreamCountImpl() {
     return 0;
   }
   return _pickerMaximumStreamCount();
+}
+
+void streamSetPickerConfigurationImpl(
+  int streamId,
+  ContentSharingPickerConfiguration? config,
+) {
+  if (!Platform.isMacOS) {
+    return;
+  }
+  if (config == null) {
+    _streamSetPickerConfiguration(streamId, nullptr);
+    return;
+  }
+  final map = <String, dynamic>{};
+  if (config.allowedModes != null && config.allowedModes!.isNotEmpty) {
+    map['allowedPickerModes'] = config.allowedModes!.map((m) {
+      switch (m) {
+        case ContentSharingPickerMode.singleDisplay:
+          return 'singleDisplay';
+        case ContentSharingPickerMode.singleWindow:
+          return 'singleWindow';
+        case ContentSharingPickerMode.singleApplication:
+          return 'singleApplication';
+        case ContentSharingPickerMode.multipleWindows:
+          return 'multipleWindows';
+        case ContentSharingPickerMode.multipleApplications:
+          return 'multipleApplications';
+      }
+    }).toList();
+  }
+  if (config.allowsChangingSelectedContent != null) {
+    map['allowsChangingSelectedContent'] = config.allowsChangingSelectedContent;
+  }
+  if (config.excludedBundleIds != null &&
+      config.excludedBundleIds!.isNotEmpty) {
+    map['excludedBundleIDs'] = config.excludedBundleIds;
+  }
+  if (config.excludedWindowIds != null &&
+      config.excludedWindowIds!.isNotEmpty) {
+    map['excludedWindowIDs'] = config.excludedWindowIds;
+  }
+  final jsonStr = jsonEncode(map);
+  final ptr = jsonStr.toNativeUtf8();
+  try {
+    _streamSetPickerConfiguration(streamId, ptr);
+  } finally {
+    malloc.free(ptr);
+  }
 }
 
 /// Returns JSON string from native (sendable for Isolate.run). Caller parses.
@@ -1028,5 +1086,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
         streamUpdateConfigurationImpl(streamId, options),
     updateContentFilter: (handle) =>
         streamUpdateContentFilterImpl(streamId, handle),
+    setContentSharingPickerConfiguration: (config) =>
+        streamSetPickerConfigurationImpl(streamId, config),
   );
 }

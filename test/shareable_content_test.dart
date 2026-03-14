@@ -216,6 +216,7 @@ void main() {
           updateCalled = true;
         },
         updateContentFilter: (_) {},
+        setContentSharingPickerConfiguration: (_) {},
       );
       expect(capture.stream, equals(controller.stream));
       capture.updateConfiguration(const StreamConfiguration(width: 100));
@@ -232,6 +233,7 @@ void main() {
         updateContentFilter: (handle) {
           passedHandle = handle;
         },
+        setContentSharingPickerConfiguration: (_) {},
       );
       const handle = ContentFilterHandle(42);
       capture.updateContentFilter(handle);
@@ -246,6 +248,7 @@ void main() {
         stream: controller.stream,
         updateConfiguration: (_) {},
         updateContentFilter: (_) {},
+        setContentSharingPickerConfiguration: (_) {},
       );
       expect(capture.audioStream, isNull);
       await controller.close();
@@ -259,6 +262,7 @@ void main() {
         audioStream: audioController.stream,
         updateConfiguration: (_) {},
         updateContentFilter: (_) {},
+        setContentSharingPickerConfiguration: (_) {},
       );
       expect(capture.audioStream, equals(audioController.stream));
       await videoController.close();
@@ -271,6 +275,7 @@ void main() {
         stream: controller.stream,
         updateConfiguration: (_) {},
         updateContentFilter: (_) {},
+        setContentSharingPickerConfiguration: (_) {},
       );
       expect(capture.microphoneStream, isNull);
       await controller.close();
@@ -284,10 +289,37 @@ void main() {
         microphoneStream: microphoneController.stream,
         updateConfiguration: (_) {},
         updateContentFilter: (_) {},
+        setContentSharingPickerConfiguration: (_) {},
       );
       expect(capture.microphoneStream, equals(microphoneController.stream));
       await videoController.close();
       await microphoneController.close();
+    });
+
+    test('invokes setContentSharingPickerConfiguration when called', () async {
+      final controller = StreamController<CapturedFrame>.broadcast();
+      ContentSharingPickerConfiguration? passedConfig;
+      final capture = CaptureStream(
+        stream: controller.stream,
+        updateConfiguration: (_) {},
+        updateContentFilter: (_) {},
+        setContentSharingPickerConfiguration: (config) {
+          passedConfig = config;
+        },
+      );
+      const config = ContentSharingPickerConfiguration(
+        allowedModes: [ContentSharingPickerMode.singleDisplay],
+        allowsChangingSelectedContent: false,
+      );
+      capture.setContentSharingPickerConfiguration(config);
+      expect(
+        passedConfig?.allowedModes,
+        [ContentSharingPickerMode.singleDisplay],
+      );
+      expect(passedConfig?.allowsChangingSelectedContent, false);
+      capture.setContentSharingPickerConfiguration(null);
+      expect(passedConfig, isNull);
+      await controller.close();
     });
   });
 

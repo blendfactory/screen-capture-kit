@@ -1,13 +1,14 @@
 import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/content_sharing_picker_configuration.dart';
 
 /// A capture stream that supports updating configuration and filter at runtime.
 ///
 /// Create via the library's startCaptureStreamWithUpdater method. Listen to
 /// [stream] for frames; when audio capture was enabled, listen to [audioStream]
-/// for system audio. Call [updateConfiguration] or [updateContentFilter]
-/// to change without stopping the stream.
+/// for system audio. Call [updateConfiguration], [updateContentFilter], or
+/// [setContentSharingPickerConfiguration] to change without stopping.
 ///
 /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
 class CaptureStream {
@@ -15,6 +16,7 @@ class CaptureStream {
     required this.stream,
     required this.updateConfiguration,
     required this.updateContentFilter,
+    required this.setContentSharingPickerConfiguration,
     this.audioStream,
     this.microphoneStream,
   });
@@ -38,6 +40,12 @@ class CaptureStream {
   /// May block briefly; throws on error. Release the handle when no longer
   /// needed via the library's releaseFilter.
   final void Function(ContentFilterHandle handle) updateContentFilter;
+
+  /// Sets the content-sharing picker configuration for this stream (macOS 14+).
+  /// Pass a config to restrict modes or exclude content; pass `null` for
+  /// system default.
+  final void Function(ContentSharingPickerConfiguration? config)
+      setContentSharingPickerConfiguration;
 }
 
 /// Options for [CaptureStream.updateConfiguration].

@@ -720,6 +720,82 @@ int stream_update_content_filter(int64_t stream_id, int64_t filter_id) {
   return 0;
 }
 
+/// Build SCContentSharingPickerMode option set from JSON array of mode names.
+static SCContentSharingPickerMode picker_modes_from_json_array(NSArray* arr) API_AVAILABLE(macos(14.0)) {
+  if (!arr || arr.count == 0) return 0;
+  SCContentSharingPickerMode modes = 0;
+  for (id item in arr) {
+    if (![item isKindOfClass:[NSString class]]) continue;
+    NSString* s = (NSString*)item;
+    if ([s isEqualToString:@"singleDisplay"]) modes |= SCContentSharingPickerModeSingleDisplay;
+    else if ([s isEqualToString:@"singleWindow"]) modes |= SCContentSharingPickerModeSingleWindow;
+    else if ([s isEqualToString:@"singleApplication"]) modes |= SCContentSharingPickerModeSingleApplication;
+    else if ([s isEqualToString:@"multipleWindows"]) modes |= SCContentSharingPickerModeMultipleWindows;
+    else if ([s isEqualToString:@"multipleApplications"]) modes |= SCContentSharingPickerModeMultipleApplications;
+  }
+  return modes;
+}
+
+/// Sets the content-sharing picker configuration for a stream (macOS 14+).
+/// config_json: NULL or empty = use default (nil). Otherwise JSON object with
+/// optional "allowedPickerModes" (array of strings), "allowsChangingSelectedContent" (bool),
+/// "excludedBundleIDs" (array of strings), "excludedWindowIDs" (array of ints).
+/// Returns 0 on success, -1 on error.
+int stream_set_picker_configuration(int64_t stream_id, const char* _Nullable config_json) {
+  if (stream_id <= 0 || _streamRegistry == nil) {
+    return -1;
+  }
+  SCStream* stream = _streamRegistry[@(stream_id)];
+  if (!stream) {
+    return -1;
+  }
+  if (!@available(macOS 14.0, *)) {
+    return -1;
+  }
+
+  if (@available(macOS 14.0, *)) {
+    SCContentSharingPickerConfiguration* config = nil;
+    if (config_json && config_json[0] != '\0') {
+      NSData* data = [NSData dataWithBytes:config_json length:strlen(config_json)];
+      NSError* err = nil;
+      id parsed = [NSJSONSerialization JSONObjectWithData:data options:0 error:&err];
+      if (!err && [parsed isKindOfClass:[NSDictionary class]]) {
+        NSDictionary* dict = (NSDictionary*)parsed;
+        config = [[SCContentSharingPickerConfiguration alloc] init];
+        id modesArr = dict[@"allowedPickerModes"];
+        if ([modesArr isKindOfClass:[NSArray class]]) {
+          config.allowedPickerModes = picker_modes_from_json_array((NSArray*)modesArr);
+        }
+        id allowsChange = dict[@"allowsChangingSelectedContent"];
+        if ([allowsChange isKindOfClass:[NSNumber class]]) {
+          config.allowsChangingSelectedContent = [(NSNumber*)allowsChange boolValue];
+        }
+        id bundleIds = dict[@"excludedBundleIDs"];
+        if ([bundleIds isKindOfClass:[NSArray class]]) {
+          NSMutableArray<NSString*>* arr = [NSMutableArray array];
+          for (id o in (NSArray*)bundleIds) {
+            if ([o isKindOfClass:[NSString class]]) [arr addObject:(NSString*)o];
+          }
+          config.excludedBundleIDs = arr;
+        }
+        id windowIds = dict[@"excludedWindowIDs"];
+        if ([windowIds isKindOfClass:[NSArray class]]) {
+          NSMutableArray<NSNumber*>* arr = [NSMutableArray array];
+          for (id o in (NSArray*)windowIds) {
+            if ([o isKindOfClass:[NSNumber class]]) [arr addObject:(NSNumber*)o];
+          }
+          config.excludedWindowIDs = arr;
+        }
+      }
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wobjc-method-access"
+    [[SCContentSharingPicker shared] setConfiguration:config forStream:stream];
+#pragma clang diagnostic pop
+  }
+  return 0;
+}
+
 /// Returns malloc'd JSON string. On success: {"error":false,"bgraBase64":"...",
 /// "width":N,"height":N,"bytesPerRow":N}. On error: {"error":true,...}.
 /// Caller must free. Blocks until frame available or timeout.

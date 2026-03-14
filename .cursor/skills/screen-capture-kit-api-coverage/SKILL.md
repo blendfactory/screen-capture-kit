@@ -80,7 +80,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | API | Status | Notes |
 |-----|--------|-------|
 | SCContentSharingPicker | ✅ | presentContentSharingPicker(); present(), present(using:), isActive, maximumStreamCount; macOS 14+ |
-| SCContentSharingPickerConfiguration | 🚧 | Not yet exposed (setConfiguration for stream) |
+| SCContentSharingPickerConfiguration | ✅ | ContentSharingPickerConfiguration + CaptureStream.setContentSharingPickerConfiguration; setConfiguration(_:for:); macOS 14+ |
 | SCContentSharingPickerMode | ✅ | ContentSharingPickerMode enum + allowedModes in present |
 | SCContentSharingPickerObserver | ✅ | Used internally in native picker_present |
 
@@ -100,11 +100,31 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | Audio capture | capturesAudio, addStreamOutput(.audio) |
 | Frame rate configuration | minimumFrameInterval |
 | Multi-display capture | SCDisplay, createDisplayFilter ✅ |
-| System picker | SCContentSharingPicker, SCContentSharingPickerMode ✅; Configuration optional |
+| System picker | SCContentSharingPicker, Configuration, Mode ✅ |
 
 ## Remaining work
 
-- **SCContentSharingPickerConfiguration**: Optional. setConfiguration(_:for:) for per-stream picker config not yet exposed in Dart.
+- None for required System picker APIs.
+
+## Optional / not yet covered (spec vs checklist)
+
+Items from the framework spec that are not in the checklist above. Low priority unless needed for a use case.
+
+| Area | API / property | Status | Notes |
+|------|----------------|--------|-------|
+| Shareable content | getExcludingDesktopWindows(onScreenWindowsOnlyAbove/Below:) | ❌ | Only onScreenWindowsOnly (bool) variant implemented |
+| Shareable content | SCShareableContent.getWithCompletionHandler | ❌ | Simpler variant; getExcludingDesktopWindows covers typical use |
+| Shareable content | SCShareableContent.info(for:) | ❌ | Content info for a filter |
+| Content filter | SCContentFilter(display:including:) | ❌ | Capture only specific windows (include list) |
+| Content filter | contentRect, pointPixelScale, streamType, style | ⚠️ | contentRect via sourceRect ✅; pointPixelScale, streamType, style not exposed |
+| Stream config | scalesToFit, destinationRect, preservesAspectRatio | ❌ | |
+| Stream config | colorMatrix, backgroundColor, shouldBeOpaque | ❌ | |
+| Stream config | capturesShadowsOnly, ignoreShadows*, ignoreGlobalClip* | ❌ | |
+| Stream config | captureResolution, sampleRate, channelCount | ❌ | sampleRate/channelCount from device; we don't set |
+| Stream config | streamName, presenterOverlayPrivacyAlertSetting | ❌ | |
+| Stream | SCStreamDelegate | ❌ | Lifecycle callbacks not bridged to Dart |
+| Stream | SCStreamFrameInfo / SCFrameStatus | ⚠️ | Used internally; not exposed as Dart API |
+| Screenshot | SCScreenshotConfiguration (image quality) | ⚠️ | width/height only; image quality not exposed |
 
 ## Usage
 
