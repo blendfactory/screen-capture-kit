@@ -52,7 +52,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | SCStream.startCapture | ✅ | |
 | SCStream.stopCapture | ✅ | |
 | SCStream.updateConfiguration | ✅ | startCaptureStreamWithUpdater + CaptureStream.updateConfiguration |
-| SCStream.updateContentFilter | ❌ | |
+| SCStream.updateContentFilter | ✅ | CaptureStream.updateContentFilter(ContentFilterHandle) |
 
 ### Stream configuration
 
