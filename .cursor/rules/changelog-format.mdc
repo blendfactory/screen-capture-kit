@@ -1,0 +1,44 @@
+---
+description: CHANGELOG.md must follow the Keep a Changelog format (1.0.0) and Semantic Versioning.
+globs: CHANGELOG.md
+alwaysApply: false
+---
+
+# Changelog Format
+
+## Scope
+
+- This rule applies when creating or editing **CHANGELOG.md** in this repository.
+- The changelog must follow [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## Structure
+
+1. **Header**
+   - First line: `# Changelog`
+   - A short paragraph: "All notable changes to this project will be documented in this file."
+   - "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),"
+   - "and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)."
+
+2. **Sections**
+   - `## [Unreleased]` at the top for upcoming changes (optional subsections: Added, Changed, etc.).
+   - Version blocks: `## [X.Y.Z] - YYYY-MM-DD` (date in ISO 8601).
+
+3. **Types of changes** (use only as needed)
+   - **Added** for new features.
+   - **Changed** for changes in existing functionality.
+   - **Deprecated** for soon-to-be removed features.
+   - **Removed** for now removed features.
+   - **Fixed** for any bug fixes.
+   - **Security** in case of vulnerabilities.
+
+4. **Footer**
+   - Link definitions for `[Unreleased]` and each version, e.g.:
+   - `[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/vX.Y.Z...HEAD`
+   - `[X.Y.Z]: https://github.com/blendfactory/screen-capture-kit/releases/tag/vX.Y.Z`
+
+## Rules
+
+- Write entries **for humans**, not raw git log dumps.
+- List **notable** changes only; group by type within each version.
+- Newest version first; one entry per release.
+- Use English for all changelog content.
