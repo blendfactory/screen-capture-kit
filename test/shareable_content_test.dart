@@ -174,10 +174,28 @@ void main() {
         updateConfiguration: (_) {
           updateCalled = true;
         },
+        updateContentFilter: (_) {},
       );
       expect(capture.stream, equals(controller.stream));
       capture.updateConfiguration(const StreamConfiguration(width: 100));
       expect(updateCalled, isTrue);
+      await controller.close();
+    });
+
+    test('invokes updateContentFilter when called', () async {
+      final controller = StreamController<CapturedFrame>.broadcast();
+      ContentFilterHandle? passedHandle;
+      final capture = CaptureStream(
+        stream: controller.stream,
+        updateConfiguration: (_) {},
+        updateContentFilter: (handle) {
+          passedHandle = handle;
+        },
+      );
+      const handle = ContentFilterHandle(42);
+      capture.updateContentFilter(handle);
+      expect(passedHandle, equals(handle));
+      expect(passedHandle?.filterId, 42);
       await controller.close();
     });
   });
@@ -511,6 +529,69 @@ void main() {
             }
           } finally {
             ScreenCaptureKit().releaseFilter(handle);
+          }
+        } on UnsupportedError catch (e) {
+          print(e);
+        } on ScreenCaptureKitException catch (e) {
+          print(e);
+        } on TimeoutException catch (e) {
+          print(e);
+        }
+      },
+      timeout: Timeout.none,
+    );
+    test(
+      'updateContentFilter switches filter on macOS',
+      () async {
+        try {
+          final content =
+              await ScreenCaptureKit().getShareableContent().timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('getShareableContent timed out'),
+                  );
+          if (content.displays.isEmpty) {
+            return;
+          }
+          final display = content.displays.first;
+          final handle1 =
+              await ScreenCaptureKit().createDisplayFilter(display).timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () =>
+                        throw TimeoutException('createDisplayFilter timed out'),
+                  );
+          ContentFilterHandle? handle2;
+          try {
+            final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
+              handle1,
+              width: 64,
+              height: 64,
+              frameRate: 10,
+              queueDepth: 3,
+            );
+            handle2 =
+                await ScreenCaptureKit().createDisplayFilter(display).timeout(
+                      const Duration(seconds: 5),
+                      onTimeout: () =>
+                          throw TimeoutException('second createDisplayFilter'),
+                    );
+            final sub = capture.stream.listen(
+              (_) {},
+              onError: (_) {},
+              cancelOnError: true,
+            );
+            try {
+              await Future<void>.delayed(const Duration(milliseconds: 200));
+              capture.updateContentFilter(handle2);
+              await Future<void>.delayed(const Duration(milliseconds: 100));
+            } finally {
+              await sub.cancel();
+            }
+          } finally {
+            ScreenCaptureKit().releaseFilter(handle1);
+            if (handle2 != null) {
+              ScreenCaptureKit().releaseFilter(handle2);
+            }
           }
         } on UnsupportedError catch (e) {
           print(e);
