@@ -85,6 +85,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   int frameRate = 60,
   ({double x, double y, double width, double height})? sourceRect,
   bool showsCursor = true,
+  int queueDepth = 5,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(

@@ -74,6 +74,7 @@ external Pointer<Utf8> _captureScreenshot(int filterId, int width, int height);
       Float,
       Float,
       Int32,
+      Int32,
     )>(
   symbol: 'stream_create_and_start',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
@@ -88,6 +89,7 @@ external int _streamCreateAndStart(
   double srcWidth,
   double srcHeight,
   int showsCursor,
+  int queueDepth,
 );
 
 @Native<Pointer<Utf8> Function(Int64, Int64)>(
@@ -395,6 +397,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   int frameRate = 60,
   ({double x, double y, double width, double height})? sourceRect,
   bool showsCursor = true,
+  int queueDepth = 5,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -404,6 +407,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   }
 
   final src = sourceRect;
+  final depth = queueDepth.clamp(1, 8);
   final streamId = _streamCreateAndStart(
     filterHandle.filterId,
     width,
@@ -414,6 +418,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
     src?.width ?? 0,
     src?.height ?? 0,
     showsCursor ? 1 : 0,
+    depth,
   );
   if (streamId <= 0) {
     throw const ScreenCaptureKitException(

@@ -125,6 +125,7 @@ class ScreenCaptureKit {
   /// [sourceRect] optionally crops to a region (x, y, width, height) in screen
   /// points. Use with display filter for region capture.
   /// [showsCursor] includes the system cursor in capture when true (default).
+  /// [queueDepth] sets the frame queue depth (1–8); default 5.
   /// Cancel the stream subscription to stop capture.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
@@ -135,6 +136,7 @@ class ScreenCaptureKit {
     int frameRate = 60,
     ({double x, double y, double width, double height})? sourceRect,
     bool showsCursor = true,
+    int queueDepth = 5,
   }) {
     return startCaptureStreamImpl(
       filterHandle,
@@ -143,6 +145,7 @@ class ScreenCaptureKit {
       frameRate: frameRate,
       sourceRect: sourceRect,
       showsCursor: showsCursor,
+      queueDepth: queueDepth,
     );
   }
 }
