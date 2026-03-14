@@ -5,30 +5,34 @@ Native Dart bindings for macOS ScreenCaptureKit using Dart Build Hooks.
 `screen_capture_kit` provides high-performance access to Apple's ScreenCaptureKit API from Dart applications.  
 It enables screen, window, and display capture on macOS with minimal overhead by calling the native APIs directly.
 
-
 [![pub version](https://img.shields.io/pub/v/screen_capture_kit.svg)](https://pub.dev/packages/screen_capture_kit)
 [![license](https://img.shields.io/github/license/blendfactory/screen-capture-kit)](LICENSE)
 
 ## Features
 
-- Native macOS screen capture
-- Window capture
-- Display capture
-- High performance frame streaming
-- Powered by Dart Build Hooks
-- No Flutter dependency (pure Dart support)
+- **Display capture** — Capture entire displays or regions
+- **Window capture** — Capture individual windows
+- **Region capture** — Crop to a specific area via `sourceRect`
+- **Screenshot** — Single-frame capture (macOS 14+)
+- **System picker** — Native content-sharing picker UI (macOS 14+)
+- **Audio capture** — System audio (macOS 13+), optional microphone (macOS 15+)
+- **Cursor capture** — Include or hide the system cursor
+- **Frame rate configuration** — 1–120 fps
+- **Multi-display** — Capture any connected display
+- **Powered by Dart Build Hooks** — No Flutter dependency (pure Dart support)
 
 ## Platform Support
 
 | Platform | Support |
-|--------|--------|
+|----------|---------|
 | macOS | ✅ |
 | Windows | ❌ |
 | Linux | ❌ |
 | iOS | ❌ |
 | Android | ❌ |
 
-macOS 12.3 or later is required.
+macOS 12.3 or later is required. Screenshot and system picker require macOS 14+.  
+Audio capture requires macOS 13+; microphone capture requires macOS 15+.
 
 ## Installation
 
@@ -36,7 +40,7 @@ Add the package:
 
 ```bash
 dart pub add screen_capture_kit
-````
+```
 
 ## Example
 
@@ -44,17 +48,31 @@ dart pub add screen_capture_kit
 import 'package:screen_capture_kit/screen_capture_kit.dart';
 
 void main() async {
-  final capture = ScreenCaptureKit();
+  final kit = ScreenCaptureKit();
+  final content = await kit.getShareableContent();
 
-  await capture.requestPermission();
+  if (content.displays.isEmpty) return;
 
-  await capture.startDisplayCapture();
+  final display = content.displays.first;
+  final filter = await kit.createDisplayFilter(display);
 
-  capture.frames.listen((frame) {
-    print('Frame received: ${frame.width}x${frame.height}');
+  kit.startCaptureStream(filter, width: display.width, height: display.height)
+      .listen((frame) {
+    print('Frame: ${frame.width}x${frame.height}');
   });
+
+  // Call kit.releaseFilter(filter) when done
 }
 ```
+
+## Usage flow
+
+1. **Get shareable content** — `getShareableContent()` returns displays, windows, and applications.
+2. **Create a content filter** — `createDisplayFilter()` or `createWindowFilter()` for the target.
+3. **Start capture** — `startCaptureStream()` for frames, or `startCaptureStreamWithUpdater()` for runtime config changes and audio.
+4. **Release** — Call `releaseFilter()` when done.
+
+For screenshots, use `captureScreenshot(filterHandle)`. For the system picker, use `presentContentSharingPicker()`.
 
 ## Architecture
 
@@ -65,35 +83,15 @@ Dart
  │
  │  Dart API
  ▼
-Native Bridge
+Native Bridge (Objective-C)
  │
- │  Swift
+ │  FFI / Dart Build Hooks
  ▼
 ScreenCaptureKit
 ```
 
 This design allows low-latency frame capture while keeping the Dart API simple.
 
-## Roadmap
+## Example app
 
-* [x] Window capture
-* [x] Region capture
-* [x] Cursor capture
-* [x] Audio capture (system audio; macOS 13+, optional microphone macOS 15+)
-* [x] Frame rate configuration
-* [x] Multi-display capture
-* [x] System picker (SCContentSharingPicker UI; macOS 14+)
-
-## Example Apps
-
-See the `example/` directory for a working sample.
-
-## Contributing
-
-Contributions are welcome.
-
-If you find bugs or have feature requests, please open an issue.
-
-## License
-
-BSD 3-Clause License
+See the `example/` directory for a full sample including display, window, region, and system picker capture.
