@@ -385,18 +385,16 @@ void main() {
               frameRate: 10,
               queueDepth: 3,
             );
-            final sub = stream
-                .timeout(
-                  const Duration(seconds: 3),
-                  onTimeout: (sink) => sink.close(),
-                )
-                .listen(
-                  (_) {},
-                  onError: (_) {},
-                  cancelOnError: true,
-                );
+            final sub = stream.listen(
+              (_) {},
+              onError: (_) {},
+              cancelOnError: true,
+            );
             try {
-              await sub.asFuture<void>().catchError((_) {});
+              // Run briefly to verify stream accepts queueDepth; then cancel.
+              // (Stream never completes; timeout resets on each frame so we
+              // don't rely on it.)
+              await Future<void>.delayed(const Duration(milliseconds: 300));
             } finally {
               await sub.cancel();
             }
