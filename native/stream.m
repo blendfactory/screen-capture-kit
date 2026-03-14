@@ -349,6 +349,8 @@ static void ensureStreamRegistry(void) {
 /// captures_audio: 1 to capture system audio, 0 to disable.
 /// excludes_current_process_audio: 1 to exclude this app's audio from capture.
 /// capture_microphone: 1 to include microphone in capture.
+/// pixel_format: CVPixelFormatType (e.g. kCVPixelFormatType_32BGRA); 0 = default.
+/// color_space_name: optional color space name (e.g. kCGColorSpaceSRGB); NULL = default.
 /// Returns stream_id on success, 0 on error.
 int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                                 int frame_rate,
@@ -356,7 +358,8 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                                 double src_width, double src_height,
                                 int shows_cursor, int queue_depth,
                                 int captures_audio, int excludes_current_process_audio,
-                                int capture_microphone) {
+                                int capture_microphone,
+                                uint32_t pixel_format, const char* color_space_name) {
   ensureCoreGraphicsInit();
   ensureStreamRegistry();
 
@@ -386,6 +389,15 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
   }
   if (@available(macos 15.0, *)) {
     config.captureMicrophone = (capture_microphone != 0);
+  }
+  if (pixel_format != 0) {
+    config.pixelFormat = (OSType)pixel_format;
+  }
+  if (color_space_name != NULL && strlen(color_space_name) > 0) {
+    NSString* name = [NSString stringWithUTF8String:color_space_name];
+    if (name) {
+      config.colorSpaceName = (__bridge CFStringRef)name;
+    }
   }
 
   StreamFrameHandler* handler = [[StreamFrameHandler alloc] init];
@@ -458,7 +470,8 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
                                 double src_width, double src_height,
                                 int shows_cursor, int queue_depth,
                                 int captures_audio, int excludes_current_process_audio,
-                                int capture_microphone) {
+                                int capture_microphone,
+                                uint32_t pixel_format, const char* color_space_name) {
   if (stream_id <= 0 || _streamRegistry == nil) {
     setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
                                   @"Invalid stream id.");
@@ -491,6 +504,15 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
   }
   if (@available(macos 15.0, *)) {
     config.captureMicrophone = (capture_microphone != 0);
+  }
+  if (pixel_format != 0) {
+    config.pixelFormat = (OSType)pixel_format;
+  }
+  if (color_space_name != NULL && strlen(color_space_name) > 0) {
+    NSString* name = [NSString stringWithUTF8String:color_space_name];
+    if (name) {
+      config.colorSpaceName = (__bridge CFStringRef)name;
+    }
   }
 
   __block BOOL success = NO;

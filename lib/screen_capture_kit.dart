@@ -134,6 +134,10 @@ class ScreenCaptureKit {
   /// [startCaptureStreamWithUpdater] to get [CaptureStream.audioStream]).
   /// [excludesCurrentProcessAudio] excludes this app's audio from capture.
   /// [captureMicrophone] includes microphone in the audio capture.
+  /// [pixelFormat] optional CVPixelFormatType (e.g. 0x42475241 for BGRA);
+  /// null = default.
+  /// [colorSpaceName] optional color space name (e.g. kCGColorSpaceSRGB);
+  /// null = default.
   /// Cancel the stream subscription to stop capture.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
@@ -148,6 +152,8 @@ class ScreenCaptureKit {
     bool capturesAudio = false,
     bool excludesCurrentProcessAudio = false,
     bool captureMicrophone = false,
+    int? pixelFormat,
+    String? colorSpaceName,
   }) {
     return startCaptureStreamImpl(
       filterHandle,
@@ -160,6 +166,8 @@ class ScreenCaptureKit {
       capturesAudio: capturesAudio,
       excludesCurrentProcessAudio: excludesCurrentProcessAudio,
       captureMicrophone: captureMicrophone,
+      pixelFormat: pixelFormat,
+      colorSpaceName: colorSpaceName,
     );
   }
 
@@ -182,6 +190,8 @@ class ScreenCaptureKit {
     bool capturesAudio = false,
     bool excludesCurrentProcessAudio = false,
     bool captureMicrophone = false,
+    int? pixelFormat,
+    String? colorSpaceName,
   }) {
     return startCaptureStreamWithUpdaterImpl(
       filterHandle,
@@ -194,6 +204,8 @@ class ScreenCaptureKit {
       capturesAudio: capturesAudio,
       excludesCurrentProcessAudio: excludesCurrentProcessAudio,
       captureMicrophone: captureMicrophone,
+      pixelFormat: pixelFormat,
+      colorSpaceName: colorSpaceName,
     );
   }
 }

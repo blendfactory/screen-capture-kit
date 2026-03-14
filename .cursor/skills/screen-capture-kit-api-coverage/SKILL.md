@@ -66,7 +66,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | capturesAudio | ✅ | StreamConfiguration + native config; macOS 13+ |
 | excludesCurrentProcessAudio | ✅ | StreamConfiguration + native config; macOS 13+ |
 | captureMicrophone | ✅ | StreamConfiguration + native config; macOS 15+ |
-| pixelFormat, colorSpaceName | ❌ | |
+| pixelFormat, colorSpaceName | ✅ | StreamConfiguration + native config; optional CVPixelFormatType + color space name |
 
 ### Screenshot
 

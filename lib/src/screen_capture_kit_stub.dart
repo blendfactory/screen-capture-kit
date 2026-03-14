@@ -90,6 +90,8 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   bool capturesAudio = false,
   bool excludesCurrentProcessAudio = false,
   bool captureMicrophone = false,
+  int? pixelFormat,
+  String? colorSpaceName,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -114,6 +116,8 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   bool capturesAudio = false,
   bool excludesCurrentProcessAudio = false,
   bool captureMicrophone = false,
+  int? pixelFormat,
+  String? colorSpaceName,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(

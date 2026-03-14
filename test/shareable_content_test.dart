@@ -194,6 +194,15 @@ void main() {
       expect(config.excludesCurrentProcessAudio, isTrue);
       expect(config.captureMicrophone, isTrue);
     });
+
+    test('creates with pixelFormat and colorSpaceName', () {
+      const config = StreamConfiguration(
+        pixelFormat: 0x42475241, // kCVPixelFormatType_32BGRA
+        colorSpaceName: 'kCGColorSpaceSRGB',
+      );
+      expect(config.pixelFormat, 0x42475241);
+      expect(config.colorSpaceName, 'kCGColorSpaceSRGB');
+    });
   });
 
   group('CaptureStream', () {

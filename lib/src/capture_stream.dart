@@ -47,6 +47,8 @@ class StreamConfiguration {
     this.capturesAudio = false,
     this.excludesCurrentProcessAudio = false,
     this.captureMicrophone = false,
+    this.pixelFormat,
+    this.colorSpaceName,
   });
 
   final int width;
@@ -65,4 +67,12 @@ class StreamConfiguration {
 
   /// When true, microphone input is included in the audio capture.
   final bool captureMicrophone;
+
+  /// Optional CVPixelFormatType (e.g. 0x42475241 for BGRA). 0 or null =
+  /// default.
+  final int? pixelFormat;
+
+  /// Optional color space name (e.g. kCGColorSpaceSRGB). null or empty =
+  /// default.
+  final String? colorSpaceName;
 }
