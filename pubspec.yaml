@@ -8,6 +8,16 @@ issue_tracker: https://github.com/blendfactory/screen-capture-kit/issues
 environment:
   sdk: ^3.10.0
 
+platforms:
+  macos:
+
+topics:
+  - macos
+  - screen-capture
+  - screenshot
+  - ffi
+  - screen-sharing
+
 dependencies:
   code_assets: ^1.0.0
   ffi: ^2.2.0
