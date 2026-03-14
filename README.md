@@ -1,4 +1,4 @@
-# screen_capture_kit
+# ScreenCaptureKit for Dart
 
 Native Dart bindings for macOS ScreenCaptureKit using Dart Build Hooks.
 
