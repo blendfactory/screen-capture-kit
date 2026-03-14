@@ -104,6 +104,13 @@ external Pointer<Utf8> _streamGetNextFrame(int streamId, int timeoutMs);
 )
 external void _streamStopAndRelease(int streamId);
 
+/// Returns malloc'd JSON for last stream error, or null. Caller must free.
+@Native<Pointer<Utf8> Function()>(
+  symbol: 'stream_get_last_error',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external Pointer<Utf8> _streamGetLastError();
+
 ShareableContent getShareableContentImpl({
   bool excludeDesktopWindows = false,
   bool onScreenWindowsOnly = true,
@@ -179,6 +186,28 @@ String _buildNativeErrorMessage({
   }
 
   return 'Failed to retrieve shareable content. '
+      '[native: $domain ($code) $description]';
+}
+
+String _buildStreamErrorMessage({
+  required String domain,
+  required int code,
+  required String description,
+}) {
+  final normalized = description.toLowerCase();
+  final isPermissionIssue = normalized.contains('not authorized') ||
+      normalized.contains('permission') ||
+      normalized.contains('denied') ||
+      normalized.contains('user declined');
+
+  if (isPermissionIssue) {
+    return 'Failed to start capture stream. Screen Recording permission '
+        'is required. Grant it in System Settings > Privacy & Security '
+        '> Screen Recording, then restart the app and retry. '
+        '[native: $domain ($code) $description]';
+  }
+
+  return 'Failed to start capture stream. '
       '[native: $domain ($code) $description]';
 }
 
@@ -421,6 +450,30 @@ Stream<CapturedFrame> startCaptureStreamImpl(
     depth,
   );
   if (streamId <= 0) {
+    final ptr = _streamGetLastError();
+    if (ptr != nullptr) {
+      try {
+        final jsonStr = ptr.toDartString();
+        final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+        if (json['error'] == true) {
+          final domain = json['domain'] as String? ?? '';
+          final code = (json['code'] as num?)?.toInt() ?? 0;
+          final desc = json['localizedDescription'] as String? ?? '';
+          final message = _buildStreamErrorMessage(
+            domain: domain,
+            code: code,
+            description: desc,
+          );
+          throw ScreenCaptureKitException(
+            message,
+            domain: domain,
+            code: code,
+          );
+        }
+      } finally {
+        malloc.free(ptr);
+      }
+    }
     throw const ScreenCaptureKitException(
       'Failed to start capture stream. '
       'Check Screen Recording permission.',

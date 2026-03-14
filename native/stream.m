@@ -140,6 +140,71 @@ static NSMutableDictionary<NSNumber*, SCStream*>* _streamRegistry = nil;
 static NSMutableDictionary<NSNumber*, StreamFrameHandler*>* _handlerRegistry = nil;
 static int64_t _nextStreamId = 1;
 
+/// Last stream error (set when stream_create_and_start fails). Cleared when read.
+static NSString* _lastStreamErrorDomain = nil;
+static NSInteger _lastStreamErrorCode = 0;
+static NSString* _lastStreamErrorDescription = nil;
+static NSLock* _lastStreamErrorLock = nil;
+
+static void setLastStreamError(NSError* _Nullable error) {
+  if (_lastStreamErrorLock == nil) {
+    _lastStreamErrorLock = [[NSLock alloc] init];
+  }
+  [_lastStreamErrorLock lock];
+  if (error) {
+    _lastStreamErrorDomain = [error.domain copy];
+    _lastStreamErrorCode = error.code;
+    _lastStreamErrorDescription = [error.localizedDescription copy];
+  } else {
+    _lastStreamErrorDomain = @"";
+    _lastStreamErrorCode = 0;
+    _lastStreamErrorDescription = @"";
+  }
+  [_lastStreamErrorLock unlock];
+}
+
+static void setLastStreamErrorFromStrings(NSString* domain, NSInteger code, NSString* description) {
+  if (_lastStreamErrorLock == nil) {
+    _lastStreamErrorLock = [[NSLock alloc] init];
+  }
+  [_lastStreamErrorLock lock];
+  _lastStreamErrorDomain = domain ? [domain copy] : @"";
+  _lastStreamErrorCode = code;
+  _lastStreamErrorDescription = description ? [description copy] : @"";
+  [_lastStreamErrorLock unlock];
+}
+
+/// Returns malloc'd JSON string for last stream error, or NULL if none. Caller must free. Clears the stored error.
+char* stream_get_last_error(void) {
+  if (_lastStreamErrorLock == nil) {
+    return NULL;
+  }
+  [_lastStreamErrorLock lock];
+  NSString* domain = _lastStreamErrorDomain;
+  NSString* desc = _lastStreamErrorDescription;
+  NSInteger code = _lastStreamErrorCode;
+  _lastStreamErrorDomain = nil;
+  _lastStreamErrorCode = 0;
+  _lastStreamErrorDescription = nil;
+  [_lastStreamErrorLock unlock];
+
+  if (domain == nil && desc == nil) {
+    return NULL;
+  }
+  NSDictionary* errDict = @{
+    @"error" : @YES,
+    @"domain" : domain ?: @"",
+    @"code" : @(code),
+    @"localizedDescription" : desc ?: @""
+  };
+  NSData* data = [NSJSONSerialization dataWithJSONObject:errDict options:0 error:nil];
+  if (!data || data.length == 0) {
+    return NULL;
+  }
+  NSString* jsonStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+  return strdup(jsonStr.UTF8String);
+}
+
 static void ensureStreamRegistry(void) {
   if (_streamRegistry == nil) {
     _streamRegistry = [NSMutableDictionary dictionary];
@@ -164,6 +229,8 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
 
   SCContentFilter* filter = get_content_filter(filter_id);
   if (!filter) {
+    setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
+                                  @"Invalid or released content filter.");
     return 0;
   }
 
@@ -198,18 +265,22 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
         sampleHandlerQueue:queue
                      error:&addError];
   if (addError) {
+    setLastStreamError(addError);
     return 0;
   }
 
   __block BOOL startSuccess = NO;
+  __block NSError* startError = nil;
   dispatch_semaphore_t sem = dispatch_semaphore_create(0);
   [stream startCaptureWithCompletionHandler:^(NSError* _Nullable error) {
     startSuccess = (error == nil);
+    startError = error;
     dispatch_semaphore_signal(sem);
   }];
   dispatch_semaphore_wait(sem,
                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
   if (!startSuccess) {
+    setLastStreamError(startError);
     return 0;
   }
 
