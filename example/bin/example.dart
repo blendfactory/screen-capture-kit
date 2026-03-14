@@ -151,6 +151,39 @@ void main() async {
         print('\nNo capturable window found.');
       }
     }
+
+    // 3. System picker (macOS 14+): user selects content from system UI
+    try {
+      print('\n=== System content-sharing picker (macOS 14+) ===');
+      final pickerFilter = await kit.presentContentSharingPicker(
+        allowedModes: [
+          ContentSharingPickerMode.singleDisplay,
+          ContentSharingPickerMode.singleWindow,
+        ],
+      );
+      if (pickerFilter != null) {
+        try {
+          await runStreamCapture(
+            kit,
+            pickerFilter,
+            width: 640,
+            height: 480,
+            label: 'Picker stream',
+          );
+        } finally {
+          kit.releaseFilter(pickerFilter);
+        }
+        print('Picker filter released.');
+      } else {
+        print('Picker cancelled or unavailable.');
+      }
+    } on ScreenCaptureKitException catch (e) {
+      if (e.message.contains('macOS 14')) {
+        print('System picker requires macOS 14+');
+      } else {
+        rethrow;
+      }
+    }
   } on UnsupportedError catch (e) {
     print('Unsupported: $e');
   } on ScreenCaptureKitException catch (e) {

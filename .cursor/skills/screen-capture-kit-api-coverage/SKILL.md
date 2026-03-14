@@ -79,10 +79,10 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 | API | Status | Notes |
 |-----|--------|-------|
-| SCContentSharingPicker | ❌ | System UI for stream selection |
-| SCContentSharingPickerConfiguration | ❌ | Picker configuration |
-| SCContentSharingPickerMode | ❌ | Selection modes |
-| SCContentSharingPickerObserver | ❌ | Observer protocol for picker events |
+| SCContentSharingPicker | ✅ | presentContentSharingPicker(); present(), present(using:), isActive, maximumStreamCount; macOS 14+ |
+| SCContentSharingPickerConfiguration | 🚧 | Not yet exposed (setConfiguration for stream) |
+| SCContentSharingPickerMode | ✅ | ContentSharingPickerMode enum + allowedModes in present |
+| SCContentSharingPickerObserver | ✅ | Used internally in native picker_present |
 
 ### Errors
 
@@ -100,11 +100,11 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | Audio capture | capturesAudio, addStreamOutput(.audio) |
 | Frame rate configuration | minimumFrameInterval |
 | Multi-display capture | SCDisplay, createDisplayFilter ✅ |
-| System picker | SCContentSharingPicker, SCContentSharingPickerConfiguration ❌ |
+| System picker | SCContentSharingPicker, SCContentSharingPickerMode ✅; Configuration optional |
 
 ## Remaining work
 
-- **System picker**: Only unchecked area. Requires native UI (SCContentSharingPicker), configuration, mode enum, and observer bridge. See `screen-capture-kit-spec` reference and Apple docs for `SCContentSharingPicker`.
+- **SCContentSharingPickerConfiguration**: Optional. setConfiguration(_:for:) for per-stream picker config not yet exposed in Dart.
 
 ## Usage
 

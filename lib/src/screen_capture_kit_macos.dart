@@ -10,6 +10,7 @@ import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/running_application.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
@@ -179,6 +180,26 @@ external int _streamUpdateConfiguration(
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
 external int _streamUpdateContentFilter(int streamId, int filterId);
+
+/// Presents the system content-sharing picker.
+/// Returns malloc'd JSON. Caller must free.
+@Native<Pointer<Utf8> Function(Pointer<Utf8>)>(
+  symbol: 'picker_present',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external Pointer<Utf8> _pickerPresent(Pointer<Utf8> allowedModesJson);
+
+@Native<Int32 Function()>(
+  symbol: 'picker_is_active',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external int _pickerIsActive();
+
+@Native<Int32 Function()>(
+  symbol: 'picker_maximum_stream_count',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external int _pickerMaximumStreamCount();
 
 ShareableContent getShareableContentImpl({
   bool excludeDesktopWindows = false,
@@ -453,6 +474,85 @@ CapturedImage captureScreenshotImpl(
   final h = (json['height'] as num?)?.toInt() ?? 0;
 
   return CapturedImage(pngData: pngData, width: w, height: h);
+}
+
+ContentFilterHandle? presentContentSharingPickerImpl({
+  List<ContentSharingPickerMode>? allowedModes,
+}) {
+  if (!Platform.isMacOS) {
+    throw UnsupportedError(
+      'screen_capture_kit only supports macOS. '
+      'Current platform: ${Platform.operatingSystem}',
+    );
+  }
+
+  Pointer<Utf8> modesPtr = nullptr;
+  if (allowedModes != null && allowedModes.isNotEmpty) {
+    final names = allowedModes.map((m) {
+      switch (m) {
+        case ContentSharingPickerMode.singleDisplay:
+          return 'singleDisplay';
+        case ContentSharingPickerMode.singleWindow:
+          return 'singleWindow';
+        case ContentSharingPickerMode.singleApplication:
+          return 'singleApplication';
+        case ContentSharingPickerMode.multipleWindows:
+          return 'multipleWindows';
+        case ContentSharingPickerMode.multipleApplications:
+          return 'multipleApplications';
+      }
+    }).toList();
+    final jsonStr = jsonEncode(names);
+    modesPtr = jsonStr.toNativeUtf8();
+  }
+  try {
+    final ptr = _pickerPresent(modesPtr);
+    if (ptr == nullptr) {
+      return null;
+    }
+    String resultJson;
+    try {
+      resultJson = ptr.toDartString();
+    } finally {
+      malloc.free(ptr);
+    }
+    final json = jsonDecode(resultJson) as Map<String, dynamic>;
+    if (json['error'] == true) {
+      final domain = json['domain'] as String? ?? '';
+      final code = json['code'] as int? ?? 0;
+      final desc = json['localizedDescription'] as String? ?? '';
+      final message = code == -3
+          ? 'Content sharing picker requires macOS 14.0 or newer.'
+          : 'Picker failed. [native: $domain ($code) $desc]';
+      throw ScreenCaptureKitException(message, domain: domain, code: code);
+    }
+    if (json['cancelled'] == true) {
+      return null;
+    }
+    final filterId = (json['filterId'] as num?)?.toInt() ?? 0;
+    if (filterId <= 0) {
+      return null;
+    }
+    return ContentFilterHandle(filterId);
+  } finally {
+    if (modesPtr != nullptr) {
+      malloc.free(modesPtr);
+    }
+  }
+}
+
+bool isContentSharingPickerActiveImpl() {
+  if (!Platform.isMacOS) {
+    return false;
+  }
+  return _pickerIsActive() != 0;
+}
+
+int contentSharingPickerMaximumStreamCountImpl() {
+  if (!Platform.isMacOS) {
+    return 0;
+  }
+  return _pickerMaximumStreamCount();
 }
 
 /// Returns JSON string from native (sendable for Isolate.run). Caller parses.

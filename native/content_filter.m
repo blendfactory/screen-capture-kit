@@ -201,6 +201,18 @@ SCContentFilter* get_content_filter(int64_t filter_id) {
   return _filterRegistry[@(filter_id)];
 }
 
+/// Registers an existing SCContentFilter and returns a new filter id.
+int64_t register_content_filter(SCContentFilter* filter) {
+  if (!filter) return 0;
+  ensureFilterRegistry();
+  int64_t filterId = 0;
+  @synchronized (_filterRegistry) {
+    filterId = _nextFilterId++;
+    _filterRegistry[@(filterId)] = filter;
+  }
+  return filterId;
+}
+
 /// Releases a content filter created by create_content_filter_for_window.
 void release_content_filter(int64_t filter_id) {
   if (filter_id <= 0 || _filterRegistry == nil) return;

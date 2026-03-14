@@ -82,7 +82,7 @@ This design allows low-latency frame capture while keeping the Dart API simple.
 * [x] Audio capture (system audio; macOS 13+, optional microphone macOS 15+)
 * [x] Frame rate configuration
 * [x] Multi-display capture
-* [ ] System picker (SCContentSharingPicker UI; macOS 13+)
+* [x] System picker (SCContentSharingPicker UI; macOS 14+)
 
 ## Example Apps
 

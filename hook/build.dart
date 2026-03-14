@@ -20,6 +20,7 @@ void main(List<String> args) async {
             'native/content_filter.m',
             'native/screenshot.m',
             'native/stream.m',
+            'native/picker.m',
           ],
           frameworks: [
             'ScreenCaptureKit',

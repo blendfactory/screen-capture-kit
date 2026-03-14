@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 
 import 'package:screen_capture_kit/screen_capture_kit.dart';
@@ -373,6 +374,32 @@ void main() {
       expect(window.frame.height, 600);
       expect(window.owningApplication.bundleIdentifier, 'com.example');
       expect(window.title, 'Test Window');
+    });
+  });
+
+  group('ContentSharingPickerMode', () {
+    test('has expected enum values', () {
+      expect(ContentSharingPickerMode.values.length, 5);
+      expect(
+        ContentSharingPickerMode.values,
+        contains(ContentSharingPickerMode.singleDisplay),
+      );
+      expect(
+        ContentSharingPickerMode.values,
+        contains(ContentSharingPickerMode.singleWindow),
+      );
+    });
+  });
+
+  group('ScreenCaptureKit.presentContentSharingPicker', () {
+    test('throws UnsupportedError on non-macOS', () async {
+      if (Platform.isMacOS) {
+        return;
+      }
+      await expectLater(
+        ScreenCaptureKit().presentContentSharingPicker(),
+        throwsA(isA<UnsupportedError>()),
+      );
     });
   });
 

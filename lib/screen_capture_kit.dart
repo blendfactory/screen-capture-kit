@@ -11,6 +11,7 @@ import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_stub.dart'
@@ -24,6 +25,7 @@ export 'src/captured_frame.dart';
 export 'src/captured_image.dart';
 export 'src/content_filter.dart';
 export 'src/content_filter_handle.dart';
+export 'src/content_sharing_picker_mode.dart';
 export 'src/display.dart';
 export 'src/running_application.dart';
 export 'src/screen_capture_kit_exception.dart';
@@ -99,6 +101,27 @@ class ScreenCaptureKit {
   /// [createDisplayFilter].
   void releaseFilter(ContentFilterHandle handle) {
     releaseFilterImpl(handle);
+  }
+
+  /// Presents the system content-sharing picker (macOS 14+).
+  ///
+  /// Returns a [ContentFilterHandle] for the selected content when the user
+  /// confirms, or `null` when the user cancels. The handle must be released
+  /// with [releaseFilter] when no longer needed.
+  ///
+  /// [allowedModes] optionally restricts selection to specific modes (e.g.
+  /// only [ContentSharingPickerMode.singleDisplay]).
+  ///
+  /// Requires Screen Recording permission. On macOS &lt; 14, throws
+  /// [ScreenCaptureKitException].
+  ///
+  /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentsharingpicker
+  Future<ContentFilterHandle?> presentContentSharingPicker({
+    List<ContentSharingPickerMode>? allowedModes,
+  }) {
+    return Isolate.run(
+      () => presentContentSharingPickerImpl(allowedModes: allowedModes),
+    );
   }
 
   /// Captures a single screenshot using the given content filter.

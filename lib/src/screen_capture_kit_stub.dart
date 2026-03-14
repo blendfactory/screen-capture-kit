@@ -5,6 +5,7 @@ import 'package:screen_capture_kit/src/capture_stream.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
 import 'package:screen_capture_kit/src/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
 import 'package:screen_capture_kit/src/window.dart';
@@ -60,6 +61,21 @@ void releaseFilterImpl(ContentFilterHandle handle) {
     return;
   }
   // No-op in stub; native impl would release the filter.
+}
+
+ContentFilterHandle? presentContentSharingPickerImpl({
+  List<ContentSharingPickerMode>? allowedModes,
+}) {
+  if (!Platform.isMacOS) {
+    throw UnsupportedError(
+      'screen_capture_kit only supports macOS. '
+      'Current platform: ${Platform.operatingSystem}',
+    );
+  }
+  throw UnimplementedError(
+    'Native implementation not yet loaded. '
+    'Ensure the native library is built.',
+  );
 }
 
 CapturedImage captureScreenshotImpl(
