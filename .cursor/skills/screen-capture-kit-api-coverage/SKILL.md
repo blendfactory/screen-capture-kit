@@ -38,7 +38,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 |-----|--------|-------|
 | SCContentFilter(desktopIndependentWindow:) | ✅ | Dart API + Objective-C bridge, createWindowFilter |
 | SCContentFilter(display:excludingApplications:exceptingWindows:) | ✅ | createDisplayFilter (empty exclusions for full display) |
-| SCContentFilter(display:excludingWindows:) | 🚧 | Dart model only |
+| SCContentFilter(display:excludingWindows:) | ✅ | createDisplayFilter(display, excludingWindows: …) + native bridge |
 | SCContentFilter.contentRect | ✅ | via SCStreamConfiguration.sourceRect |
 
 ### Stream
@@ -61,7 +61,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | width, height | ✅ | via startCaptureStream |
 | sourceRect | ✅ | region capture via startCaptureStream |
 | minimumFrameInterval | ✅ | via startCaptureStream frameRate |
-| queueDepth | 🚧 | hardcoded 5 in native |
+| queueDepth | ✅ | optional in startCaptureStream (1–8, default 5) |
 | showsCursor | ✅ | via startCaptureStream |
 | capturesAudio | ❌ | |
 | excludesCurrentProcessAudio | ❌ | |

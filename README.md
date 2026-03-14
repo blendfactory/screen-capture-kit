@@ -76,14 +76,12 @@ This design allows low-latency frame capture while keeping the Dart API simple.
 
 ## Roadmap
 
-Planned features:
-
-* [ ] Window capture
-* [ ] Region capture
-* [ ] Cursor capture
+* [x] Window capture
+* [x] Region capture
+* [x] Cursor capture
 * [ ] Audio capture
-* [ ] Frame rate configuration
-* [ ] Multi-display capture
+* [x] Frame rate configuration
+* [x] Multi-display capture
 
 ## Example Apps
 
