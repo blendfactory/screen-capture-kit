@@ -51,7 +51,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | SCStream.addStreamOutput (microphone) | ❌ | |
 | SCStream.startCapture | ✅ | |
 | SCStream.stopCapture | ✅ | |
-| SCStream.updateConfiguration | ❌ | |
+| SCStream.updateConfiguration | ✅ | startCaptureStreamWithUpdater + CaptureStream.updateConfiguration |
 | SCStream.updateContentFilter | ❌ | |
 
 ### Stream configuration
