@@ -223,4 +223,4 @@ When moving code toward this architecture:
 
 ## Design review
 
-A detailed review of this design (appropriateness, consumability by apps/CLI, testability, resource lifecycle) is in [docs/architecture-review.md](../../docs/architecture-review.md). Summary: the layering is appropriate; recommend exposing an application port for DI and documenting filter lifecycle clearly.
+The layering is appropriate for this package; recommend exposing an application port for DI and documenting filter lifecycle clearly.
