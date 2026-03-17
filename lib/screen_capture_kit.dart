@@ -4,8 +4,8 @@
 /// screen, window, and display capture on macOS 12.3+.
 library;
 
-import 'dart:isolate';
-
+import 'package:screen_capture_kit/src/application/screen_capture_kit.dart'
+    as app;
 import 'package:screen_capture_kit/src/capture_stream.dart';
 import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
@@ -14,8 +14,6 @@ import 'package:screen_capture_kit/src/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/display.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
-import 'package:screen_capture_kit/src/screen_capture_kit_stub.dart'
-    if (dart.library.io) 'package:screen_capture_kit/src/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
 import 'package:screen_capture_kit/src/window.dart';
 
@@ -42,7 +40,10 @@ export 'src/window.dart';
 /// final kit = ScreenCaptureKit();
 /// final content = await kit.getShareableContent();
 /// ```
-class ScreenCaptureKit {
+class ScreenCaptureKit implements app.ScreenCaptureKitPort {
+  ScreenCaptureKit() : _impl = app.ScreenCaptureKitImpl();
+
+  final app.ScreenCaptureKitPort _impl;
   /// Retrieves the shareable content (displays, apps, windows) available for
   /// capture.
   ///
@@ -50,17 +51,15 @@ class ScreenCaptureKit {
   /// [UnsupportedError].
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scshareablecontent
+  @override
   Future<ShareableContent> getShareableContent({
     bool excludeDesktopWindows = false,
     bool onScreenWindowsOnly = true,
-  }) {
-    return Isolate.run(
-      () => getShareableContentImpl(
+  }) =>
+      _impl.getShareableContent(
         excludeDesktopWindows: excludeDesktopWindows,
         onScreenWindowsOnly: onScreenWindowsOnly,
-      ),
-    );
-  }
+      );
 
   /// Creates a native content filter for capturing the given window.
   ///
@@ -71,9 +70,9 @@ class ScreenCaptureKit {
   /// Requires Screen Recording permission.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944912-init
-  Future<ContentFilterHandle> createWindowFilter(Window window) {
-    return Isolate.run(() => createWindowFilterImpl(window));
-  }
+  @override
+  Future<ContentFilterHandle> createWindowFilter(Window window) =>
+      _impl.createWindowFilter(window);
 
   /// Creates a native content filter for capturing the entire display.
   ///
@@ -86,23 +85,20 @@ class ScreenCaptureKit {
   /// Requires Screen Recording permission.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944911-init
+  @override
   Future<ContentFilterHandle> createDisplayFilter(
     Display display, {
     List<Window>? excludingWindows,
-  }) {
-    return Isolate.run(
-      () => createDisplayFilterImpl(
+  }) =>
+      _impl.createDisplayFilter(
         display,
         excludingWindows: excludingWindows,
-      ),
-    );
-  }
+      );
 
   /// Releases a content filter created by [createWindowFilter] or
   /// [createDisplayFilter].
-  void releaseFilter(ContentFilterHandle handle) {
-    releaseFilterImpl(handle);
-  }
+  @override
+  void releaseFilter(ContentFilterHandle handle) => _impl.releaseFilter(handle);
 
   /// Presents the system content-sharing picker (macOS 14+).
   ///
@@ -117,13 +113,11 @@ class ScreenCaptureKit {
   /// [ScreenCaptureKitException].
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentsharingpicker
+  @override
   Future<ContentFilterHandle?> presentContentSharingPicker({
     List<ContentSharingPickerMode>? allowedModes,
-  }) {
-    return Isolate.run(
-      () => presentContentSharingPickerImpl(allowedModes: allowedModes),
-    );
-  }
+  }) =>
+      _impl.presentContentSharingPicker(allowedModes: allowedModes);
 
   /// Captures a single screenshot using the given content filter.
   ///
@@ -133,19 +127,17 @@ class ScreenCaptureKit {
   /// [width] and [height] optionally specify output dimensions; 0 uses default.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager/captureimage(contentfilter:configuration:completionhandler:)
+  @override
   Future<CapturedImage> captureScreenshot(
     ContentFilterHandle filterHandle, {
     int width = 0,
     int height = 0,
-  }) {
-    return Isolate.run(
-      () => captureScreenshotImpl(
+  }) =>
+      _impl.captureScreenshot(
         filterHandle,
         width: width,
         height: height,
-      ),
-    );
-  }
+      );
 
   /// Starts a capture stream yielding [CapturedFrame]s (BGRA pixel data).
   ///
@@ -165,6 +157,7 @@ class ScreenCaptureKit {
   /// Cancel the stream subscription to stop capture.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
+  @override
   Stream<CapturedFrame> startCaptureStream(
     ContentFilterHandle filterHandle, {
     int width = 0,
@@ -178,22 +171,21 @@ class ScreenCaptureKit {
     bool captureMicrophone = false,
     int? pixelFormat,
     String? colorSpaceName,
-  }) {
-    return startCaptureStreamImpl(
-      filterHandle,
-      width: width,
-      height: height,
-      frameRate: frameRate,
-      sourceRect: sourceRect,
-      showsCursor: showsCursor,
-      queueDepth: queueDepth,
-      capturesAudio: capturesAudio,
-      excludesCurrentProcessAudio: excludesCurrentProcessAudio,
-      captureMicrophone: captureMicrophone,
-      pixelFormat: pixelFormat,
-      colorSpaceName: colorSpaceName,
-    );
-  }
+  }) =>
+      _impl.startCaptureStream(
+        filterHandle,
+        width: width,
+        height: height,
+        frameRate: frameRate,
+        sourceRect: sourceRect,
+        showsCursor: showsCursor,
+        queueDepth: queueDepth,
+        capturesAudio: capturesAudio,
+        excludesCurrentProcessAudio: excludesCurrentProcessAudio,
+        captureMicrophone: captureMicrophone,
+        pixelFormat: pixelFormat,
+        colorSpaceName: colorSpaceName,
+      );
 
   /// Starts a capture stream and returns a [CaptureStream] that supports
   /// [CaptureStream.updateConfiguration] for changing config at runtime.
@@ -203,6 +195,7 @@ class ScreenCaptureKit {
   /// video subscription to stop capture.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
+  @override
   CaptureStream startCaptureStreamWithUpdater(
     ContentFilterHandle filterHandle, {
     int width = 0,
@@ -216,20 +209,19 @@ class ScreenCaptureKit {
     bool captureMicrophone = false,
     int? pixelFormat,
     String? colorSpaceName,
-  }) {
-    return startCaptureStreamWithUpdaterImpl(
-      filterHandle,
-      width: width,
-      height: height,
-      frameRate: frameRate,
-      sourceRect: sourceRect,
-      showsCursor: showsCursor,
-      queueDepth: queueDepth,
-      capturesAudio: capturesAudio,
-      excludesCurrentProcessAudio: excludesCurrentProcessAudio,
-      captureMicrophone: captureMicrophone,
-      pixelFormat: pixelFormat,
-      colorSpaceName: colorSpaceName,
-    );
-  }
+  }) =>
+      _impl.startCaptureStreamWithUpdater(
+        filterHandle,
+        width: width,
+        height: height,
+        frameRate: frameRate,
+        sourceRect: sourceRect,
+        showsCursor: showsCursor,
+        queueDepth: queueDepth,
+        capturesAudio: capturesAudio,
+        excludesCurrentProcessAudio: excludesCurrentProcessAudio,
+        captureMicrophone: captureMicrophone,
+        pixelFormat: pixelFormat,
+        colorSpaceName: colorSpaceName,
+      );
 }
