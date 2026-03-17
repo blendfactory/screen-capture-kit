@@ -150,15 +150,15 @@ The full domain model—aggregate root, consistency boundary, entities, and valu
 
 - **Aggregate root**: `ShareableContent`. Single entry point for “what can be captured”; contains lists of Display, Window, RunningApplication. Consistency boundary: all content is loaded in one snapshot.
 - **Entities** (have identity, part of aggregate): `Display` (identity: DisplayId), `Window` (identity: WindowId), `RunningApplication` (identity: ProcessId). Immutable snapshots in Dart.
-- **Value objects**: Must be implemented using **Dart extension types** (Dart 3+). Use a single primitive (e.g. `int`) for id-like values; use a **record** for multi-field values and expose getters on the extension type.
+- **Value objects**: Use **Dart extension types** for scalar identifiers (e.g. `DisplayId`, `WindowId`, `ProcessId`, `FilterId`) and immutable classes for multi-field structures (e.g. `FrameSize`, `PixelRect`, `CapturedFrame`, `CapturedImage`, `CapturedAudio`).
 
-**Value objects (extension types)**:
+**Value objects**:
 
 | Kind | Types | Representation |
 |------|--------|-----------------|
 | Identifiers | `DisplayId`, `WindowId`, `ProcessId`, `FilterId` | `extension type ... on int` |
-| Geometry/size | `FrameSize`, `PixelRect` | `extension type ... on (int,int)` or record |
-| Capture results | `CapturedFrame`, `CapturedImage`, `CapturedAudio` | `extension type ... on record` |
+| Geometry/size | `FrameSize`, `PixelRect` | immutable classes |
+| Capture results | `CapturedFrame`, `CapturedImage`, `CapturedAudio` | immutable classes |
 | API handle | `ContentFilterHandle` | Extension type on `FilterId` (or int), enforce `FilterId > 0` |
 
 Entities reference these value types (e.g. `Display` has `DisplayId` and `FrameSize`, not raw `int`).
@@ -176,7 +176,7 @@ flowchart LR
       W["Window"]
       RA["RunningApplication"]
     end
-    subgraph VOs["Value objects (extension types)"]
+    subgraph VOs["Value objects (IDs as extension types, others as classes)"]
       ID["DisplayId, WindowId, ProcessId, FilterId"]
       GEO["FrameSize, PixelRect"]
       CAP["CapturedFrame, CapturedImage, CapturedAudio"]
@@ -202,7 +202,7 @@ flowchart LR
 ## Conventions
 
 1. **Domain**: No `dart:io`, no `dart:ffi`, no platform-specific imports. Pure Dart types and exceptions.
-2. **Value objects**: Define all domain value objects using **Dart extension types**. IDs and handles: `extension type X(int value)`. Multi-field values: `extension type X(RecordType _)` with explicit getters. See [docs/domain-model.md](../../docs/domain-model.md).
+2. **Value objects**: Define scalar identifier value objects using **Dart extension types**. IDs and handles: `extension type X(int value)`. Use immutable classes for multi-field values (geometry, capture results). See [docs/domain-model.md](../../docs/domain-model.md).
 3. **Application**: Contains the main `ScreenCaptureKit` facade and use-case entry points. Calls into domain and into infrastructure via ports (or direct impl if no port yet).
 4. **Aggregate**: Only `ShareableContent` is the aggregate root for the “shareable content” boundary; entities are referenced via the root. See docs/domain-model.md.
 5. **Infrastructure**: All FFI and `if (dart.library.io)` platform code lives here. Depends only on domain (and ports if defined).
@@ -219,7 +219,7 @@ When moving code toward this architecture:
 - [ ] Introduce ports (abstract interfaces) in application if infrastructure is invoked from application. Expose an abstract application port (e.g. `ScreenCaptureKitPort`) and have the facade implement it so that apps and CLI tools can inject mocks in tests.
 - [ ] Keep the public barrel (`screen_capture_kit.dart`) exporting only the intended API surface.
 - [ ] Document filter lifecycle in API docs and README: every `ContentFilterHandle` must be released with `releaseFilter(handle)`; recommend `try/finally`.
-- [ ] Implement value objects as **extension types** per docs/domain-model.md (IDs on `int`, multi-field on records with getters). Migrate existing value types (e.g. Display, Window dimensions; CapturedFrame, CapturedImage, CapturedAudio; ContentFilterHandle) to extension types and have entities use them (e.g. Display uses DisplayId and FrameSize).
+- [ ] Implement scalar identifier value objects as **extension types** per docs/domain-model.md (IDs on `int`) and multi-field value objects as immutable classes. Migrate existing value types (e.g. Display, Window dimensions; CapturedFrame, CapturedImage, CapturedAudio; ContentFilterHandle) accordingly and have entities use them (e.g. Display uses DisplayId and FrameSize).
 
 ## Design review
 

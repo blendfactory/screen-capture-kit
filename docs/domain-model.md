@@ -53,9 +53,9 @@ Entities reference **value objects** (IDs, rects, sizes) implemented as extensio
 
 ---
 
-## Value objects (extension types)
+## Value objects (IDs as extension types, others as immutable classes)
 
-All value objects are implemented with **Dart extension types** to get a distinct type, zero-cost wrapping, and a clear API. The representation type is either a single primitive (for IDs) or a **record** (for multi-field values).
+Value objects use **Dart extension types** for scalar identifiers, and **immutable classes** for multi-field structures (geometry, capture results).
 
 ### Identifier value objects (extension type on `int`)
 
@@ -80,32 +80,14 @@ extension type FilterId(int value) {
 
 `ContentFilterHandle` is the public API type for a filter; it can be an extension type on `FilterId` (or on `int`) and must enforce `value > 0` at construction.
 
-### Geometric / size value objects (extension type on record)
+### Geometric / size value objects (immutable classes)
 
 | Value object | Representation | Purpose |
 |--------------|----------------|---------|
 | **FrameSize** | `(int width, int height)` | Width and height in pixels. |
 | **PixelRect** | `(double x, double y, double width, double height)` | Rectangle in screen points (e.g. window frame, source rect). |
 
-Example:
-
-```dart
-extension type FrameSize((int, int) _) {
-  FrameSize(int width, int height) : _ = (width, height);
-  int get width => _.$1;
-  int get height => _.$2;
-}
-extension type PixelRect(({double x, double y, double width, double height}) _) {
-  PixelRect({required double x, required double y, required double width, required double height})
-      : _ = (x: x, y: y, width: width, height: height);
-  double get x => _.x;
-  double get y => _.y;
-  double get width => _.width;
-  double get height => _.height;
-}
-```
-
-### Capture result value objects (extension type on record)
+### Capture result value objects (immutable classes)
 
 These represent a single frame, image, or audio buffer. They are **immutable** and defined by their data and metadata (no identity).
 
@@ -115,20 +97,7 @@ These represent a single frame, image, or audio buffer. They are **immutable** a
 | **CapturedImage** | Record `(Uint8List pngData, int width, int height)` | One screenshot (PNG bytes). |
 | **CapturedAudio** | Record `(Uint8List pcmData, double sampleRate, int channelCount, String format)` | One audio buffer (PCM). |
 
-Example (conceptually):
-
-```dart
-extension type CapturedFrame((Uint8List, int, int, int) _) {
-  CapturedFrame({required Uint8List bgraData, required int width, required int height, required int bytesPerRow})
-      : _ = (bgraData, width, height, bytesPerRow);
-  Uint8List get bgraData => _.$1;
-  int get width => _.$2;
-  int get height => _.$3;
-  int get bytesPerRow => _.$4;
-}
-```
-
-Use positional record `(int, int)` or named record `({double x, double y, ...})` as the representation type; expose getters so callers do not depend on `_.$1` etc.
+These are modelled as immutable classes in the codebase; see the corresponding Dart files for concrete implementations.
 
 ---
 
@@ -167,7 +136,7 @@ flowchart TB
 
 ## Rules
 
-1. **Value objects**: Implement all value objects as **Dart extension types**. Use `int` for single-id types; use a **record** for multi-field value objects and expose getters on the extension type.
+1. **Value objects**: Implement scalar identifier value objects as **Dart extension types** (e.g. `DisplayId`, `WindowId`, `ProcessId`, `FilterId`), and model multi-field value objects (e.g. `FrameSize`, `PixelRect`, `CapturedFrame`, `CapturedImage`, `CapturedAudio`) as immutable classes.
 2. **Entities**: Use value object types for ids and dimensions (e.g. `Display` has `DisplayId` and `FrameSize`, not raw `int`).
 3. **Aggregate root**: Only `ShareableContent` is the aggregate root. All reads of “what can be captured” go through it. Do not add another root for the same consistency boundary.
 4. **Capture results**: `CapturedFrame`, `CapturedImage`, and `CapturedAudio` are value objects (extension types); they are produced by the application/infrastructure layer and consumed by the caller; they do not belong to the ShareableContent aggregate.
@@ -181,7 +150,7 @@ flowchart TB
 - `domain/display.dart` — entity `Display` (uses `DisplayId`, `FrameSize`).
 - `domain/window.dart` — entity `Window` (uses `WindowId`, `PixelRect`, references `RunningApplication`).
 - `domain/running_application.dart` — entity `RunningApplication` (uses `ProcessId`).
-- `domain/value_objects/` — extension types: `display_id.dart`, `window_id.dart`, `process_id.dart`, `filter_id.dart`, `frame_size.dart`, `pixel_rect.dart`, `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`.
+- `domain/value_objects/` — value objects: `display_id.dart`, `window_id.dart`, `process_id.dart`, `filter_id.dart`, `frame_size.dart`, `pixel_rect.dart`, `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`.
 - `domain/screen_capture_kit_exception.dart` — domain exception (no extension type).
 
 Presentation/API may re-export `ContentFilterHandle` as an extension type on `FilterId` for the public API.

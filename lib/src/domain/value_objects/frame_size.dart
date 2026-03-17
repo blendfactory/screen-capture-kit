@@ -1,11 +1,31 @@
+import 'package:meta/meta.dart';
+
 /// Size in pixels (width × height).
-extension type FrameSize((int, int) value) {
+@immutable
+class FrameSize {
   /// Creates a [FrameSize] from width and height.
-  FrameSize.fromWH(int width, int height) : value = (width, height);
+  const FrameSize({
+    required this.width,
+    required this.height,
+  });
 
   /// Width in pixels.
-  int get width => value.$1;
+  final int width;
 
   /// Height in pixels.
-  int get height => value.$2;
+  final int height;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FrameSize &&
+          runtimeType == other.runtimeType &&
+          width == other.width &&
+          height == other.height;
+
+  @override
+  int get hashCode => Object.hash(width, height);
+
+  @override
+  String toString() => 'FrameSize(width: $width, height: $height)';
 }

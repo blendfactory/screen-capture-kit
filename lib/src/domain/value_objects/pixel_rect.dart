@@ -1,26 +1,44 @@
+import 'package:meta/meta.dart';
+
 /// Rectangle in screen points.
 ///
 /// Represents a region with origin (x, y) and size (width, height).
-extension type PixelRect(
-  ({double x, double y, double width, double height}) value
-) {
+@immutable
+class PixelRect {
   /// Creates a [PixelRect] from its components.
-  PixelRect.fromComponents({
-    required double x,
-    required double y,
-    required double width,
-    required double height,
-  }) : value = (x: x, y: y, width: width, height: height);
+  const PixelRect({
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+  });
 
   /// X coordinate of the origin.
-  double get x => value.x;
+  final double x;
 
   /// Y coordinate of the origin.
-  double get y => value.y;
+  final double y;
 
   /// Width of the rectangle.
-  double get width => value.width;
+  final double width;
 
   /// Height of the rectangle.
-  double get height => value.height;
+  final double height;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PixelRect &&
+          runtimeType == other.runtimeType &&
+          x == other.x &&
+          y == other.y &&
+          width == other.width &&
+          height == other.height;
+
+  @override
+  int get hashCode => Object.hash(x, y, width, height);
+
+  @override
+  String toString() =>
+      'PixelRect(x: $x, y: $y, width: $width, height: $height)';
 }
