@@ -1,4 +1,7 @@
+import 'package:meta/meta.dart';
+
 /// Exception thrown when ScreenCaptureKit API fails.
+@immutable
 class ScreenCaptureKitException implements Exception {
   const ScreenCaptureKitException(
     this.message, {

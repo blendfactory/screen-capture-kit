@@ -1,8 +1,11 @@
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
+
 /// A captured screenshot image.
 ///
 /// Contains PNG-encoded image data and dimensions.
+@immutable
 class CapturedImage {
   /// Creates a [CapturedImage] with the given data and dimensions.
   const CapturedImage({

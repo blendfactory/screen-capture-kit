@@ -1,5 +1,5 @@
 import 'package:meta/meta.dart';
-import 'package:screen_capture_kit/src/running_application.dart';
+import 'package:screen_capture_kit/src/domain/running_application.dart';
 
 /// An onscreen window available for capture.
 ///

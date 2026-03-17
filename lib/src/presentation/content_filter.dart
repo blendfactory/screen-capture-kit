@@ -1,7 +1,7 @@
 import 'package:meta/meta.dart';
-import 'package:screen_capture_kit/src/display.dart';
-import 'package:screen_capture_kit/src/running_application.dart';
-import 'package:screen_capture_kit/src/window.dart';
+import 'package:screen_capture_kit/src/domain/display.dart';
+import 'package:screen_capture_kit/src/domain/running_application.dart';
+import 'package:screen_capture_kit/src/domain/window.dart';
 
 /// Configuration for which content a capture stream includes.
 ///

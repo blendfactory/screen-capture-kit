@@ -1,5 +1,5 @@
-import 'package:screen_capture_kit/src/captured_audio.dart';
-import 'package:screen_capture_kit/src/captured_frame.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/captured_audio.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/captured_frame.dart';
 import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_configuration.dart';
 

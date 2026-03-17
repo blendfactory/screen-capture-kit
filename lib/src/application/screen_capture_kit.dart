@@ -1,16 +1,16 @@
 import 'dart:isolate';
 
-import 'package:screen_capture_kit/src/captured_frame.dart';
-import 'package:screen_capture_kit/src/captured_image.dart';
-import 'package:screen_capture_kit/src/display.dart';
+import 'package:screen_capture_kit/src/domain/display.dart';
+import 'package:screen_capture_kit/src/domain/shareable_content.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/captured_frame.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/captured_image.dart';
+import 'package:screen_capture_kit/src/domain/window.dart';
 import 'package:screen_capture_kit/src/infrastructure/screen_capture_kit_stub.dart'
     if (dart.library.io)
       'package:screen_capture_kit/src/infrastructure/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
 import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
-import 'package:screen_capture_kit/src/shareable_content.dart';
-import 'package:screen_capture_kit/src/window.dart';
 
 /// Application-layer port for ScreenCaptureKit operations.
 abstract class ScreenCaptureKitPort {

@@ -5,18 +5,18 @@ import 'dart:io' show Platform;
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:screen_capture_kit/src/captured_audio.dart';
-import 'package:screen_capture_kit/src/captured_frame.dart';
-import 'package:screen_capture_kit/src/captured_image.dart';
-import 'package:screen_capture_kit/src/display.dart';
+import 'package:screen_capture_kit/src/domain/display.dart';
+import 'package:screen_capture_kit/src/domain/running_application.dart';
+import 'package:screen_capture_kit/src/domain/screen_capture_kit_exception.dart';
+import 'package:screen_capture_kit/src/domain/shareable_content.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/captured_audio.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/captured_frame.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/captured_image.dart';
+import 'package:screen_capture_kit/src/domain/window.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
 import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_configuration.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
-import 'package:screen_capture_kit/src/running_application.dart';
-import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
-import 'package:screen_capture_kit/src/shareable_content.dart';
-import 'package:screen_capture_kit/src/window.dart';
 
 /// C function returning malloc'd JSON string. Caller must free.
 @Native<Pointer<Utf8> Function(Int32, Int32)>(
