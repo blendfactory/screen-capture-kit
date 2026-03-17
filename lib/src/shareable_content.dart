@@ -23,6 +23,7 @@ class ShareableContent {
   final List<Window> windows;
 
   @override
-  String toString() => 'ShareableContent(displays: ${displays.length}, '
+  String toString() =>
+      'ShareableContent(displays: ${displays.length}, '
       'applications: ${applications.length}, windows: ${windows.length})';
 }

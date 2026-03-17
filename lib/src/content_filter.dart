@@ -86,9 +86,9 @@ final class _DisplayContentFilter extends ContentFilter {
     this.display, {
     List<RunningApplication>? excludingApplications,
     List<Window>? exceptingWindows,
-  })  : excludingApplications = excludingApplications ?? const [],
-        exceptingWindows = exceptingWindows ?? const [],
-        super._();
+  }) : excludingApplications = excludingApplications ?? const [],
+       exceptingWindows = exceptingWindows ?? const [],
+       super._();
 
   final Display display;
   final List<RunningApplication> excludingApplications;
@@ -104,13 +104,14 @@ final class _DisplayContentFilter extends ContentFilter {
 
   @override
   int get hashCode => Object.hash(
-        display,
-        Object.hashAll(excludingApplications),
-        Object.hashAll(exceptingWindows),
-      );
+    display,
+    Object.hashAll(excludingApplications),
+    Object.hashAll(exceptingWindows),
+  );
 
   @override
-  String toString() => 'ContentFilter.display($display, excluding: '
+  String toString() =>
+      'ContentFilter.display($display, excluding: '
       '${excludingApplications.length}, excepting: ${exceptingWindows.length})';
 }
 
@@ -136,7 +137,8 @@ final class _DisplayExcludingWindowsContentFilter extends ContentFilter {
   int get hashCode => Object.hash(display, Object.hashAll(excludingWindows));
 
   @override
-  String toString() => 'ContentFilter.displayExcludingWindows($display, '
+  String toString() =>
+      'ContentFilter.displayExcludingWindows($display, '
       '${excludingWindows.length} windows)';
 }
 

@@ -67,23 +67,24 @@ external void _releaseContentFilter(int filterId);
 external Pointer<Utf8> _captureScreenshot(int filterId, int width, int height);
 
 @Native<
-    Int64 Function(
-      Int64,
-      Int32,
-      Int32,
-      Int32,
-      Float,
-      Float,
-      Float,
-      Float,
-      Int32,
-      Int32,
-      Int32,
-      Int32,
-      Int32,
-      Uint32,
-      Pointer<Utf8>,
-    )>(
+  Int64 Function(
+    Int64,
+    Int32,
+    Int32,
+    Int32,
+    Float,
+    Float,
+    Float,
+    Float,
+    Int32,
+    Int32,
+    Int32,
+    Int32,
+    Int32,
+    Uint32,
+    Pointer<Utf8>,
+  )
+>(
   symbol: 'stream_create_and_start',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
@@ -138,23 +139,24 @@ external Pointer<Utf8> _streamGetLastError();
 
 /// Updates running stream config. Returns 0 on success, -1 on error.
 @Native<
-    Int32 Function(
-      Int64,
-      Int32,
-      Int32,
-      Int32,
-      Float,
-      Float,
-      Float,
-      Float,
-      Int32,
-      Int32,
-      Int32,
-      Int32,
-      Int32,
-      Uint32,
-      Pointer<Utf8>,
-    )>(
+  Int32 Function(
+    Int64,
+    Int32,
+    Int32,
+    Int32,
+    Float,
+    Float,
+    Float,
+    Float,
+    Int32,
+    Int32,
+    Int32,
+    Int32,
+    Int32,
+    Uint32,
+    Pointer<Utf8>,
+  )
+>(
   symbol: 'stream_update_configuration',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
@@ -267,7 +269,8 @@ String _buildNativeErrorMessage({
 }) {
   final normalized = description.toLowerCase();
   final isTimeout = normalized.contains('timed out');
-  final isPermissionIssue = normalized.contains('not authorized') ||
+  final isPermissionIssue =
+      normalized.contains('not authorized') ||
       normalized.contains('permission') ||
       normalized.contains('denied');
 
@@ -295,7 +298,8 @@ String _buildStreamErrorMessage({
   required String description,
 }) {
   final normalized = description.toLowerCase();
-  final isPermissionIssue = normalized.contains('not authorized') ||
+  final isPermissionIssue =
+      normalized.contains('not authorized') ||
       normalized.contains('permission') ||
       normalized.contains('denied') ||
       normalized.contains('user declined');

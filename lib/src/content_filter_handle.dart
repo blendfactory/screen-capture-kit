@@ -11,7 +11,7 @@ import 'package:screen_capture_kit/screen_capture_kit.dart'
 @immutable
 class ContentFilterHandle {
   const ContentFilterHandle(this._filterId)
-      : assert(_filterId > 0, 'Invalid filter id');
+    : assert(_filterId > 0, 'Invalid filter id');
 
   final int _filterId;
 

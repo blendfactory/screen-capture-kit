@@ -45,7 +45,7 @@ class CaptureStream {
   /// Pass a config to restrict modes or exclude content; pass `null` for
   /// system default.
   final void Function(ContentSharingPickerConfiguration? config)
-      setContentSharingPickerConfiguration;
+  setContentSharingPickerConfiguration;
 }
 
 /// Options for [CaptureStream.updateConfiguration].

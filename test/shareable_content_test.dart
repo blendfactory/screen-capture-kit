@@ -34,27 +34,29 @@ void main() {
       expect(filter.toString(), contains('display'));
     });
 
-    test('ContentFilter.displayExcludingWindows creates with display and list',
-        () {
-      const display = Display(
-        displayId: 1,
-        width: 1920,
-        height: 1080,
-      );
-      const app = RunningApplication(
-        bundleIdentifier: 'com.example',
-        applicationName: 'Example',
-        processId: 1,
-      );
-      const window = Window(
-        windowId: 100,
-        frame: (x: 0, y: 0, width: 100, height: 100),
-        owningApplication: app,
-      );
-      const filter = ContentFilter.displayExcludingWindows(display, [window]);
-      expect(filter, isA<ContentFilter>());
-      expect(filter.toString(), contains('displayExcludingWindows'));
-    });
+    test(
+      'ContentFilter.displayExcludingWindows creates with display and list',
+      () {
+        const display = Display(
+          displayId: 1,
+          width: 1920,
+          height: 1080,
+        );
+        const app = RunningApplication(
+          bundleIdentifier: 'com.example',
+          applicationName: 'Example',
+          processId: 1,
+        );
+        const window = Window(
+          windowId: 100,
+          frame: (x: 0, y: 0, width: 100, height: 100),
+          owningApplication: app,
+        );
+        const filter = ContentFilter.displayExcludingWindows(display, [window]);
+        expect(filter, isA<ContentFilter>());
+        expect(filter.toString(), contains('displayExcludingWindows'));
+      },
+    );
 
     test('ContentFilter.region creates with rect', () {
       const filter = ContentFilter.region(
@@ -440,12 +442,13 @@ void main() {
       'captures on macOS 14+ or throws on older/unsupported',
       () async {
         try {
-          final content =
-              await ScreenCaptureKit().getShareableContent().timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('getShareableContent timed out'),
-                  );
+          final content = await ScreenCaptureKit()
+              .getShareableContent()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('getShareableContent timed out'),
+              );
           if (content.windows.isEmpty) {
             return;
           }
@@ -457,12 +460,13 @@ void main() {
                     throw TimeoutException('createWindowFilter timed out'),
               );
           try {
-            final image =
-                await ScreenCaptureKit().captureScreenshot(handle).timeout(
-                      const Duration(seconds: 10),
-                      onTimeout: () =>
-                          throw TimeoutException('captureScreenshot timed out'),
-                    );
+            final image = await ScreenCaptureKit()
+                .captureScreenshot(handle)
+                .timeout(
+                  const Duration(seconds: 10),
+                  onTimeout: () =>
+                      throw TimeoutException('captureScreenshot timed out'),
+                );
             expect(image.pngData, isNotEmpty);
             expect(image.width, greaterThan(0));
             expect(image.height, greaterThan(0));
@@ -489,22 +493,24 @@ void main() {
       'creates filter on macOS or throws on unsupported',
       () async {
         try {
-          final content =
-              await ScreenCaptureKit().getShareableContent().timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('getShareableContent timed out'),
-                  );
+          final content = await ScreenCaptureKit()
+              .getShareableContent()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('getShareableContent timed out'),
+              );
           if (content.windows.isEmpty) {
             return;
           }
           final window = content.windows.first;
-          final handle =
-              await ScreenCaptureKit().createWindowFilter(window).timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('createWindowFilter timed out'),
-                  );
+          final handle = await ScreenCaptureKit()
+              .createWindowFilter(window)
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('createWindowFilter timed out'),
+              );
           expect(handle, isA<ContentFilterHandle>());
           expect(handle.filterId, greaterThan(0));
           ScreenCaptureKit().releaseFilter(handle);
@@ -525,22 +531,24 @@ void main() {
       'creates display filter with or without excludingWindows on macOS',
       () async {
         try {
-          final content =
-              await ScreenCaptureKit().getShareableContent().timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('getShareableContent timed out'),
-                  );
+          final content = await ScreenCaptureKit()
+              .getShareableContent()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('getShareableContent timed out'),
+              );
           if (content.displays.isEmpty) {
             return;
           }
           final display = content.displays.first;
-          final handle =
-              await ScreenCaptureKit().createDisplayFilter(display).timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('createDisplayFilter timed out'),
-                  );
+          final handle = await ScreenCaptureKit()
+              .createDisplayFilter(display)
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('createDisplayFilter timed out'),
+              );
           expect(handle, isA<ContentFilterHandle>());
           expect(handle.filterId, greaterThan(0));
           ScreenCaptureKit().releaseFilter(handle);
@@ -574,12 +582,13 @@ void main() {
       'accepts queueDepth parameter on macOS',
       () async {
         try {
-          final content =
-              await ScreenCaptureKit().getShareableContent().timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('getShareableContent timed out'),
-                  );
+          final content = await ScreenCaptureKit()
+              .getShareableContent()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('getShareableContent timed out'),
+              );
           if (content.displays.isEmpty) {
             return;
           }
@@ -631,12 +640,13 @@ void main() {
       'returns CaptureStream and updateConfiguration works on macOS',
       () async {
         try {
-          final content =
-              await ScreenCaptureKit().getShareableContent().timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('getShareableContent timed out'),
-                  );
+          final content = await ScreenCaptureKit()
+              .getShareableContent()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('getShareableContent timed out'),
+              );
           if (content.displays.isEmpty) {
             return;
           }
@@ -693,12 +703,13 @@ void main() {
       'capturesAudio true provides audioStream on macOS',
       () async {
         try {
-          final content =
-              await ScreenCaptureKit().getShareableContent().timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('getShareableContent timed out'),
-                  );
+          final content = await ScreenCaptureKit()
+              .getShareableContent()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('getShareableContent timed out'),
+              );
           if (content.displays.isEmpty) {
             return;
           }
@@ -749,22 +760,24 @@ void main() {
       'updateContentFilter switches filter on macOS',
       () async {
         try {
-          final content =
-              await ScreenCaptureKit().getShareableContent().timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('getShareableContent timed out'),
-                  );
+          final content = await ScreenCaptureKit()
+              .getShareableContent()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('getShareableContent timed out'),
+              );
           if (content.displays.isEmpty) {
             return;
           }
           final display = content.displays.first;
-          final handle1 =
-              await ScreenCaptureKit().createDisplayFilter(display).timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('createDisplayFilter timed out'),
-                  );
+          final handle1 = await ScreenCaptureKit()
+              .createDisplayFilter(display)
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('createDisplayFilter timed out'),
+              );
           ContentFilterHandle? handle2;
           try {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
@@ -774,12 +787,13 @@ void main() {
               frameRate: 10,
               queueDepth: 3,
             );
-            handle2 =
-                await ScreenCaptureKit().createDisplayFilter(display).timeout(
-                      const Duration(seconds: 5),
-                      onTimeout: () =>
-                          throw TimeoutException('second createDisplayFilter'),
-                    );
+            handle2 = await ScreenCaptureKit()
+                .createDisplayFilter(display)
+                .timeout(
+                  const Duration(seconds: 5),
+                  onTimeout: () =>
+                      throw TimeoutException('second createDisplayFilter'),
+                );
             final sub = capture.stream.listen(
               (_) {},
               onError: (_) {},
@@ -819,12 +833,13 @@ void main() {
         // (e.g. permission)
         // Timeout: native call may block on permission dialog or hang
         try {
-          final content =
-              await ScreenCaptureKit().getShareableContent().timeout(
-                    const Duration(seconds: 5),
-                    onTimeout: () =>
-                        throw TimeoutException('getShareableContent timed out'),
-                  );
+          final content = await ScreenCaptureKit()
+              .getShareableContent()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () =>
+                    throw TimeoutException('getShareableContent timed out'),
+              );
           expect(content, isA<ShareableContent>());
           expect(content.displays, isA<List<Display>>());
           expect(content.applications, isA<List<RunningApplication>>());
