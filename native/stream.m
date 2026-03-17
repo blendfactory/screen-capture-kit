@@ -929,6 +929,10 @@ void stream_stop_and_release(int64_t stream_id) {
 
   if (handler) {
     handler.stopped = YES;
+    [handler.lock lock];
+    handler.latestFrameJson = nil;
+    [handler.lock unlock];
+    dispatch_semaphore_signal(handler.frameSemaphore);
   }
   if (audioHandler) {
     audioHandler.stopped = YES;
@@ -937,6 +941,29 @@ void stream_stop_and_release(int64_t stream_id) {
     microphoneHandler.stopped = YES;
   }
   if (stream) {
+    // Remove outputs before stopCapture so no more callbacks are delivered.
+    // Per Apple docs: removeStreamOutput disconnects outputs before stopping.
+    if (handler) {
+      NSError* err = nil;
+      [stream removeStreamOutput:handler type:SCStreamOutputTypeScreen error:&err];
+      (void)err;
+    }
+    if (audioHandler) {
+      if (@available(macos 13.0, *)) {
+        NSError* err = nil;
+        [stream removeStreamOutput:audioHandler type:SCStreamOutputTypeAudio error:&err];
+        (void)err;
+      }
+    }
+    if (microphoneHandler) {
+      if (@available(macos 15.0, *)) {
+        NSError* err = nil;
+        [stream removeStreamOutput:microphoneHandler
+                              type:SCStreamOutputTypeMicrophone
+                              error:&err];
+        (void)err;
+      }
+    }
     [stream stopCaptureWithCompletionHandler:^(NSError* _Nullable error){
     }];
   }
