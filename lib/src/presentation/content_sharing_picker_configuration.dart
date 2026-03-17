@@ -1,4 +1,4 @@
-import 'package:screen_capture_kit/src/content_sharing_picker_mode.dart';
+import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 
 /// Configuration for the system content-sharing picker (macOS 14+).
 ///

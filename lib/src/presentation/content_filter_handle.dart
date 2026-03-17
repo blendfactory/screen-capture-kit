@@ -1,11 +1,13 @@
+/// @docImport 'package:screen_capture_kit/src/application/screen_capture_kit.dart';
+library;
+
 import 'package:meta/meta.dart';
-import 'package:screen_capture_kit/screen_capture_kit.dart'
-    show ScreenCaptureKit;
 
 /// Opaque handle to a native SCContentFilter.
 ///
-/// Created by [ScreenCaptureKit.createWindowFilter]. Must be released with
-/// [ScreenCaptureKit.releaseFilter] when no longer needed.
+/// Created by [ScreenCaptureKitPort.createWindowFilter] or
+/// [ScreenCaptureKitPort.createDisplayFilter]. Must be released
+/// with [ScreenCaptureKitPort.releaseFilter] when no longer needed.
 ///
 /// This handle will be used when implementing capture streams.
 @immutable

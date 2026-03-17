@@ -1,7 +1,7 @@
 import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
-import 'package:screen_capture_kit/src/content_filter_handle.dart';
-import 'package:screen_capture_kit/src/content_sharing_picker_configuration.dart';
+import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/presentation/content_sharing_picker_configuration.dart';
 
 /// A capture stream that supports updating configuration and filter at runtime.
 ///

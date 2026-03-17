@@ -6,26 +6,26 @@ library;
 
 import 'package:screen_capture_kit/src/application/screen_capture_kit.dart'
     as app;
-import 'package:screen_capture_kit/src/capture_stream.dart';
 import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
-import 'package:screen_capture_kit/src/content_filter_handle.dart';
-import 'package:screen_capture_kit/src/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/display.dart';
+import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
+import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
 import 'package:screen_capture_kit/src/window.dart';
 
-export 'src/capture_stream.dart';
 export 'src/captured_audio.dart';
 export 'src/captured_frame.dart';
 export 'src/captured_image.dart';
-export 'src/content_filter.dart';
-export 'src/content_filter_handle.dart';
-export 'src/content_sharing_picker_configuration.dart';
-export 'src/content_sharing_picker_mode.dart';
 export 'src/display.dart';
+export 'src/presentation/capture_stream.dart';
+export 'src/presentation/content_filter.dart';
+export 'src/presentation/content_filter_handle.dart';
+export 'src/presentation/content_sharing_picker_configuration.dart';
+export 'src/presentation/content_sharing_picker_mode.dart';
 export 'src/running_application.dart';
 export 'src/screen_capture_kit_exception.dart';
 export 'src/shareable_content.dart';

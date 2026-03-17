@@ -5,14 +5,14 @@ import 'dart:io' show Platform;
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:screen_capture_kit/src/capture_stream.dart';
 import 'package:screen_capture_kit/src/captured_audio.dart';
 import 'package:screen_capture_kit/src/captured_frame.dart';
 import 'package:screen_capture_kit/src/captured_image.dart';
-import 'package:screen_capture_kit/src/content_filter_handle.dart';
-import 'package:screen_capture_kit/src/content_sharing_picker_configuration.dart';
-import 'package:screen_capture_kit/src/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/display.dart';
+import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
+import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/presentation/content_sharing_picker_configuration.dart';
+import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/running_application.dart';
 import 'package:screen_capture_kit/src/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/shareable_content.dart';
