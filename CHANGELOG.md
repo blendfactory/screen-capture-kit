@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-03-18
+
+### Fixed
+
+- Stream SEGV on cancel: call `removeStreamOutput` before `stopCapture` so no callbacks run during teardown, preventing crash when subscription is cancelled on macOS.
+
+### Changed
+
+- Layered architecture: domain, application, infrastructure, and presentation layers with ports and adapters.
+- Domain: value objects for IDs and geometry (`DisplayId`, `WindowId`, `FilterId`, `PixelRect`, `FrameSize`), entities with `@immutable`.
+- Application: `ScreenCaptureKitPort` interface and `ScreenCaptureKitImpl` implementation.
+- Infrastructure: native bridge (FFI) and stub implementations moved into infrastructure layer.
+- Presentation: configuration and DTO-like types (`ContentFilter`, `StreamConfiguration`, etc.) grouped in presentation layer.
+
 ## [0.0.1] - 2026-03-14
 
 ### Added
@@ -21,5 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stub implementation on non-macOS platforms (throws `UnsupportedError`).
 - Dart SDK constraint `^3.10.0` and dependency set (code_assets, ffi, hooks, meta, native_toolchain_c; mocktail, test for dev).
 
-[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.2...HEAD
+[0.0.2]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.2
 [0.0.1]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.1
