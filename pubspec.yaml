@@ -1,6 +1,6 @@
 name: screen_capture_kit
 description: Native Dart bindings for macOS ScreenCaptureKit using Dart Build Hooks.
-version: 0.0.3
+version: 0.0.4
 repository: https://github.com/blendfactory/screen-capture-kit
 documentation: https://github.com/blendfactory/screen-capture-kit#readme
 issue_tracker: https://github.com/blendfactory/screen-capture-kit/issues

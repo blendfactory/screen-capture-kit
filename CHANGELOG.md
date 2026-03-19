@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-03-20
+
 ### Changed
 
 - **Breaking type updates**: stream configuration and stream APIs now use `FrameRate` (`1..120`) and `QueueDepth` (`1..8`) value objects instead of raw `int` for `frameRate`/`queueDepth`; invalid values throw `ArgumentError`.
@@ -58,7 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stub implementation on non-macOS platforms (throws `UnsupportedError`).
 - Dart SDK constraint `^3.10.0` and dependency set (code_assets, ffi, hooks, meta, native_toolchain_c; mocktail, test for dev).
 
-[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.3...HEAD
+[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.4...HEAD
+[0.0.4]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.4
 [0.0.3]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.3
 [0.0.2]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.2
 [0.0.1]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.1
