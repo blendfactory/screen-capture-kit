@@ -70,24 +70,25 @@ void main() async {
 1. **Get shareable content** — `getShareableContent()` returns displays, windows, and applications.
 2. **Create a content filter** — `createDisplayFilter()` or `createWindowFilter()` for the target.
 3. **Start capture** — `startCaptureStream()` for frames, or `startCaptureStreamWithUpdater()` for runtime config changes and audio.
-4. **Release** — Call `releaseFilter()` when done.
+4. **Release** — Call `releaseFilter(filter)` with the same `FilterId` you used for capture.
 
-For screenshots, use `captureScreenshot(filterHandle)`. For the system picker, use `presentContentSharingPicker()`.
+For screenshots, use `captureScreenshot(filter)` (pass the `FilterId` from `createDisplayFilter` / `createWindowFilter` / the picker flow). For the system picker, use `presentContentSharingPicker()`.
 
 ## Architecture
 
 This package uses Dart Build Hooks to compile native macOS code and bridge the ScreenCaptureKit APIs to Dart.
 
+**Dart layers** (inward dependencies): **domain** (entities, value objects, errors) → **application** (`ScreenCaptureKit` facade) → **infrastructure** (macOS FFI + stub). **Presentation** holds stream-facing types such as `CaptureStream`. The public barrel exports domain types and the facade only.
+
 ```
-Dart
+Dart (barrel + ScreenCaptureKit)
  │
- │  Dart API
+ │  FFI
  ▼
-Native Bridge (Objective-C)
+Native bridge (Objective-C)
  │
- │  FFI / Dart Build Hooks
  ▼
-ScreenCaptureKit
+ScreenCaptureKit (Apple framework)
 ```
 
 This design allows low-latency frame capture while keeping the Dart API simple.
@@ -95,3 +96,8 @@ This design allows low-latency frame capture while keeping the Dart API simple.
 ## Example app
 
 See the `example/` directory for a full sample including display, window, region, and system picker capture.
+
+## Additional documentation
+
+- [Domain model](doc/domain-model.md) — aggregate root, entities, and value objects
+- [Intended use cases](doc/intended-use-cases.md) — capture-only scope and typical pipelines

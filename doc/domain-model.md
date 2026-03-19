@@ -139,7 +139,7 @@ flowchart TB
 1. **Value objects**: Implement scalar identifier value objects as **Dart extension types** (e.g. `DisplayId`, `WindowId`, `ProcessId`, `FilterId`), and model multi-field value objects (e.g. `FrameSize`, `PixelRect`, `CapturedFrame`, `CapturedImage`, `CapturedAudio`) as immutable classes.
 2. **Entities**: Use value object types for ids and dimensions (e.g. `Display` has `DisplayId` and `FrameSize`, not raw `int`).
 3. **Aggregate root**: Only `ShareableContent` is the aggregate root. All reads of “what can be captured” go through it. Do not add another root for the same consistency boundary.
-4. **Capture results**: `CapturedFrame`, `CapturedImage`, and `CapturedAudio` are value objects (extension types); they are produced by the application/infrastructure layer and consumed by the caller; they do not belong to the ShareableContent aggregate.
+4. **Capture results**: `CapturedFrame`, `CapturedImage`, and `CapturedAudio` are value objects implemented as **immutable classes** (not extension types); they are produced by the application/infrastructure layer and consumed by the caller; they do not belong to the ShareableContent aggregate.
 5. **FilterId**: Represents an opaque native content filter. Use `FilterId > 0` at construction; document that it must be released via the application service (`releaseFilter`).
 
 ---
