@@ -58,7 +58,7 @@ void main() {
 
     test('ContentFilter.region creates with rect', () {
       const filter = ContentFilter.region(
-        (x: 10, y: 20, width: 400, height: 300),
+        PixelRect(x: 10, y: 20, width: 400, height: 300),
       );
       expect(filter, isA<ContentFilter>());
       expect(filter.toString(), contains('region'));
@@ -171,7 +171,7 @@ void main() {
         width: 320,
         height: 240,
         frameRate: 30,
-        sourceRect: (x: 0, y: 0, width: 320, height: 240),
+        sourceRect: PixelRect(x: 0, y: 0, width: 320, height: 240),
         showsCursor: false,
         queueDepth: 8,
       );

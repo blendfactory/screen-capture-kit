@@ -9,7 +9,7 @@ Future<int> runStreamCapture(
   required int width,
   required int height,
   required String label,
-  ({double x, double y, double width, double height})? sourceRect,
+  PixelRect? sourceRect,
   Duration timeout = const Duration(seconds: 5),
 }) async {
   print('\n--- $label ---');
@@ -107,7 +107,12 @@ void main() async {
         displayFilter,
         width: regionW.toInt(),
         height: regionH.toInt(),
-        sourceRect: (x: regionX, y: regionY, width: regionW, height: regionH),
+        sourceRect: PixelRect(
+          x: regionX,
+          y: regionY,
+          width: regionW,
+          height: regionH,
+        ),
         label: 'Region stream',
       );
 

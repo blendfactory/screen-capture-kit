@@ -10,6 +10,7 @@ import 'package:screen_capture_kit/src/infrastructure/screen_capture_kit_stub.da
       'package:screen_capture_kit/src/infrastructure/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
 import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 
 /// Application-layer port for ScreenCaptureKit operations.
@@ -43,7 +44,7 @@ abstract class ScreenCaptureKitPort {
     int width,
     int height,
     int frameRate,
-    ({double x, double y, double width, double height})? sourceRect,
+    PixelRect? sourceRect,
     bool showsCursor,
     int queueDepth,
     bool capturesAudio,
@@ -58,7 +59,7 @@ abstract class ScreenCaptureKitPort {
     int width,
     int height,
     int frameRate,
-    ({double x, double y, double width, double height})? sourceRect,
+    PixelRect? sourceRect,
     bool showsCursor,
     int queueDepth,
     bool capturesAudio,
@@ -139,7 +140,7 @@ class ScreenCaptureKitImpl implements ScreenCaptureKitPort {
     int width = 0,
     int height = 0,
     int frameRate = 60,
-    ({double x, double y, double width, double height})? sourceRect,
+    PixelRect? sourceRect,
     bool showsCursor = true,
     int queueDepth = 5,
     bool capturesAudio = false,
@@ -170,7 +171,7 @@ class ScreenCaptureKitImpl implements ScreenCaptureKitPort {
     int width = 0,
     int height = 0,
     int frameRate = 60,
-    ({double x, double y, double width, double height})? sourceRect,
+    PixelRect? sourceRect,
     bool showsCursor = true,
     int queueDepth = 5,
     bool capturesAudio = false,

@@ -12,6 +12,7 @@ import 'package:screen_capture_kit/src/domain/shareable_content.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_image.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/window.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
 import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
@@ -169,7 +170,7 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
     int width = 0,
     int height = 0,
     int frameRate = 60,
-    ({double x, double y, double width, double height})? sourceRect,
+    PixelRect? sourceRect,
     bool showsCursor = true,
     int queueDepth = 5,
     bool capturesAudio = false,
@@ -207,7 +208,7 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
     int width = 0,
     int height = 0,
     int frameRate = 60,
-    ({double x, double y, double width, double height})? sourceRect,
+    PixelRect? sourceRect,
     bool showsCursor = true,
     int queueDepth = 5,
     bool capturesAudio = false,

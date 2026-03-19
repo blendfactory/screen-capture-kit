@@ -1,5 +1,6 @@
 import 'package:screen_capture_kit/src/domain/value_objects/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_frame.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
 import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_configuration.dart';
 
@@ -67,7 +68,7 @@ class StreamConfiguration {
   final int width;
   final int height;
   final int frameRate;
-  final ({double x, double y, double width, double height})? sourceRect;
+  final PixelRect? sourceRect;
   final bool showsCursor;
   final int queueDepth;
 

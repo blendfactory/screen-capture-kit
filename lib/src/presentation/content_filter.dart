@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 import 'package:screen_capture_kit/src/domain/display.dart';
 import 'package:screen_capture_kit/src/domain/running_application.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/window.dart';
 
 /// Configuration for which content a capture stream includes.
@@ -55,9 +56,7 @@ sealed class ContentFilter {
   /// captures a region of the main display.
   ///
   /// Maps to `SCContentFilter.contentRect`.
-  const factory ContentFilter.region(
-    ({double x, double y, double width, double height}) rect,
-  ) = _RegionContentFilter;
+  const factory ContentFilter.region(PixelRect rect) = _RegionContentFilter;
 }
 
 /// Filter for single-window capture.
@@ -147,19 +146,15 @@ final class _DisplayExcludingWindowsContentFilter extends ContentFilter {
 final class _RegionContentFilter extends ContentFilter {
   const _RegionContentFilter(this.rect) : super._();
 
-  final ({double x, double y, double width, double height}) rect;
+  final PixelRect rect;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is _RegionContentFilter &&
-          rect.x == other.rect.x &&
-          rect.y == other.rect.y &&
-          rect.width == other.rect.width &&
-          rect.height == other.rect.height;
+      other is _RegionContentFilter && rect == other.rect;
 
   @override
-  int get hashCode => Object.hash(rect.x, rect.y, rect.width, rect.height);
+  int get hashCode => rect.hashCode;
 
   @override
   String toString() => 'ContentFilter.region($rect)';
