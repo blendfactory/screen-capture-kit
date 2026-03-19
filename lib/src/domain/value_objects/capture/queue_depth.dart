@@ -25,7 +25,7 @@ class QueueDepth {
   const QueueDepth._(this.value);
 
   /// Default queue depth used when the caller does not specify one.
-  static const depth5 = QueueDepth._(5);
+  const QueueDepth.depth5() : value = 5;
 
   /// The validated queue depth value.
   final int value;

@@ -11,10 +11,10 @@ import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.
 class StreamConfiguration {
   const StreamConfiguration({
     this.outputSize = const FrameSize.zero(),
-    this.frameRate = FrameRate.fps60,
+    this.frameRate = const FrameRate.fps60(),
     this.sourceRect,
     this.showsCursor = true,
-    this.queueDepth = QueueDepth.depth5,
+    this.queueDepth = const QueueDepth.depth5(),
     this.capturesAudio = false,
     this.excludesCurrentProcessAudio = false,
     this.captureMicrophone = false,

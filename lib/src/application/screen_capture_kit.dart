@@ -153,10 +153,10 @@ class ScreenCaptureKit {
   Stream<CapturedFrame> startCaptureStream(
     FilterId filterHandle, {
     FrameSize outputSize = const FrameSize.zero(),
-    FrameRate frameRate = FrameRate.fps60,
+    FrameRate frameRate = const FrameRate.fps60(),
     PixelRect? sourceRect,
     bool showsCursor = true,
-    QueueDepth queueDepth = QueueDepth.depth5,
+    QueueDepth queueDepth = const QueueDepth.depth5(),
     bool capturesAudio = false,
     bool excludesCurrentProcessAudio = false,
     bool captureMicrophone = false,
@@ -189,10 +189,10 @@ class ScreenCaptureKit {
   CaptureStream startCaptureStreamWithUpdater(
     FilterId filterHandle, {
     FrameSize outputSize = const FrameSize.zero(),
-    FrameRate frameRate = FrameRate.fps60,
+    FrameRate frameRate = const FrameRate.fps60(),
     PixelRect? sourceRect,
     bool showsCursor = true,
-    QueueDepth queueDepth = QueueDepth.depth5,
+    QueueDepth queueDepth = const QueueDepth.depth5(),
     bool capturesAudio = false,
     bool excludesCurrentProcessAudio = false,
     bool captureMicrophone = false,

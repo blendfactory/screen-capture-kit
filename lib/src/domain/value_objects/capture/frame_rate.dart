@@ -25,7 +25,7 @@ class FrameRate {
   const FrameRate._(this.value);
 
   /// Default frame rate used when the caller does not specify one.
-  static const fps60 = FrameRate._(60);
+  const FrameRate.fps60() : value = 60;
 
   /// The validated FPS value.
   final int value;

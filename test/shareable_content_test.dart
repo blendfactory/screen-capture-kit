@@ -185,10 +185,10 @@ void main() {
       expect(config.outputSize, const FrameSize.zero());
       expect(config.outputSize.width, 0);
       expect(config.outputSize.height, 0);
-      expect(config.frameRate, FrameRate.fps60);
+      expect(config.frameRate, const FrameRate.fps60());
       expect(config.sourceRect, isNull);
       expect(config.showsCursor, isTrue);
-      expect(config.queueDepth, QueueDepth.depth5);
+      expect(config.queueDepth, const QueueDepth.depth5());
       expect(config.capturesAudio, isFalse);
       expect(config.excludesCurrentProcessAudio, isFalse);
       expect(config.captureMicrophone, isFalse);
