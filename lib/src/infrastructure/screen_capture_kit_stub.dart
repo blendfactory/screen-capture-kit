@@ -7,6 +7,7 @@ import 'package:screen_capture_kit/src/domain/entities/window.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
@@ -81,8 +82,7 @@ FilterId? presentContentSharingPickerImpl({
 
 CapturedImage captureScreenshotImpl(
   FilterId filterHandle, {
-  int width = 0,
-  int height = 0,
+  FrameSize outputSize = const FrameSize.zero(),
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -98,8 +98,7 @@ CapturedImage captureScreenshotImpl(
 
 Stream<CapturedFrame> startCaptureStreamImpl(
   FilterId filterHandle, {
-  int width = 0,
-  int height = 0,
+  FrameSize outputSize = const FrameSize.zero(),
   int frameRate = 60,
   PixelRect? sourceRect,
   bool showsCursor = true,
@@ -124,8 +123,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
 
 CaptureStream startCaptureStreamWithUpdaterImpl(
   FilterId filterHandle, {
-  int width = 0,
-  int height = 0,
+  FrameSize outputSize = const FrameSize.zero(),
   int frameRate = 60,
   PixelRect? sourceRect,
   bool showsCursor = true,

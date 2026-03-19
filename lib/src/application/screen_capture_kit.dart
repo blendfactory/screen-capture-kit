@@ -125,8 +125,7 @@ class ScreenCaptureKit {
     return Isolate.run(
       () => captureScreenshotImpl(
         filterHandle,
-        width: outputSize.width,
-        height: outputSize.height,
+        outputSize: outputSize,
       ),
     );
   }
@@ -164,8 +163,7 @@ class ScreenCaptureKit {
   }) {
     return startCaptureStreamImpl(
       filterHandle,
-      width: outputSize.width,
-      height: outputSize.height,
+      outputSize: outputSize,
       frameRate: frameRate,
       sourceRect: sourceRect,
       showsCursor: showsCursor,
@@ -201,8 +199,7 @@ class ScreenCaptureKit {
   }) {
     return startCaptureStreamWithUpdaterImpl(
       filterHandle,
-      width: outputSize.width,
-      height: outputSize.height,
+      outputSize: outputSize,
       frameRate: frameRate,
       sourceRect: sourceRect,
       showsCursor: showsCursor,

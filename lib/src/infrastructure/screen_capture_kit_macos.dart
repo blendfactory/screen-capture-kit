@@ -448,8 +448,7 @@ void releaseFilterImpl(FilterId handle) {
 
 CapturedImage captureScreenshotImpl(
   FilterId filterHandle, {
-  int width = 0,
-  int height = 0,
+  FrameSize outputSize = const FrameSize.zero(),
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -460,8 +459,8 @@ CapturedImage captureScreenshotImpl(
 
   final ptr = _captureScreenshot(
     filterHandle.filterId,
-    width,
-    height,
+    outputSize.width,
+    outputSize.height,
   );
   if (ptr == nullptr) {
     throw const ScreenCaptureKitException(
@@ -721,8 +720,7 @@ Pointer<Utf8> _allocColorSpaceName(String? name) {
 
 Stream<CapturedFrame> startCaptureStreamImpl(
   FilterId filterHandle, {
-  int width = 0,
-  int height = 0,
+  FrameSize outputSize = const FrameSize.zero(),
   int frameRate = 60,
   PixelRect? sourceRect,
   bool showsCursor = true,
@@ -747,8 +745,8 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   try {
     streamId = _streamCreateAndStart(
       filterHandle.filterId,
-      width,
-      height,
+      outputSize.width,
+      outputSize.height,
       frameRate,
       src?.x ?? 0,
       src?.y ?? 0,
@@ -925,8 +923,7 @@ void streamUpdateContentFilterImpl(
 
 CaptureStream startCaptureStreamWithUpdaterImpl(
   FilterId filterHandle, {
-  int width = 0,
-  int height = 0,
+  FrameSize outputSize = const FrameSize.zero(),
   int frameRate = 60,
   PixelRect? sourceRect,
   bool showsCursor = true,
@@ -951,8 +948,8 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   try {
     streamId = _streamCreateAndStart(
       filterHandle.filterId,
-      width,
-      height,
+      outputSize.width,
+      outputSize.height,
       frameRate,
       src?.x ?? 0,
       src?.y ?? 0,
