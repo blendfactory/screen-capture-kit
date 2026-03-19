@@ -58,7 +58,7 @@ void main() async {
 
   kit.startCaptureStream(filter, width: display.width, height: display.height)
       .listen((frame) {
-    print('Frame: ${frame.width}x${frame.height}');
+    print('Frame: ${frame.size.width}x${frame.size.height}');
   });
 
   // Call kit.releaseFilter(filter) when done

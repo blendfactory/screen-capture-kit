@@ -113,13 +113,12 @@ void main() {
     test('creates with required fields', () {
       final frame = CapturedFrame(
         bgraData: Uint8List.fromList([1, 2, 3, 4]),
-        width: 10,
-        height: 5,
+        size: const FrameSize(width: 10, height: 5),
         bytesPerRow: 40,
       );
       expect(frame.bgraData.length, 4);
-      expect(frame.width, 10);
-      expect(frame.height, 5);
+      expect(frame.size.width, 10);
+      expect(frame.size.height, 5);
       expect(frame.bytesPerRow, 40);
     });
   });
@@ -128,8 +127,7 @@ void main() {
     test('creates with required fields', () {
       final image = CapturedImage(
         pngData: Uint8List.fromList([0x89, 0x50, 0x4e]),
-        width: 100,
-        height: 50,
+        size: const FrameSize(width: 100, height: 50),
       );
       expect(image.pngData.length, 3);
       expect(image.width, 100);

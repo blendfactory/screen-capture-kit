@@ -93,8 +93,8 @@ These represent a single frame, image, or audio buffer. They are **immutable** a
 
 | Value object | Representation | Purpose |
 |--------------|----------------|---------|
-| **CapturedFrame** | Record `(Uint8List bgraData, int width, int height, int bytesPerRow)` | One video frame (BGRA pixels). |
-| **CapturedImage** | Record `(Uint8List pngData, int width, int height)` | One screenshot (PNG bytes). |
+| **CapturedFrame** | `(Uint8List bgraData, FrameSize size, int bytesPerRow)` | One video frame (BGRA pixels). |
+| **CapturedImage** | `(Uint8List pngData, FrameSize size)` | One screenshot (PNG bytes). |
 | **CapturedAudio** | Record `(Uint8List pcmData, double sampleRate, int channelCount, String format)` | One audio buffer (PCM). |
 
 These are modelled as immutable classes in the codebase; see the corresponding Dart files for concrete implementations.

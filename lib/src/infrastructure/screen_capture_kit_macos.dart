@@ -494,7 +494,10 @@ CapturedImage captureScreenshotImpl(
   final w = (json['width'] as num?)?.toInt() ?? 0;
   final h = (json['height'] as num?)?.toInt() ?? 0;
 
-  return CapturedImage(pngData: pngData, width: w, height: h);
+  return CapturedImage(
+    pngData: pngData,
+    size: FrameSize(width: w, height: h),
+  );
 }
 
 FilterId? presentContentSharingPickerImpl({
@@ -652,8 +655,7 @@ CapturedFrame? _parseFrameJson(String jsonStr) {
   final bpr = (json['bytesPerRow'] as num?)?.toInt() ?? 0;
   return CapturedFrame(
     bgraData: bgraData,
-    width: w,
-    height: h,
+    size: FrameSize(width: w, height: h),
     bytesPerRow: bpr,
   );
 }

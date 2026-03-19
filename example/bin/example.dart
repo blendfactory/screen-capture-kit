@@ -26,7 +26,7 @@ Future<int> runStreamCapture(
     (frame) {
       frameCount++;
       if (frameCount <= 3) {
-        print('Frame $frameCount: ${frame.width}x${frame.height}');
+        print('Frame $frameCount: ${frame.size.width}x${frame.size.height}');
       }
       if (frameCount >= 10 && !completer.isCompleted) {
         completer.complete();
