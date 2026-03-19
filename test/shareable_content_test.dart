@@ -185,10 +185,10 @@ void main() {
       expect(config.outputSize, const FrameSize.zero());
       expect(config.outputSize.width, 0);
       expect(config.outputSize.height, 0);
-      expect(config.frameRate, 60);
+      expect(config.frameRate, FrameRate.fps60);
       expect(config.sourceRect, isNull);
       expect(config.showsCursor, isTrue);
-      expect(config.queueDepth, 5);
+      expect(config.queueDepth, QueueDepth.depth5);
       expect(config.capturesAudio, isFalse);
       expect(config.excludesCurrentProcessAudio, isFalse);
       expect(config.captureMicrophone, isFalse);
@@ -197,17 +197,17 @@ void main() {
     test('creates with custom values', () {
       final config = StreamConfiguration(
         outputSize: FrameSize(width: 320, height: 240),
-        frameRate: 30,
+        frameRate: FrameRate(30),
         sourceRect: const PixelRect(x: 0, y: 0, width: 320, height: 240),
         showsCursor: false,
-        queueDepth: 8,
+        queueDepth: QueueDepth(8),
       );
       expect(config.outputSize.width, 320);
       expect(config.outputSize.height, 240);
-      expect(config.frameRate, 30);
+      expect(config.frameRate.value, 30);
       expect(config.sourceRect?.width, 320);
       expect(config.showsCursor, isFalse);
-      expect(config.queueDepth, 8);
+      expect(config.queueDepth.value, 8);
     });
 
     test('creates with custom audio values', () {
@@ -639,8 +639,8 @@ void main() {
             final stream = ScreenCaptureKit().startCaptureStream(
               handle,
               outputSize: FrameSize(width: 64, height: 64),
-              frameRate: 10,
-              queueDepth: 3,
+              frameRate: FrameRate(10),
+              queueDepth: QueueDepth(3),
             );
             final sub = stream.listen(
               (_) {},
@@ -696,8 +696,8 @@ void main() {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle,
               outputSize: FrameSize(width: 64, height: 64),
-              frameRate: 10,
-              queueDepth: 3,
+              frameRate: FrameRate(10),
+              queueDepth: QueueDepth(3),
             );
             expect(capture, isA<CaptureStream>());
             expect(capture.stream, isA<Stream<CapturedFrame>>());
@@ -712,7 +712,7 @@ void main() {
               capture.updateConfiguration(
                 StreamConfiguration(
                   outputSize: FrameSize(width: 128, height: 128),
-                  frameRate: 15,
+                  frameRate: FrameRate(15),
                 ),
               );
               await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -757,8 +757,8 @@ void main() {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle,
               outputSize: FrameSize(width: 64, height: 64),
-              frameRate: 10,
-              queueDepth: 3,
+              frameRate: FrameRate(10),
+              queueDepth: QueueDepth(3),
               capturesAudio: true,
             );
             expect(capture.audioStream, isNotNull);
@@ -815,8 +815,8 @@ void main() {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle1,
               outputSize: FrameSize(width: 64, height: 64),
-              frameRate: 10,
-              queueDepth: 3,
+              frameRate: FrameRate(10),
+              queueDepth: QueueDepth(3),
             );
             handle2 = await ScreenCaptureKit()
                 .createDisplayFilter(display)

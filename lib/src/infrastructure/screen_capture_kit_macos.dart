@@ -739,7 +739,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   }
 
   final src = sourceRect;
-  final depth = queueDepth.clamp(1, 8);
+  final depth = queueDepth;
   final colorSpacePtr = _allocColorSpaceName(colorSpaceName);
   int streamId;
   try {
@@ -829,14 +829,14 @@ Stream<CapturedFrame> startCaptureStreamImpl(
 
 void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
   final src = options.sourceRect;
-  final depth = options.queueDepth.clamp(1, 8);
+  final depth = options.queueDepth.value;
   final colorSpacePtr = _allocColorSpaceName(options.colorSpaceName);
   try {
     final result = _streamUpdateConfiguration(
       streamId,
       options.outputSize.width,
       options.outputSize.height,
-      options.frameRate,
+      options.frameRate.value,
       src?.x ?? 0,
       src?.y ?? 0,
       src?.width ?? 0,
@@ -942,7 +942,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   }
 
   final src = sourceRect;
-  final depth = queueDepth.clamp(1, 8);
+  final depth = queueDepth;
   final colorSpacePtr = _allocColorSpaceName(colorSpaceName);
   int streamId;
   try {

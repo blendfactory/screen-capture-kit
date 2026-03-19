@@ -8,6 +8,8 @@ import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_aud
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/frame_rate.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/queue_depth.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart'
     show FrameSize;
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
@@ -132,11 +134,11 @@ class ScreenCaptureKit {
 
   /// Starts a capture stream yielding [CapturedFrame]s (BGRA pixel data).
   ///
-  /// [frameRate] sets the target fps (1–120); 0 or invalid uses 60.
+  /// [frameRate] sets the target fps (1–120).
   /// [sourceRect] optionally crops to a region (x, y, width, height) in screen
   /// points. Use with display filter for region capture.
   /// [showsCursor] includes the system cursor in capture when true (default).
-  /// [queueDepth] sets the frame queue depth (1–8); default 5.
+  /// [queueDepth] sets the frame queue depth (1–8).
   /// [capturesAudio] when true, system audio is captured (use with
   /// [startCaptureStreamWithUpdater] to get [CaptureStream.audioStream]).
   /// [excludesCurrentProcessAudio] excludes this app's audio from capture.
@@ -151,10 +153,10 @@ class ScreenCaptureKit {
   Stream<CapturedFrame> startCaptureStream(
     FilterId filterHandle, {
     FrameSize outputSize = const FrameSize.zero(),
-    int frameRate = 60,
+    FrameRate frameRate = FrameRate.fps60,
     PixelRect? sourceRect,
     bool showsCursor = true,
-    int queueDepth = 5,
+    QueueDepth queueDepth = QueueDepth.depth5,
     bool capturesAudio = false,
     bool excludesCurrentProcessAudio = false,
     bool captureMicrophone = false,
@@ -164,10 +166,10 @@ class ScreenCaptureKit {
     return startCaptureStreamImpl(
       filterHandle,
       outputSize: outputSize,
-      frameRate: frameRate,
+      frameRate: frameRate.value,
       sourceRect: sourceRect,
       showsCursor: showsCursor,
-      queueDepth: queueDepth,
+      queueDepth: queueDepth.value,
       capturesAudio: capturesAudio,
       excludesCurrentProcessAudio: excludesCurrentProcessAudio,
       captureMicrophone: captureMicrophone,
@@ -187,10 +189,10 @@ class ScreenCaptureKit {
   CaptureStream startCaptureStreamWithUpdater(
     FilterId filterHandle, {
     FrameSize outputSize = const FrameSize.zero(),
-    int frameRate = 60,
+    FrameRate frameRate = FrameRate.fps60,
     PixelRect? sourceRect,
     bool showsCursor = true,
-    int queueDepth = 5,
+    QueueDepth queueDepth = QueueDepth.depth5,
     bool capturesAudio = false,
     bool excludesCurrentProcessAudio = false,
     bool captureMicrophone = false,
@@ -200,10 +202,10 @@ class ScreenCaptureKit {
     return startCaptureStreamWithUpdaterImpl(
       filterHandle,
       outputSize: outputSize,
-      frameRate: frameRate,
+      frameRate: frameRate.value,
       sourceRect: sourceRect,
       showsCursor: showsCursor,
-      queueDepth: queueDepth,
+      queueDepth: queueDepth.value,
       capturesAudio: capturesAudio,
       excludesCurrentProcessAudio: excludesCurrentProcessAudio,
       captureMicrophone: captureMicrophone,

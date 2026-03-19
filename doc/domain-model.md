@@ -88,6 +88,13 @@ extension type const FilterId(int value) {
 | **FrameSize** | `(int width, int height)` | Width and height in pixels; use the [`FrameSize`] factory — **non-negative**, and either **0×0** ([`FrameSize.zero`]) or **both strictly positive**; otherwise [`ArgumentError`]. |
 | **PixelRect** | `(double x, double y, double width, double height)` | Rectangle in screen points (e.g. window frame, source rect). |
 
+### Stream configuration value objects (immutable classes)
+
+| Value object | Representation | Purpose |
+|--------------|----------------|---------|
+| **FrameRate** | `(int fps)` | Target capture frame rate in FPS (`1..120`); invalid values throw [`ArgumentError`]. |
+| **QueueDepth** | `(int depth)` | Capture stream frame queue depth (`1..8`); invalid values throw [`ArgumentError`]. |
+
 ### Capture result value objects (immutable classes)
 
 These represent a single frame, image, or audio buffer. They are **immutable** and defined by their data and metadata (no identity).

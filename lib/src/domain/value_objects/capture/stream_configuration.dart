@@ -1,4 +1,6 @@
 import 'package:screen_capture_kit/screen_capture_kit.dart' show FrameSize;
+import 'package:screen_capture_kit/src/domain/value_objects/capture/frame_rate.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/queue_depth.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
 
@@ -9,10 +11,10 @@ import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.
 class StreamConfiguration {
   const StreamConfiguration({
     this.outputSize = const FrameSize.zero(),
-    this.frameRate = 60,
+    this.frameRate = FrameRate.fps60,
     this.sourceRect,
     this.showsCursor = true,
-    this.queueDepth = 5,
+    this.queueDepth = QueueDepth.depth5,
     this.capturesAudio = false,
     this.excludesCurrentProcessAudio = false,
     this.captureMicrophone = false,
@@ -24,10 +26,13 @@ class StreamConfiguration {
   /// (0×0 in the Objective-C bridge).
   final FrameSize outputSize;
 
-  final int frameRate;
+  /// Target capture frame rate.
+  final FrameRate frameRate;
   final PixelRect? sourceRect;
   final bool showsCursor;
-  final int queueDepth;
+
+  /// Frame queue depth.
+  final QueueDepth queueDepth;
 
   /// When true, system audio is captured and available on
   /// `CaptureStream.audioStream`.

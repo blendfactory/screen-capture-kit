@@ -16,6 +16,8 @@ export 'src/domain/value_objects/capture/captured_image.dart';
 export 'src/domain/value_objects/capture/content_filter.dart';
 export 'src/domain/value_objects/capture/content_sharing_picker_configuration.dart';
 export 'src/domain/value_objects/capture/content_sharing_picker_mode.dart';
+export 'src/domain/value_objects/capture/frame_rate.dart';
+export 'src/domain/value_objects/capture/queue_depth.dart';
 export 'src/domain/value_objects/capture/stream_configuration.dart';
 export 'src/domain/value_objects/geometry/frame_size.dart';
 export 'src/domain/value_objects/geometry/pixel_rect.dart';
