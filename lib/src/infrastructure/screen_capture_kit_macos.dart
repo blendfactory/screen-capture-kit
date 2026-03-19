@@ -614,7 +614,8 @@ void streamSetPickerConfigurationImpl(
   }
   if (config.excludedWindowIds != null &&
       config.excludedWindowIds!.isNotEmpty) {
-    map['excludedWindowIDs'] = config.excludedWindowIds;
+    map['excludedWindowIDs'] =
+        config.excludedWindowIds!.map((id) => id.value).toList();
   }
   final jsonStr = jsonEncode(map);
   final ptr = jsonStr.toNativeUtf8();
