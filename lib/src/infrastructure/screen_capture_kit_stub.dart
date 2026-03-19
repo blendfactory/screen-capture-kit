@@ -5,10 +5,10 @@ import 'package:screen_capture_kit/src/domain/display.dart';
 import 'package:screen_capture_kit/src/domain/shareable_content.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_image.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/window.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
 import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
-import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 
 /// Stub implementation that throws on unsupported platforms.

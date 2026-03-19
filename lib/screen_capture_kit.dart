@@ -20,17 +20,17 @@ import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.
 
 export 'src/domain/display.dart';
 export 'src/domain/running_application.dart';
+export 'src/domain/screen_capture_kit_exception.dart';
+export 'src/domain/shareable_content.dart';
+export 'src/domain/value_objects/captured_audio.dart';
+export 'src/domain/value_objects/captured_frame.dart';
+export 'src/domain/value_objects/captured_image.dart';
 export 'src/domain/value_objects/display_id.dart';
 export 'src/domain/value_objects/filter_id.dart';
 export 'src/domain/value_objects/frame_size.dart';
 export 'src/domain/value_objects/pixel_rect.dart';
 export 'src/domain/value_objects/process_id.dart';
 export 'src/domain/value_objects/window_id.dart';
-export 'src/domain/screen_capture_kit_exception.dart';
-export 'src/domain/shareable_content.dart';
-export 'src/domain/value_objects/captured_audio.dart';
-export 'src/domain/value_objects/captured_frame.dart';
-export 'src/domain/value_objects/captured_image.dart';
 export 'src/domain/window.dart';
 export 'src/presentation/capture_stream.dart';
 export 'src/presentation/content_filter.dart';

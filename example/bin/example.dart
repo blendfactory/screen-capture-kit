@@ -69,7 +69,9 @@ void main() async {
     // 1. Display filter: capture entire display
     if (content.displays.isNotEmpty) {
       final display = content.displays.first;
-      print('\n=== Display capture (displayId: ${display.displayId.value}) ===');
+      print(
+        '\n=== Display capture (displayId: ${display.displayId.value}) ===',
+      );
       final displayFilter = await kit.createDisplayFilter(display);
       print('Display filter created: ${displayFilter.filterId}');
       try {
@@ -134,7 +136,9 @@ void main() async {
         }
       }
       if (windowFilter != null && window != null) {
-        print('\n=== Window capture (${window.title ?? window.windowId.value}) ===');
+        print(
+          '\n=== Window capture (${window.title ?? window.windowId.value}) ===',
+        );
         print('Window filter created: ${windowFilter.filterId}');
         try {
           final image = await kit.captureScreenshot(windowFilter);
