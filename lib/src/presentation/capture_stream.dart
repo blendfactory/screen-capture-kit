@@ -1,7 +1,7 @@
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
-import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_configuration.dart';
 
 /// A capture stream that supports updating configuration and filter at runtime.
@@ -40,7 +40,7 @@ class CaptureStream {
   /// Updates the content filter (e.g. switch to another display or window).
   /// May block briefly; throws on error. Release the handle when no longer
   /// needed via the library's releaseFilter.
-  final void Function(ContentFilterHandle handle) updateContentFilter;
+  final void Function(FilterId handle) updateContentFilter;
 
   /// Sets the content-sharing picker configuration for this stream (macOS 14+).
   /// Pass a config to restrict modes or exclude content; pass `null` for

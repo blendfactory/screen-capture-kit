@@ -14,8 +14,8 @@ import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_aud
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
-import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 
 export 'src/domain/entities/display.dart';
@@ -34,7 +34,6 @@ export 'src/domain/value_objects/identifiers/process_id.dart';
 export 'src/domain/value_objects/identifiers/window_id.dart';
 export 'src/presentation/capture_stream.dart';
 export 'src/presentation/content_filter.dart';
-export 'src/presentation/content_filter_handle.dart';
 export 'src/presentation/content_sharing_picker_configuration.dart';
 export 'src/presentation/content_sharing_picker_mode.dart';
 
@@ -70,7 +69,7 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
 
   /// Creates a native content filter for capturing the given window.
   ///
-  /// Returns a [ContentFilterHandle] that must be released with [releaseFilter]
+  /// Returns a [FilterId] that must be released with [releaseFilter]
   /// when no longer needed. The handle will be used when implementing capture
   /// streams.
   ///
@@ -78,7 +77,7 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944912-init
   @override
-  Future<ContentFilterHandle> createWindowFilter(Window window) =>
+  Future<FilterId> createWindowFilter(Window window) =>
       _impl.createWindowFilter(window);
 
   /// Creates a native content filter for capturing the entire display.
@@ -86,14 +85,14 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
   /// [excludingWindows] optionally excludes specific windows from capture.
   /// Maps to `SCContentFilter(display:excludingWindows:)` when non-empty.
   ///
-  /// Returns a [ContentFilterHandle] that must be released with [releaseFilter]
+  /// Returns a [FilterId] that must be released with [releaseFilter]
   /// when no longer needed.
   ///
   /// Requires Screen Recording permission.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentfilter/3944911-init
   @override
-  Future<ContentFilterHandle> createDisplayFilter(
+  Future<FilterId> createDisplayFilter(
     Display display, {
     List<Window>? excludingWindows,
   }) =>
@@ -105,11 +104,11 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
   /// Releases a content filter created by [createWindowFilter] or
   /// [createDisplayFilter].
   @override
-  void releaseFilter(ContentFilterHandle handle) => _impl.releaseFilter(handle);
+  void releaseFilter(FilterId handle) => _impl.releaseFilter(handle);
 
   /// Presents the system content-sharing picker (macOS 14+).
   ///
-  /// Returns a [ContentFilterHandle] for the selected content when the user
+  /// Returns a [FilterId] for the selected content when the user
   /// confirms, or `null` when the user cancels. The handle must be released
   /// with [releaseFilter] when no longer needed.
   ///
@@ -121,7 +120,7 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentsharingpicker
   @override
-  Future<ContentFilterHandle?> presentContentSharingPicker({
+  Future<FilterId?> presentContentSharingPicker({
     List<ContentSharingPickerMode>? allowedModes,
   }) =>
       _impl.presentContentSharingPicker(allowedModes: allowedModes);
@@ -136,7 +135,7 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager/captureimage(contentfilter:configuration:completionhandler:)
   @override
   Future<CapturedImage> captureScreenshot(
-    ContentFilterHandle filterHandle, {
+    FilterId filterHandle, {
     int width = 0,
     int height = 0,
   }) =>
@@ -166,7 +165,7 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
   @override
   Stream<CapturedFrame> startCaptureStream(
-    ContentFilterHandle filterHandle, {
+    FilterId filterHandle, {
     int width = 0,
     int height = 0,
     int frameRate = 60,
@@ -204,7 +203,7 @@ class ScreenCaptureKit implements app.ScreenCaptureKitPort {
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
   @override
   CaptureStream startCaptureStreamWithUpdater(
-    ContentFilterHandle filterHandle, {
+    FilterId filterHandle, {
     int width = 0,
     int height = 0,
     int frameRate = 60,

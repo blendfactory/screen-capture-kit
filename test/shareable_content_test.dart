@@ -65,10 +65,10 @@ void main() {
     });
   });
 
-  group('ContentFilterHandle', () {
+  group('FilterId', () {
     test('creates with positive filter id', () {
-      const handle = ContentFilterHandle(FilterId(1));
-      expect(handle.filterId, 1);
+      const filterId = FilterId(1);
+      expect(filterId.filterId, 1);
     });
   });
 
@@ -226,7 +226,7 @@ void main() {
 
     test('invokes updateContentFilter when called', () async {
       final controller = StreamController<CapturedFrame>.broadcast();
-      ContentFilterHandle? passedHandle;
+      FilterId? passedHandle;
       final capture = CaptureStream(
         stream: controller.stream,
         updateConfiguration: (_) {},
@@ -235,7 +235,7 @@ void main() {
         },
         setContentSharingPickerConfiguration: (_) {},
       );
-      const handle = ContentFilterHandle(FilterId(42));
+      const handle = FilterId(42);
       capture.updateContentFilter(handle);
       expect(passedHandle, equals(handle));
       expect(passedHandle?.filterId, 42);
@@ -517,7 +517,7 @@ void main() {
                 onTimeout: () =>
                     throw TimeoutException('createWindowFilter timed out'),
               );
-          expect(handle, isA<ContentFilterHandle>());
+          expect(handle, isA<FilterId>());
           expect(handle.filterId, greaterThan(0));
           ScreenCaptureKit().releaseFilter(handle);
         } on UnsupportedError catch (e) {
@@ -555,7 +555,7 @@ void main() {
                 onTimeout: () =>
                     throw TimeoutException('createDisplayFilter timed out'),
               );
-          expect(handle, isA<ContentFilterHandle>());
+          expect(handle, isA<FilterId>());
           expect(handle.filterId, greaterThan(0));
           ScreenCaptureKit().releaseFilter(handle);
 
@@ -784,7 +784,7 @@ void main() {
                 onTimeout: () =>
                     throw TimeoutException('createDisplayFilter timed out'),
               );
-          ContentFilterHandle? handle2;
+          FilterId? handle2;
           try {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle1,
@@ -807,7 +807,9 @@ void main() {
             );
             try {
               await Future<void>.delayed(const Duration(milliseconds: 200));
-              capture.updateContentFilter(handle2);
+              if (handle2 != null) {
+                capture.updateContentFilter(handle2);
+              }
               await Future<void>.delayed(const Duration(milliseconds: 100));
             } finally {
               await sub.cancel();

@@ -138,7 +138,6 @@ lib/
       screen_capture_kit_macos.dart
       screen_capture_kit_stub.dart
     presentation/                  # Optional: config DTOs used by API
-      content_filter_handle.dart
       content_filter.dart
       content_sharing_picker_*.dart
       capture_stream.dart
@@ -160,7 +159,7 @@ The full domain model—aggregate root, consistency boundary, entities, and valu
 | Identifiers | `DisplayId`, `WindowId`, `ProcessId`, `FilterId` | `extension type ... on int` |
 | Geometry/size | `FrameSize`, `PixelRect` | immutable classes |
 | Capture results | `CapturedFrame`, `CapturedImage`, `CapturedAudio` | immutable classes |
-| API handle | `ContentFilterHandle` | Extension type on `FilterId` (or int), enforce `FilterId > 0` |
+| Filter handle | `FilterId` | Extension type on `int`, enforce `value > 0`; must be released via `releaseFilter` |
 
 Entities reference these value types (e.g. `Display` has `DisplayId` and `FrameSize`, not raw `int`).
 
@@ -181,7 +180,7 @@ flowchart LR
       ID["DisplayId, WindowId, ProcessId, FilterId"]
       GEO["FrameSize, PixelRect"]
       CAP["CapturedFrame, CapturedImage, CapturedAudio"]
-      FH["ContentFilterHandle"]
+      FH["FilterId"]
     end
   end
   SC --> D
@@ -219,8 +218,8 @@ When moving code toward this architecture:
 - [ ] Ensure domain has zero dependencies on other layers.
 - [ ] Introduce ports (abstract interfaces) in application if infrastructure is invoked from application. Expose an abstract application port (e.g. `ScreenCaptureKitPort`) and have the facade implement it so that apps and CLI tools can inject mocks in tests.
 - [ ] Keep the public barrel (`screen_capture_kit.dart`) exporting only the intended API surface.
-- [ ] Document filter lifecycle in API docs and README: every `ContentFilterHandle` must be released with `releaseFilter(handle)`; recommend `try/finally`.
-- [ ] Implement scalar identifier value objects as **extension types** per docs/domain-model.md (IDs on `int`) and multi-field value objects as immutable classes. Migrate existing value types (e.g. Display, Window dimensions; CapturedFrame, CapturedImage, CapturedAudio; ContentFilterHandle) accordingly and have entities use them (e.g. Display uses DisplayId and FrameSize).
+- [ ] Document filter lifecycle in API docs and README: every `FilterId` must be released with `releaseFilter(handle)`; recommend `try/finally`.
+- [ ] Implement scalar identifier value objects as **extension types** per docs/domain-model.md (IDs on `int`) and multi-field value objects as immutable classes. Migrate existing value types (e.g. Display, Window dimensions; CapturedFrame, CapturedImage, CapturedAudio; FilterId) accordingly and have entities use them (e.g. Display uses DisplayId and FrameSize).
 
 ## Design review
 

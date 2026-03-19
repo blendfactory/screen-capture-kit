@@ -6,11 +6,11 @@ import 'package:screen_capture_kit/src/domain/entities/window.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 import 'package:screen_capture_kit/src/infrastructure/screen_capture_kit_stub.dart'
     if (dart.library.io)
       'package:screen_capture_kit/src/infrastructure/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
-import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 
 /// Application-layer port for ScreenCaptureKit operations.
@@ -20,27 +20,27 @@ abstract class ScreenCaptureKitPort {
     bool onScreenWindowsOnly,
   });
 
-  Future<ContentFilterHandle> createWindowFilter(Window window);
+  Future<FilterId> createWindowFilter(Window window);
 
-  Future<ContentFilterHandle> createDisplayFilter(
+  Future<FilterId> createDisplayFilter(
     Display display, {
     List<Window>? excludingWindows,
   });
 
-  void releaseFilter(ContentFilterHandle handle);
+  void releaseFilter(FilterId handle);
 
-  Future<ContentFilterHandle?> presentContentSharingPicker({
+  Future<FilterId?> presentContentSharingPicker({
     List<ContentSharingPickerMode>? allowedModes,
   });
 
   Future<CapturedImage> captureScreenshot(
-    ContentFilterHandle filterHandle, {
+    FilterId filterHandle, {
     int width,
     int height,
   });
 
   Stream<CapturedFrame> startCaptureStream(
-    ContentFilterHandle filterHandle, {
+    FilterId filterHandle, {
     int width,
     int height,
     int frameRate,
@@ -55,7 +55,7 @@ abstract class ScreenCaptureKitPort {
   });
 
   CaptureStream startCaptureStreamWithUpdater(
-    ContentFilterHandle filterHandle, {
+    FilterId filterHandle, {
     int width,
     int height,
     int frameRate,
@@ -88,12 +88,12 @@ class ScreenCaptureKitImpl implements ScreenCaptureKitPort {
   }
 
   @override
-  Future<ContentFilterHandle> createWindowFilter(Window window) {
+  Future<FilterId> createWindowFilter(Window window) {
     return Isolate.run(() => createWindowFilterImpl(window));
   }
 
   @override
-  Future<ContentFilterHandle> createDisplayFilter(
+  Future<FilterId> createDisplayFilter(
     Display display, {
     List<Window>? excludingWindows,
   }) {
@@ -106,12 +106,12 @@ class ScreenCaptureKitImpl implements ScreenCaptureKitPort {
   }
 
   @override
-  void releaseFilter(ContentFilterHandle handle) {
+  void releaseFilter(FilterId handle) {
     releaseFilterImpl(handle);
   }
 
   @override
-  Future<ContentFilterHandle?> presentContentSharingPicker({
+  Future<FilterId?> presentContentSharingPicker({
     List<ContentSharingPickerMode>? allowedModes,
   }) {
     return Isolate.run(
@@ -121,7 +121,7 @@ class ScreenCaptureKitImpl implements ScreenCaptureKitPort {
 
   @override
   Future<CapturedImage> captureScreenshot(
-    ContentFilterHandle filterHandle, {
+    FilterId filterHandle, {
     int width = 0,
     int height = 0,
   }) {
@@ -136,7 +136,7 @@ class ScreenCaptureKitImpl implements ScreenCaptureKitPort {
 
   @override
   Stream<CapturedFrame> startCaptureStream(
-    ContentFilterHandle filterHandle, {
+    FilterId filterHandle, {
     int width = 0,
     int height = 0,
     int frameRate = 60,
@@ -167,7 +167,7 @@ class ScreenCaptureKitImpl implements ScreenCaptureKitPort {
 
   @override
   CaptureStream startCaptureStreamWithUpdater(
-    ContentFilterHandle filterHandle, {
+    FilterId filterHandle, {
     int width = 0,
     int height = 0,
     int frameRate = 60,

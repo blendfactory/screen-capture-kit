@@ -64,7 +64,7 @@ Value objects use **Dart extension types** for scalar identifiers, and **immutab
 | **DisplayId** | `int` | Display identifier (maps to native). |
 | **WindowId** | `int` | Window identifier (maps to native). |
 | **ProcessId** | `int` | Process identifier (maps to native). |
-| **FilterId** | `int` | Opaque filter handle id (must be > 0). Used by `ContentFilterHandle`. |
+| **FilterId** | `int` | Opaque filter handle id (must be > 0). Must be released via application service. |
 
 Example:
 
@@ -78,7 +78,7 @@ extension type FilterId(int value) {
 }
 ```
 
-`ContentFilterHandle` is the public API type for a filter; it can be an extension type on `FilterId` (or on `int`) and must enforce `value > 0` at construction.
+`FilterId` is the public API type for a content filter; it must be released with `releaseFilter` when no longer needed.
 
 ### Geometric / size value objects (immutable classes)
 
@@ -140,7 +140,7 @@ flowchart TB
 2. **Entities**: Use value object types for ids and dimensions (e.g. `Display` has `DisplayId` and `FrameSize`, not raw `int`).
 3. **Aggregate root**: Only `ShareableContent` is the aggregate root. All reads of “what can be captured” go through it. Do not add another root for the same consistency boundary.
 4. **Capture results**: `CapturedFrame`, `CapturedImage`, and `CapturedAudio` are value objects (extension types); they are produced by the application/infrastructure layer and consumed by the caller; they do not belong to the ShareableContent aggregate.
-5. **ContentFilterHandle**: Represents an opaque native filter. Model as a value object (extension type on `FilterId` or `int`) in the API layer; ensure `FilterId > 0` at construction and document that the handle must be released via the application service.
+5. **FilterId**: Represents an opaque native content filter. Use `FilterId > 0` at construction; document that it must be released via the application service (`releaseFilter`).
 
 ---
 
@@ -152,4 +152,4 @@ flowchart TB
 - `domain/value_objects/capture/` — `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`.
 - `domain/errors/screen_capture_kit_exception.dart` — domain exception (no extension type).
 
-Presentation/API may re-export `ContentFilterHandle` as an extension type on `FilterId` for the public API.
+`FilterId` is exported from the public API.

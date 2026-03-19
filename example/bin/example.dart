@@ -5,7 +5,7 @@ import 'package:screen_capture_kit/screen_capture_kit.dart';
 /// Runs stream capture for the given filter and returns frame count.
 Future<int> runStreamCapture(
   ScreenCaptureKit kit,
-  ContentFilterHandle filterHandle, {
+  FilterId filterHandle, {
   required int width,
   required int height,
   required String label,
@@ -124,7 +124,7 @@ void main() async {
 
     // 2. Window filter: capture single window
     if (content.windows.isNotEmpty) {
-      ContentFilterHandle? windowFilter;
+      FilterId? windowFilter;
       Window? window;
       for (final w in content.windows) {
         try {

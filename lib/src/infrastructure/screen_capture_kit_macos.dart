@@ -20,7 +20,6 @@ import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_i
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/process_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/window_id.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
-import 'package:screen_capture_kit/src/presentation/content_filter_handle.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_configuration.dart';
 import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 
@@ -379,7 +378,7 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
   );
 }
 
-ContentFilterHandle createWindowFilterImpl(Window window) {
+FilterId createWindowFilterImpl(Window window) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
       'screen_capture_kit only supports macOS. '
@@ -394,10 +393,10 @@ ContentFilterHandle createWindowFilterImpl(Window window) {
       'The window may no longer exist or may not be capturable.',
     );
   }
-  return ContentFilterHandle(FilterId(filterId));
+  return FilterId(filterId);
 }
 
-ContentFilterHandle createDisplayFilterImpl(
+FilterId createDisplayFilterImpl(
   Display display, {
   List<Window>? excludingWindows,
 }) {
@@ -436,10 +435,10 @@ ContentFilterHandle createDisplayFilterImpl(
       'The display may not exist or may not be capturable.',
     );
   }
-  return ContentFilterHandle(FilterId(filterId));
+  return FilterId(filterId);
 }
 
-void releaseFilterImpl(ContentFilterHandle handle) {
+void releaseFilterImpl(FilterId handle) {
   if (!Platform.isMacOS) {
     return;
   }
@@ -447,7 +446,7 @@ void releaseFilterImpl(ContentFilterHandle handle) {
 }
 
 CapturedImage captureScreenshotImpl(
-  ContentFilterHandle filterHandle, {
+  FilterId filterHandle, {
   int width = 0,
   int height = 0,
 }) {
@@ -498,7 +497,7 @@ CapturedImage captureScreenshotImpl(
   return CapturedImage(pngData: pngData, width: w, height: h);
 }
 
-ContentFilterHandle? presentContentSharingPickerImpl({
+FilterId? presentContentSharingPickerImpl({
   List<ContentSharingPickerMode>? allowedModes,
 }) {
   if (!Platform.isMacOS) {
@@ -555,7 +554,7 @@ ContentFilterHandle? presentContentSharingPickerImpl({
     if (id <= 0) {
       return null;
     }
-    return ContentFilterHandle(FilterId(id));
+    return FilterId(id);
   } finally {
     if (modesPtr != nullptr) {
       malloc.free(modesPtr);
@@ -717,7 +716,7 @@ Pointer<Utf8> _allocColorSpaceName(String? name) {
 }
 
 Stream<CapturedFrame> startCaptureStreamImpl(
-  ContentFilterHandle filterHandle, {
+  FilterId filterHandle, {
   int width = 0,
   int height = 0,
   int frameRate = 60,
@@ -886,7 +885,7 @@ void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
 
 void streamUpdateContentFilterImpl(
   int streamId,
-  ContentFilterHandle handle,
+  FilterId handle,
 ) {
   final result = _streamUpdateContentFilter(streamId, handle.filterId);
   if (result != 0) {
@@ -921,7 +920,7 @@ void streamUpdateContentFilterImpl(
 }
 
 CaptureStream startCaptureStreamWithUpdaterImpl(
-  ContentFilterHandle filterHandle, {
+  FilterId filterHandle, {
   int width = 0,
   int height = 0,
   int frameRate = 60,

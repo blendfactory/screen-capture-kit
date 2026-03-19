@@ -26,10 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Shareable content API: `getShareableContent()` returning displays, applications, and windows (`Display`, `RunningApplication`, `Window`, `ShareableContent`).
-- Content filters: `createWindowFilter(Window)`, `createDisplayFilter(Display, {excludingWindows})`, `releaseFilter(ContentFilterHandle)`.
+- Content filters: `createWindowFilter(Window)`, `createDisplayFilter(Display, {excludingWindows})`, `releaseFilter(FilterId)`.
 - Display and window capture: `startCaptureStream()` and `startCaptureStreamWithUpdater()` with configurable width, height, frame rate, source rect (region capture), cursor visibility, queue depth, and optional system audio (macOS 13+) and microphone (macOS 15+).
 - Runtime updates: `CaptureStream.updateConfiguration()`, `CaptureStream.updateContentFilter()` for changing stream config or filter without stopping.
-- Screenshot: `captureScreenshot(ContentFilterHandle, {width, height})` (macOS 14+).
+- Screenshot: `captureScreenshot(FilterId, {width, height})` (macOS 14+).
 - System content-sharing picker (macOS 14+): `presentContentSharingPicker({allowedModes})`, `ContentSharingPickerMode` enum, `ContentSharingPickerConfiguration`, and `CaptureStream.setContentSharingPickerConfiguration()` for per-stream picker config.
 - Exception type: `ScreenCaptureKitException` with optional domain and code from native errors.
 - Stub implementation on non-macOS platforms (throws `UnsupportedError`).
