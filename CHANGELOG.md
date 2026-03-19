@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-03-19
+
+### Removed
+
+- `ScreenCaptureKitPort` and `ScreenCaptureKitImpl`: the public entry type is `ScreenCaptureKit` only. Tests may use `implements ScreenCaptureKit` or a mocking package (see class documentation).
+- `ContentFilterHandle`: use `FilterId` directly for `captureScreenshot`, stream APIs, and `releaseFilter`.
+
+### Changed
+
+- Domain layout: `entities/`, `value_objects/` (`geometry/`, `identifiers/`, `capture/`), and `errors/`; shareable-content types and capture configuration types (`ContentFilter`, `StreamConfiguration`, picker types, etc.) are grouped under domain value objects where appropriate.
+- **Breaking type updates**: entities use `DisplayId`, `WindowId`, `ProcessId`, `FrameSize`, and `PixelRect` instead of raw primitives; `CapturedFrame` and `CapturedImage` expose `FrameSize` for dimensions.
+
+### Fixed
+
+- Native bridge: safer cross-thread transfer for frame metadata (C strings) and corrected `@available` branching in the stream path.
+
 ## [0.0.2] - 2026-03-18
 
 ### Fixed
@@ -35,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stub implementation on non-macOS platforms (throws `UnsupportedError`).
 - Dart SDK constraint `^3.10.0` and dependency set (code_assets, ffi, hooks, meta, native_toolchain_c; mocktail, test for dev).
 
-[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.2...HEAD
+[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.3...HEAD
+[0.0.3]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.3
 [0.0.2]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.2
 [0.0.1]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.1
