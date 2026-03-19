@@ -15,6 +15,8 @@ import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_fra
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_configuration.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/frame_rate.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/queue_depth.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/stream_configuration.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
@@ -721,10 +723,10 @@ Pointer<Utf8> _allocColorSpaceName(String? name) {
 Stream<CapturedFrame> startCaptureStreamImpl(
   FilterId filterHandle, {
   FrameSize outputSize = const FrameSize.zero(),
-  int frameRate = 60,
+  FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
   bool showsCursor = true,
-  int queueDepth = 5,
+  QueueDepth queueDepth = const QueueDepth.depth5(),
   bool capturesAudio = false,
   bool excludesCurrentProcessAudio = false,
   bool captureMicrophone = false,
@@ -747,13 +749,13 @@ Stream<CapturedFrame> startCaptureStreamImpl(
       filterHandle.filterId,
       outputSize.width,
       outputSize.height,
-      frameRate,
+      frameRate.value,
       src?.x ?? 0,
       src?.y ?? 0,
       src?.width ?? 0,
       src?.height ?? 0,
       showsCursor ? 1 : 0,
-      depth,
+      depth.value,
       capturesAudio ? 1 : 0,
       excludesCurrentProcessAudio ? 1 : 0,
       captureMicrophone ? 1 : 0,
@@ -924,10 +926,10 @@ void streamUpdateContentFilterImpl(
 CaptureStream startCaptureStreamWithUpdaterImpl(
   FilterId filterHandle, {
   FrameSize outputSize = const FrameSize.zero(),
-  int frameRate = 60,
+  FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
   bool showsCursor = true,
-  int queueDepth = 5,
+  QueueDepth queueDepth = const QueueDepth.depth5(),
   bool capturesAudio = false,
   bool excludesCurrentProcessAudio = false,
   bool captureMicrophone = false,
@@ -950,13 +952,13 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
       filterHandle.filterId,
       outputSize.width,
       outputSize.height,
-      frameRate,
+      frameRate.value,
       src?.x ?? 0,
       src?.y ?? 0,
       src?.width ?? 0,
       src?.height ?? 0,
       showsCursor ? 1 : 0,
-      depth,
+      depth.value,
       capturesAudio ? 1 : 0,
       excludesCurrentProcessAudio ? 1 : 0,
       captureMicrophone ? 1 : 0,

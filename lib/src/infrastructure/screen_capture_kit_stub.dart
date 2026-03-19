@@ -7,6 +7,8 @@ import 'package:screen_capture_kit/src/domain/entities/window.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/frame_rate.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/queue_depth.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
@@ -99,10 +101,10 @@ CapturedImage captureScreenshotImpl(
 Stream<CapturedFrame> startCaptureStreamImpl(
   FilterId filterHandle, {
   FrameSize outputSize = const FrameSize.zero(),
-  int frameRate = 60,
+  FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
   bool showsCursor = true,
-  int queueDepth = 5,
+  QueueDepth queueDepth = const QueueDepth.depth5(),
   bool capturesAudio = false,
   bool excludesCurrentProcessAudio = false,
   bool captureMicrophone = false,
@@ -124,10 +126,10 @@ Stream<CapturedFrame> startCaptureStreamImpl(
 CaptureStream startCaptureStreamWithUpdaterImpl(
   FilterId filterHandle, {
   FrameSize outputSize = const FrameSize.zero(),
-  int frameRate = 60,
+  FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
   bool showsCursor = true,
-  int queueDepth = 5,
+  QueueDepth queueDepth = const QueueDepth.depth5(),
   bool capturesAudio = false,
   bool excludesCurrentProcessAudio = false,
   bool captureMicrophone = false,
