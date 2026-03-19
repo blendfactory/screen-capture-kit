@@ -95,9 +95,16 @@ This design allows low-latency frame capture while keeping the Dart API simple.
 
 ## Example app
 
-See the `example/` directory for a full sample including display, window, region, and system picker capture.
+See the `example/` directory for a full sample including display, window, region, and system picker capture. Run instructions: [example/README.md](example/README.md).
+
+## Roadmap
+
+Major capability areas are **implemented** and listed under [Features](#features): display/window capture, region crop via `sourceRect`, cursor visibility, system and microphone audio (where supported by macOS version), frame rate, multi-display, screenshot (macOS 14+), and the system content-sharing picker (macOS 14+).
+
+**Not exposed** in the Dart API today includes many optional framework knobs (e.g. `SCStreamDelegate`, several advanced `SCStreamConfiguration` properties, include-only window filters). Maintainers track those gaps in the repository checklist [`.cursor/skills/screen-capture-kit-api-coverage/SKILL.md`](.cursor/skills/screen-capture-kit-api-coverage/SKILL.md).
 
 ## Additional documentation
 
+- [Contributing](CONTRIBUTING.md) — setup, tests, and PR guidelines
 - [Domain model](doc/domain-model.md) — aggregate root, entities, and value objects
 - [Intended use cases](doc/intended-use-cases.md) — capture-only scope and typical pipelines

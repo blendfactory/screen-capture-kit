@@ -1,6 +1,6 @@
 # Domain Model: Screen Capture
 
-This document defines the **aggregate root**, **entities**, and **value objects** for the Screen Capture bounded context. Value objects are implemented using **Dart extension types** (Dart 3+).
+This document defines the **aggregate root**, **entities**, and **value objects** for the Screen Capture bounded context. **Scalar identifiers** use **Dart extension types**; **geometry, capture results, and multi-field config** use **immutable classes** (Dart 3+).
 
 ## Bounded context
 
@@ -31,7 +31,7 @@ flowchart TB
     AR --> E3["RunningApplication\n(entity)"]
   end
   E1 --> VO_D["DisplayId\n(value, extension type)"]
-  E1 --> VO_S["FrameSize\n(value, extension type)"]
+  E1 --> VO_S["FrameSize\n(immutable class)"]
   E2 --> VO_W["WindowId\n(value, extension type)"]
   E2 --> VO_R["PixelRect\n(value, extension type)"]
   E3 --> VO_P["ProcessId\n(value, extension type)"]
@@ -49,7 +49,7 @@ Entities have **identity** (stable id over time). They are immutable snapshots i
 | **Window** | `WindowId` | An on-screen window. Contains `WindowId`, `PixelRect` (frame), `RunningApplication` (owner), optional title. |
 | **RunningApplication** | `ProcessId` (+ app name / bundle id for display) | A running app. Contains `ProcessId`, bundle identifier, application name. |
 
-Entities reference **value objects** (IDs, rects, sizes) implemented as extension types. They do **not** hold raw `int`/`double` for ids and dimensions; they use the value object types.
+Entities reference **value objects**: extension-type **identifiers** and immutable **geometry** types (`FrameSize`, `PixelRect`). They do **not** hold raw `int`/`double` for ids and dimensions where a value object exists.
 
 ---
 
@@ -69,12 +69,13 @@ Value objects use **Dart extension types** for scalar identifiers, and **immutab
 Example:
 
 ```dart
-extension type DisplayId(int value) {
+extension type const DisplayId(int value) {
   int get displayId => value;
 }
-extension type FilterId(int value) {
+
+extension type const FilterId(int value) {
   int get filterId => value;
-  /// Use at construction: FilterId(id) with id > 0.
+  // Creation sites must enforce FilterId(id) with id > 0.
 }
 ```
 
@@ -116,10 +117,10 @@ flowchart TB
     W["Window\nWindowId, PixelRect, RunningApplication"]
     RA["RunningApplication\nProcessId, bundleId, name"]
   end
-  subgraph ValueObjects["Value objects (extension types)"]
-    ID["DisplayId, WindowId, ProcessId, FilterId"]
-    GEO["FrameSize, PixelRect"]
-    CAP["CapturedFrame, CapturedImage, CapturedAudio"]
+  subgraph ValueObjects["Value objects"]
+    ID["IDs: DisplayId, WindowId, ProcessId, FilterId\n(extension types)"]
+    GEO["FrameSize, PixelRect\n(immutable classes)"]
+    CAP["CapturedFrame, CapturedImage, CapturedAudio\n(immutable classes)"]
   end
   L1 --> D
   L2 --> W
