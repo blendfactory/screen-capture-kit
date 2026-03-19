@@ -18,8 +18,7 @@ Future<int> runStreamCapture(
   final completer = Completer<void>();
   final stream = kit.startCaptureStream(
     filterHandle,
-    width: width,
-    height: height,
+    outputSize: FrameSize(width: width, height: height),
     sourceRect: sourceRect,
   );
   final subscription = stream.listen(

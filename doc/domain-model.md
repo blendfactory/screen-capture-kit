@@ -85,7 +85,7 @@ extension type const FilterId(int value) {
 
 | Value object | Representation | Purpose |
 |--------------|----------------|---------|
-| **FrameSize** | `(int width, int height)` | Width and height in pixels. |
+| **FrameSize** | `(int width, int height)` | Width and height in pixels; use the [`FrameSize`] factory — **non-negative**, and either **0×0** ([`FrameSize.zero`]) or **both strictly positive**; otherwise [`ArgumentError`]. |
 | **PixelRect** | `(double x, double y, double width, double height)` | Rectangle in screen points (e.g. window frame, source rect). |
 
 ### Capture result value objects (immutable classes)

@@ -56,7 +56,10 @@ void main() async {
   final display = content.displays.first;
   final filter = await kit.createDisplayFilter(display);
 
-  kit.startCaptureStream(filter, width: display.width, height: display.height)
+  kit.startCaptureStream(
+    filter,
+    outputSize: FrameSize(width: display.width, height: display.height),
+  )
       .listen((frame) {
     print('Frame: ${frame.size.width}x${frame.size.height}');
   });

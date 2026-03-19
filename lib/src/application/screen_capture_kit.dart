@@ -8,6 +8,8 @@ import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_aud
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart'
+    show FrameSize;
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 import 'package:screen_capture_kit/src/infrastructure/screen_capture_kit_stub.dart'
@@ -112,19 +114,19 @@ class ScreenCaptureKit {
   /// Returns PNG-encoded image data. Requires macOS 14.0 or newer.
   /// On older macOS, throws [ScreenCaptureKitException].
   ///
-  /// [width] and [height] optionally specify output dimensions; 0 uses default.
+  /// [outputSize] optionally sets output dimensions; use [FrameSize.zero] to
+  /// let the native layer choose.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager/captureimage(contentfilter:configuration:completionhandler:)
   Future<CapturedImage> captureScreenshot(
     FilterId filterHandle, {
-    int width = 0,
-    int height = 0,
+    FrameSize outputSize = const FrameSize.zero(),
   }) {
     return Isolate.run(
       () => captureScreenshotImpl(
         filterHandle,
-        width: width,
-        height: height,
+        width: outputSize.width,
+        height: outputSize.height,
       ),
     );
   }
@@ -149,8 +151,7 @@ class ScreenCaptureKit {
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
   Stream<CapturedFrame> startCaptureStream(
     FilterId filterHandle, {
-    int width = 0,
-    int height = 0,
+    FrameSize outputSize = const FrameSize.zero(),
     int frameRate = 60,
     PixelRect? sourceRect,
     bool showsCursor = true,
@@ -163,8 +164,8 @@ class ScreenCaptureKit {
   }) {
     return startCaptureStreamImpl(
       filterHandle,
-      width: width,
-      height: height,
+      width: outputSize.width,
+      height: outputSize.height,
       frameRate: frameRate,
       sourceRect: sourceRect,
       showsCursor: showsCursor,
@@ -187,8 +188,7 @@ class ScreenCaptureKit {
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
   CaptureStream startCaptureStreamWithUpdater(
     FilterId filterHandle, {
-    int width = 0,
-    int height = 0,
+    FrameSize outputSize = const FrameSize.zero(),
     int frameRate = 60,
     PixelRect? sourceRect,
     bool showsCursor = true,
@@ -201,8 +201,8 @@ class ScreenCaptureKit {
   }) {
     return startCaptureStreamWithUpdaterImpl(
       filterHandle,
-      width: width,
-      height: height,
+      width: outputSize.width,
+      height: outputSize.height,
       frameRate: frameRate,
       sourceRect: sourceRect,
       showsCursor: showsCursor,

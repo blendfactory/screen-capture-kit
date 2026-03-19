@@ -71,7 +71,7 @@ Step-by-step workflow for adding a new ScreenCaptureKit feature to the screen-ca
 ## Example: Window capture (already shipped — use as reference)
 
 1. **Spec:** `SCContentFilter(desktopIndependentWindow:)`, `SCWindow`, `SCShareableContent.windows`
-2. **Dart API:** `getShareableContent()` → `Window` list on `ShareableContent`; `createWindowFilter(Window)` → `FilterId`; `startCaptureStream(filter, …)` / `startCaptureStreamWithUpdater(filter, …)` → `Stream<CapturedFrame>` / `CaptureStream`
+2. **Dart API:** `getShareableContent()` → `Window` list on `ShareableContent`; `createWindowFilter(Window)` → `FilterId`; `startCaptureStream(filter, outputSize: …)` / `startCaptureStreamWithUpdater(filter, outputSize: …)` → `Stream<CapturedFrame>` / `CaptureStream` (use `FrameSize.zero` or `FrameSize(width:, height:)`)
 3. **Native:** `native/content_filter.m`, `native/stream.m`, FFI from `screen_capture_kit_macos.dart`
 4. **Docs:** `///` on facade and exported types; README usage flow
 5. **Example:** Window path in `example/bin/example.dart`

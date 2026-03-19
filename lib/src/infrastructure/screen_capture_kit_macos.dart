@@ -836,8 +836,8 @@ void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
   try {
     final result = _streamUpdateConfiguration(
       streamId,
-      options.width,
-      options.height,
+      options.outputSize.width,
+      options.outputSize.height,
       options.frameRate,
       src?.x ?? 0,
       src?.y ?? 0,

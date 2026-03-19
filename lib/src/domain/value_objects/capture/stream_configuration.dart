@@ -1,15 +1,14 @@
-import 'package:screen_capture_kit/screen_capture_kit.dart' show CaptureStream;
+import 'package:screen_capture_kit/screen_capture_kit.dart' show FrameSize;
+import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
-import 'package:screen_capture_kit/src/presentation/capture_stream.dart'
-    show CaptureStream;
 
 /// Options for stream configuration.
 ///
-/// Used with updateConfiguration for changing stream config at runtime.
+/// Used with `CaptureStream.updateConfiguration` for changing stream config at
+/// runtime.
 class StreamConfiguration {
   const StreamConfiguration({
-    this.width = 0,
-    this.height = 0,
+    this.outputSize = const FrameSize.zero(),
     this.frameRate = 60,
     this.sourceRect,
     this.showsCursor = true,
@@ -21,15 +20,17 @@ class StreamConfiguration {
     this.colorSpaceName,
   });
 
-  final int width;
-  final int height;
+  /// Output dimensions; [FrameSize.zero] leaves sizing to the native layer
+  /// (0×0 in the Objective-C bridge).
+  final FrameSize outputSize;
+
   final int frameRate;
   final PixelRect? sourceRect;
   final bool showsCursor;
   final int queueDepth;
 
   /// When true, system audio is captured and available on
-  /// [CaptureStream.audioStream].
+  /// `CaptureStream.audioStream`.
   final bool capturesAudio;
 
   /// When true, this application's audio is excluded from capture.

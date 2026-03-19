@@ -24,11 +24,11 @@ void main() {
     });
 
     test('ContentFilter.display creates with display', () {
-      const display = Display(
-        displayId: DisplayId(1),
+      final display = Display(
+        displayId: const DisplayId(1),
         size: FrameSize(width: 1920, height: 1080),
       );
-      const filter = ContentFilter.display(display);
+      final filter = ContentFilter.display(display);
       expect(filter, isA<ContentFilter>());
       expect(filter.toString(), contains('display'));
     });
@@ -36,8 +36,8 @@ void main() {
     test(
       'ContentFilter.displayExcludingWindows creates with display and list',
       () {
-        const display = Display(
-          displayId: DisplayId(1),
+        final display = Display(
+          displayId: const DisplayId(1),
           size: FrameSize(width: 1920, height: 1080),
         );
         const app = RunningApplication(
@@ -50,7 +50,10 @@ void main() {
           frame: PixelRect(x: 0, y: 0, width: 100, height: 100),
           owningApplication: app,
         );
-        const filter = ContentFilter.displayExcludingWindows(display, [window]);
+        final filter = ContentFilter.displayExcludingWindows(
+          display,
+          const [window],
+        );
         expect(filter, isA<ContentFilter>());
         expect(filter.toString(), contains('displayExcludingWindows'));
       },
@@ -69,6 +72,32 @@ void main() {
     test('creates with positive filter id', () {
       const filterId = FilterId(1);
       expect(filterId.filterId, 1);
+    });
+  });
+
+  group('FrameSize', () {
+    test('zero is 0x0', () {
+      expect(const FrameSize.zero().width, 0);
+      expect(const FrameSize.zero().height, 0);
+      expect(FrameSize.zero, returnsNormally);
+    });
+
+    test('factory rejects negative dimensions', () {
+      expect(
+        () => FrameSize(width: -1, height: 10),
+        throwsArgumentError,
+      );
+    });
+
+    test('factory rejects mixed zero and positive (capture output rule)', () {
+      expect(
+        () => FrameSize(width: 100, height: 0),
+        throwsArgumentError,
+      );
+    });
+
+    test('factory returns FrameSize.zero for 0x0', () {
+      expect(FrameSize(width: 0, height: 0), const FrameSize.zero());
     });
   });
 
@@ -113,7 +142,7 @@ void main() {
     test('creates with required fields', () {
       final frame = CapturedFrame(
         bgraData: Uint8List.fromList([1, 2, 3, 4]),
-        size: const FrameSize(width: 10, height: 5),
+        size: FrameSize(width: 10, height: 5),
         bytesPerRow: 40,
       );
       expect(frame.bgraData.length, 4);
@@ -127,7 +156,7 @@ void main() {
     test('creates with required fields', () {
       final image = CapturedImage(
         pngData: Uint8List.fromList([0x89, 0x50, 0x4e]),
-        size: const FrameSize(width: 100, height: 50),
+        size: FrameSize(width: 100, height: 50),
       );
       expect(image.pngData.length, 3);
       expect(image.width, 100);
@@ -153,8 +182,9 @@ void main() {
   group('StreamConfiguration', () {
     test('creates with defaults', () {
       const config = StreamConfiguration();
-      expect(config.width, 0);
-      expect(config.height, 0);
+      expect(config.outputSize, const FrameSize.zero());
+      expect(config.outputSize.width, 0);
+      expect(config.outputSize.height, 0);
       expect(config.frameRate, 60);
       expect(config.sourceRect, isNull);
       expect(config.showsCursor, isTrue);
@@ -165,16 +195,15 @@ void main() {
     });
 
     test('creates with custom values', () {
-      const config = StreamConfiguration(
-        width: 320,
-        height: 240,
+      final config = StreamConfiguration(
+        outputSize: FrameSize(width: 320, height: 240),
         frameRate: 30,
-        sourceRect: PixelRect(x: 0, y: 0, width: 320, height: 240),
+        sourceRect: const PixelRect(x: 0, y: 0, width: 320, height: 240),
         showsCursor: false,
         queueDepth: 8,
       );
-      expect(config.width, 320);
-      expect(config.height, 240);
+      expect(config.outputSize.width, 320);
+      expect(config.outputSize.height, 240);
       expect(config.frameRate, 30);
       expect(config.sourceRect?.width, 320);
       expect(config.showsCursor, isFalse);
@@ -182,9 +211,8 @@ void main() {
     });
 
     test('creates with custom audio values', () {
-      const config = StreamConfiguration(
-        width: 320,
-        height: 240,
+      final config = StreamConfiguration(
+        outputSize: FrameSize(width: 320, height: 240),
         capturesAudio: true,
         excludesCurrentProcessAudio: true,
         captureMicrophone: true,
@@ -217,7 +245,11 @@ void main() {
         setContentSharingPickerConfiguration: (_) {},
       );
       expect(capture.stream, equals(controller.stream));
-      capture.updateConfiguration(const StreamConfiguration(width: 100));
+      capture.updateConfiguration(
+        StreamConfiguration(
+          outputSize: FrameSize(width: 100, height: 100),
+        ),
+      );
       expect(updateCalled, isTrue);
       await controller.close();
     });
@@ -334,14 +366,14 @@ void main() {
     });
 
     test('creates with display data', () {
-      const display = Display(
-        displayId: DisplayId(1),
+      final display = Display(
+        displayId: const DisplayId(1),
         size: FrameSize(width: 1920, height: 1080),
       );
-      const content = ShareableContent(
+      final content = ShareableContent(
         displays: [display],
-        applications: [],
-        windows: [],
+        applications: const [],
+        windows: const [],
       );
       expect(content.displays, hasLength(1));
       expect(content.displays.first.displayId.value, 1);
@@ -350,16 +382,16 @@ void main() {
     });
 
     test('Display equality', () {
-      const a = Display(
-        displayId: DisplayId(1),
+      final a = Display(
+        displayId: const DisplayId(1),
         size: FrameSize(width: 1920, height: 1080),
       );
-      const b = Display(
-        displayId: DisplayId(1),
+      final b = Display(
+        displayId: const DisplayId(1),
         size: FrameSize(width: 1920, height: 1080),
       );
-      const c = Display(
-        displayId: DisplayId(2),
+      final c = Display(
+        displayId: const DisplayId(2),
         size: FrameSize(width: 1920, height: 1080),
       );
       expect(a, equals(b));
@@ -606,8 +638,7 @@ void main() {
           try {
             final stream = ScreenCaptureKit().startCaptureStream(
               handle,
-              width: 64,
-              height: 64,
+              outputSize: FrameSize(width: 64, height: 64),
               frameRate: 10,
               queueDepth: 3,
             );
@@ -664,8 +695,7 @@ void main() {
           try {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle,
-              width: 64,
-              height: 64,
+              outputSize: FrameSize(width: 64, height: 64),
               frameRate: 10,
               queueDepth: 3,
             );
@@ -680,9 +710,8 @@ void main() {
             try {
               await Future<void>.delayed(const Duration(milliseconds: 200));
               capture.updateConfiguration(
-                const StreamConfiguration(
-                  width: 128,
-                  height: 128,
+                StreamConfiguration(
+                  outputSize: FrameSize(width: 128, height: 128),
                   frameRate: 15,
                 ),
               );
@@ -727,8 +756,7 @@ void main() {
           try {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle,
-              width: 64,
-              height: 64,
+              outputSize: FrameSize(width: 64, height: 64),
               frameRate: 10,
               queueDepth: 3,
               capturesAudio: true,
@@ -786,8 +814,7 @@ void main() {
           try {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle1,
-              width: 64,
-              height: 64,
+              outputSize: FrameSize(width: 64, height: 64),
               frameRate: 10,
               queueDepth: 3,
             );
