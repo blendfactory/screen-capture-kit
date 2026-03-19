@@ -11,8 +11,7 @@ import 'package:screen_capture_kit/src/domain/value_objects/capture/content_shar
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 import 'package:screen_capture_kit/src/infrastructure/screen_capture_kit_stub.dart'
-    if (dart.library.io)
-      'package:screen_capture_kit/src/infrastructure/screen_capture_kit_macos.dart';
+    if (dart.library.io) 'package:screen_capture_kit/src/infrastructure/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
 
 /// Application-layer port for ScreenCaptureKit operations.
@@ -224,11 +223,10 @@ class ScreenCaptureKit implements ScreenCaptureKitPort {
   Future<ShareableContent> getShareableContent({
     bool excludeDesktopWindows = false,
     bool onScreenWindowsOnly = true,
-  }) =>
-      _impl.getShareableContent(
-        excludeDesktopWindows: excludeDesktopWindows,
-        onScreenWindowsOnly: onScreenWindowsOnly,
-      );
+  }) => _impl.getShareableContent(
+    excludeDesktopWindows: excludeDesktopWindows,
+    onScreenWindowsOnly: onScreenWindowsOnly,
+  );
 
   /// Creates a native content filter for capturing the given window.
   ///
@@ -258,11 +256,10 @@ class ScreenCaptureKit implements ScreenCaptureKitPort {
   Future<FilterId> createDisplayFilter(
     Display display, {
     List<Window>? excludingWindows,
-  }) =>
-      _impl.createDisplayFilter(
-        display,
-        excludingWindows: excludingWindows,
-      );
+  }) => _impl.createDisplayFilter(
+    display,
+    excludingWindows: excludingWindows,
+  );
 
   /// Releases a content filter created by [createWindowFilter] or
   /// [createDisplayFilter].
@@ -285,8 +282,7 @@ class ScreenCaptureKit implements ScreenCaptureKitPort {
   @override
   Future<FilterId?> presentContentSharingPicker({
     List<ContentSharingPickerMode>? allowedModes,
-  }) =>
-      _impl.presentContentSharingPicker(allowedModes: allowedModes);
+  }) => _impl.presentContentSharingPicker(allowedModes: allowedModes);
 
   /// Captures a single screenshot using the given content filter.
   ///
@@ -301,12 +297,11 @@ class ScreenCaptureKit implements ScreenCaptureKitPort {
     FilterId filterHandle, {
     int width = 0,
     int height = 0,
-  }) =>
-      _impl.captureScreenshot(
-        filterHandle,
-        width: width,
-        height: height,
-      );
+  }) => _impl.captureScreenshot(
+    filterHandle,
+    width: width,
+    height: height,
+  );
 
   /// Starts a capture stream yielding [CapturedFrame]s (BGRA pixel data).
   ///
@@ -340,21 +335,20 @@ class ScreenCaptureKit implements ScreenCaptureKitPort {
     bool captureMicrophone = false,
     int? pixelFormat,
     String? colorSpaceName,
-  }) =>
-      _impl.startCaptureStream(
-        filterHandle,
-        width: width,
-        height: height,
-        frameRate: frameRate,
-        sourceRect: sourceRect,
-        showsCursor: showsCursor,
-        queueDepth: queueDepth,
-        capturesAudio: capturesAudio,
-        excludesCurrentProcessAudio: excludesCurrentProcessAudio,
-        captureMicrophone: captureMicrophone,
-        pixelFormat: pixelFormat,
-        colorSpaceName: colorSpaceName,
-      );
+  }) => _impl.startCaptureStream(
+    filterHandle,
+    width: width,
+    height: height,
+    frameRate: frameRate,
+    sourceRect: sourceRect,
+    showsCursor: showsCursor,
+    queueDepth: queueDepth,
+    capturesAudio: capturesAudio,
+    excludesCurrentProcessAudio: excludesCurrentProcessAudio,
+    captureMicrophone: captureMicrophone,
+    pixelFormat: pixelFormat,
+    colorSpaceName: colorSpaceName,
+  );
 
   /// Starts a capture stream and returns a [CaptureStream] that supports
   /// [CaptureStream.updateConfiguration] for changing config at runtime.
@@ -378,19 +372,18 @@ class ScreenCaptureKit implements ScreenCaptureKitPort {
     bool captureMicrophone = false,
     int? pixelFormat,
     String? colorSpaceName,
-  }) =>
-      _impl.startCaptureStreamWithUpdater(
-        filterHandle,
-        width: width,
-        height: height,
-        frameRate: frameRate,
-        sourceRect: sourceRect,
-        showsCursor: showsCursor,
-        queueDepth: queueDepth,
-        capturesAudio: capturesAudio,
-        excludesCurrentProcessAudio: excludesCurrentProcessAudio,
-        captureMicrophone: captureMicrophone,
-        pixelFormat: pixelFormat,
-        colorSpaceName: colorSpaceName,
-      );
+  }) => _impl.startCaptureStreamWithUpdater(
+    filterHandle,
+    width: width,
+    height: height,
+    frameRate: frameRate,
+    sourceRect: sourceRect,
+    showsCursor: showsCursor,
+    queueDepth: queueDepth,
+    capturesAudio: capturesAudio,
+    excludesCurrentProcessAudio: excludesCurrentProcessAudio,
+    captureMicrophone: captureMicrophone,
+    pixelFormat: pixelFormat,
+    colorSpaceName: colorSpaceName,
+  );
 }

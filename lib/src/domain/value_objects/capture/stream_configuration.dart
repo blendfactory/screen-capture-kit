@@ -1,6 +1,7 @@
 import 'package:screen_capture_kit/screen_capture_kit.dart' show CaptureStream;
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
-import 'package:screen_capture_kit/src/presentation/capture_stream.dart' show CaptureStream;
+import 'package:screen_capture_kit/src/presentation/capture_stream.dart'
+    show CaptureStream;
 
 /// Options for stream configuration.
 ///
