@@ -1,0 +1,5 @@
+{
+  "setup-worktree": [
+    "dart pub get"
+  ]
+}
