@@ -129,7 +129,7 @@ void main() async {
         }
       }
       if (windowFilter != null && window != null) {
-        print('\n=== Window capture (${window.title ?? window.windowId}) ===');
+        print('\n=== Window capture (${window.title ?? window.windowId.value}) ===');
         print('Window filter created: ${windowFilter.filterId}');
         try {
           final image = await kit.captureScreenshot(windowFilter);

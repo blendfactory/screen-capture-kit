@@ -8,6 +8,8 @@ import 'package:ffi/ffi.dart';
 import 'package:screen_capture_kit/src/domain/display.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/display_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/frame_size.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/window_id.dart';
 import 'package:screen_capture_kit/src/domain/running_application.dart';
 import 'package:screen_capture_kit/src/domain/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/domain/shareable_content.dart';
@@ -351,8 +353,8 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
     final frameJson = m['frame'] as Map<String, dynamic>? ?? {};
     windows.add(
       Window(
-        windowId: (m['windowId'] as num).toInt(),
-        frame: (
+        windowId: WindowId((m['windowId'] as num).toInt()),
+        frame: PixelRect(
           x: (frameJson['x'] as num?)?.toDouble() ?? 0,
           y: (frameJson['y'] as num?)?.toDouble() ?? 0,
           width: (frameJson['width'] as num?)?.toDouble() ?? 0,
@@ -383,10 +385,10 @@ ContentFilterHandle createWindowFilterImpl(Window window) {
     );
   }
 
-  final filterId = _createContentFilterForWindow(window.windowId);
+  final filterId = _createContentFilterForWindow(window.windowId.value);
   if (filterId <= 0) {
     throw ScreenCaptureKitException(
-      'Failed to create content filter for window ${window.windowId}. '
+      'Failed to create content filter for window ${window.windowId.value}. '
       'The window may no longer exist or may not be capturable.',
     );
   }
@@ -406,7 +408,7 @@ ContentFilterHandle createDisplayFilterImpl(
 
   int filterId;
   if (excludingWindows != null && excludingWindows.isNotEmpty) {
-    final windowIds = excludingWindows.map((w) => w.windowId).toList();
+    final windowIds = excludingWindows.map((w) => w.windowId.value).toList();
     final jsonStr = jsonEncode(windowIds);
     final units = utf8.encode(jsonStr);
     final ptr = malloc<Uint8>(units.length + 1);

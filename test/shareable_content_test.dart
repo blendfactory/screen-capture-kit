@@ -14,8 +14,8 @@ void main() {
         processId: 1,
       );
       const window = Window(
-        windowId: 100,
-        frame: (x: 0, y: 0, width: 800, height: 600),
+        windowId: WindowId(100),
+        frame: PixelRect(x: 0, y: 0, width: 800, height: 600),
         owningApplication: app,
       );
       const filter = ContentFilter.window(window);
@@ -46,8 +46,8 @@ void main() {
           processId: 1,
         );
         const window = Window(
-          windowId: 100,
-          frame: (x: 0, y: 0, width: 100, height: 100),
+          windowId: WindowId(100),
+          frame: PixelRect(x: 0, y: 0, width: 100, height: 100),
           owningApplication: app,
         );
         const filter = ContentFilter.displayExcludingWindows(display, [window]);
@@ -404,12 +404,12 @@ void main() {
         processId: 1,
       );
       const window = Window(
-        windowId: 100,
-        frame: (x: 0, y: 0, width: 800, height: 600),
+        windowId: WindowId(100),
+        frame: PixelRect(x: 0, y: 0, width: 800, height: 600),
         owningApplication: app,
         title: 'Test Window',
       );
-      expect(window.windowId, 100);
+      expect(window.windowId.value, 100);
       expect(window.frame.width, 800);
       expect(window.frame.height, 600);
       expect(window.owningApplication.bundleIdentifier, 'com.example');
