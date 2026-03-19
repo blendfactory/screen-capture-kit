@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Domain layout: `entities/`, `value_objects/` (`geometry/`, `identifiers/`, `capture/`), and `errors/`; shareable-content types and capture configuration types (`ContentFilter`, `StreamConfiguration`, picker types, etc.) are grouped under domain value objects where appropriate.
 - **Breaking type updates**: entities use `DisplayId`, `WindowId`, `ProcessId`, `FrameSize`, and `PixelRect` instead of raw primitives; `CapturedFrame` and `CapturedImage` expose `FrameSize` for dimensions.
+- **Capture output sizing API updates**: `captureScreenshot`, `startCaptureStream`, and `startCaptureStreamWithUpdater` take `outputSize: FrameSize` instead of separate `width`/`height` integers; `StreamConfiguration` uses `outputSize` for stream output dimensions.
+- **FrameSize validation for capture output**: for capture output requests, valid sizes are `FrameSize.zero` (`0×0`, native default) or **both** dimensions strictly positive; mixed `0`/positive pairs throw `ArgumentError`.
 
 ### Fixed
 
