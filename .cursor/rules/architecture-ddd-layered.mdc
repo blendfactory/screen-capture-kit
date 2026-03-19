@@ -88,7 +88,7 @@ flowchart TB
         d_entities["entities: display, window, running_application"]
         d_aggregates["shareable_content"]
         d_values["value objects: captured_frame, captured_image, captured_audio"]
-        d_errors["screen_capture_kit_exception"]
+        d_errors["errors/screen_capture_kit_exception"]
       end
       subgraph application["application/"]
         app_service["screen_capture_kit.dart\n(application service)"]
@@ -127,7 +127,7 @@ lib/
       captured_frame.dart
       captured_image.dart
       captured_audio.dart
-      screen_capture_kit_exception.dart
+      errors/screen_capture_kit_exception.dart
     application/                   # Application layer
       screen_capture_kit.dart      # Main facade / application service
       ports/                       # Optional: interfaces for infra

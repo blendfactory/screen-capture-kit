@@ -7,7 +7,7 @@ library;
 import 'package:screen_capture_kit/src/application/screen_capture_kit.dart'
     as app;
 import 'package:screen_capture_kit/src/domain/display.dart';
-import 'package:screen_capture_kit/src/domain/screen_capture_kit_exception.dart';
+import 'package:screen_capture_kit/src/domain/errors/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/domain/shareable_content.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_frame.dart';
@@ -20,7 +20,7 @@ import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.
 
 export 'src/domain/display.dart';
 export 'src/domain/running_application.dart';
-export 'src/domain/screen_capture_kit_exception.dart';
+export 'src/domain/errors/screen_capture_kit_exception.dart';
 export 'src/domain/shareable_content.dart';
 export 'src/domain/value_objects/captured_audio.dart';
 export 'src/domain/value_objects/captured_frame.dart';

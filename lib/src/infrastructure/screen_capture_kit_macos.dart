@@ -7,7 +7,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:screen_capture_kit/src/domain/display.dart';
 import 'package:screen_capture_kit/src/domain/running_application.dart';
-import 'package:screen_capture_kit/src/domain/screen_capture_kit_exception.dart';
+import 'package:screen_capture_kit/src/domain/errors/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/domain/shareable_content.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/captured_frame.dart';
