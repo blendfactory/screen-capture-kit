@@ -48,6 +48,34 @@ Ref: https://raw.githubusercontent.com/flutter/flutter/refs/heads/main/docs/rule
 - Include code samples where helpful.
 - Explain parameters, return values, and exceptions.
 
+### Doc imports (`@docImport`)
+
+Use this when doc comments reference types you **do not** import in code (e.g. another layer), so `dart doc` can resolve `[TypeName]` links.
+
+**File order (required):**
+
+1. **First line(s) of the file:** one or more `/// @docImport '...';` comments (URI of the library that defines the symbol).
+2. **Immediately next:** `library;` (unnamed library directive).
+3. **Then:** normal `import` / `export` directives and the rest of the code.
+
+Example:
+
+```dart
+/// @docImport 'package:screen_capture_kit/src/domain/value_objects/capture/stream_configuration.dart';
+library;
+
+import 'package:meta/meta.dart';
+
+/// Uses [StreamConfiguration] in prose without importing it for code.
+@immutable
+class Example {}
+```
+
+- Do **not** put `@docImport` after `import` lines; it belongs at the **very start** of the file.
+- After adding doc imports, use bracket references (e.g. `[StreamConfiguration]`) in `///` comments.
+
+Ref: [`dart doc`](https://dart.dev/tools/dart-doc) and [documentation comments](https://dart.dev/language/comments#documentation-comments).
+
 ## Lint Rules
 
 Use `package:dart_lints` in `analysis_options.yaml`:
