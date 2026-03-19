@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": ".cursor/hooks/dart-fix.sh",
+        "matcher": "Write|TabWrite",
+        "timeout": 45
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/verify.sh",
+        "timeout": 180,
+        "loop_limit": 5
+      }
+    ]
+  }
+}
