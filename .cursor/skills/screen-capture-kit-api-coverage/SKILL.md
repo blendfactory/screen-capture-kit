@@ -12,7 +12,7 @@ Checklist for tracking which ScreenCaptureKit APIs are implemented in the Dart p
 ## When to use
 
 - Before adding a new feature (check what's missing)
-- When updating README Roadmap
+- When updating README [Roadmap](../../../README.md#roadmap) or Features
 - During release planning
 - When reviewing PRs for completeness
 
@@ -92,19 +92,22 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 
 ## README Roadmap alignment
 
-| Roadmap item | Coverage target |
-|--------------|-----------------|
-| Window capture | SCContentFilter(desktopIndependentWindow:), SCWindow |
-| Region capture | SCContentFilter.contentRect |
-| Cursor capture | SCStreamConfiguration.showsCursor |
-| Audio capture | capturesAudio, addStreamOutput(.audio) |
-| Frame rate configuration | minimumFrameInterval |
-| Multi-display capture | SCDisplay, createDisplayFilter ✅ |
-| System picker | SCContentSharingPicker, Configuration, Mode ✅ |
+The package [README](../../../README.md) includes a **Roadmap** section that summarizes capability areas. Use this table to map those bullets to ScreenCaptureKit APIs (all rows below are implemented in the current Dart API unless noted).
 
-## Remaining work
+| Roadmap / capability area | Coverage target |
+|---------------------------|-----------------|
+| Window capture | `SCContentFilter(desktopIndependentWindow:)`, `SCWindow` |
+| Region capture | Region via `SCStreamConfiguration.sourceRect` |
+| Cursor capture | `SCStreamConfiguration.showsCursor` |
+| Audio capture | `capturesAudio`, `addStreamOutput` (audio); microphone macOS 15+ |
+| Frame rate configuration | `minimumFrameInterval` via `frameRate` parameter |
+| Multi-display capture | `SCDisplay`, `createDisplayFilter` |
+| System picker | `SCContentSharingPicker`, configuration, mode (macOS 14+) |
 
-- None for required System picker APIs.
+## Remaining work (picker subset)
+
+- **System picker:** No further work required for the picker APIs listed in the checklist above.
+- **Other framework surface:** See **Optional / not yet covered** below for additional APIs (stream delegate, extra config properties, etc.).
 
 ## Optional / not yet covered (spec vs checklist)
 
@@ -130,4 +133,4 @@ Items from the framework spec that are not in the checklist above. Low priority 
 
 1. Before implementing: identify which checklist items the feature touches
 2. After implementing: update Status to ✅ and add Notes
-3. Sync README Roadmap when major items are done
+3. If user-facing, update README **Features** and/or **Roadmap**; keep this file’s alignment table in sync when roadmap wording changes

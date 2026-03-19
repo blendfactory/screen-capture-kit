@@ -1,82 +1,83 @@
 ---
 name: screen-capture-kit-native-bridge
 description: >-
-  Patterns for bridging ScreenCaptureKit Swift APIs to Dart. Use when implementing
-  new native bindings, converting CMSampleBuffer to Dart, or designing the Swift-Dart
-  interface layer.
+  Patterns for bridging ScreenCaptureKit to Dart. Use when implementing native
+  bindings in Objective-C, converting CMSampleBuffer to Dart, or designing the
+  native–Dart interface layer.
 ---
 
 # ScreenCaptureKit Native Bridge
 
-Patterns for bridging Apple ScreenCaptureKit (Swift) to Dart in the screen-capture-kit package.
+Patterns for bridging Apple **ScreenCaptureKit** (called from **Objective-C** in this package) to Dart via **FFI** and **Dart Build Hooks**.
 
 ## When to use
 
-- Implementing a new ScreenCaptureKit API in Swift
+- Implementing a new ScreenCaptureKit API in `native/*.m`
 - Exposing native callbacks (e.g. frame output) as Dart `Stream`
 - Converting `CMSampleBuffer` / `CVPixelBuffer` to Dart-friendly types
-- Designing async Swift → Dart communication
+- Designing async native → Dart communication
 
 ## Architecture
 
 ```
-Dart API (Stream, Future, etc.)
+Dart API (Stream, Future, ScreenCaptureKit facade)
     │
-    │  Dart FFI / Build Hooks
+    │  FFI (C symbols) + Dart Build Hooks
     ▼
-Swift Bridge
+Objective-C bridge (native/*.m)
     │
-    │  ScreenCaptureKit
+    │  ScreenCaptureKit framework
     ▼
 SCStream, SCShareableContent, etc.
 ```
 
+Apple documents APIs in Swift; Objective-C method names map to the same underlying classes.
+
 ## Bridging patterns
 
-### 1. Async Swift → Dart Future
+### 1. Async native → Dart Future
 
-- Swift methods with completion handlers map to Dart `Future<T>`
-- Use `withCheckedContinuation` or equivalent in the bridge layer
-- Example: `SCShareableContent.getExcludingDesktopWindows(...)` → `Future<ShareableContent>`
+- APIs with completion handlers (blocks) in Objective-C map to Dart `Future<T>` via the FFI layer and isolates where used
+- Example: `SCShareableContent` fetch → `Future<ShareableContent>` (`getShareableContent`)
 
 ### 2. Callbacks → Dart Stream
 
-- `SCStreamOutput.stream(_:didOutputSampleBuffer:of:)` receives `CMSampleBuffer`
-- Bridge: maintain a `StreamController` in Dart, push from Swift callback
-- Ensure callback runs on correct isolate; use `IsolateNameServer` or similar if needed
+- `SCStreamOutput` sample-buffer callbacks receive `CMSampleBuffer`
+- Bridge: forward into Dart-side streaming (e.g. `StreamController` or native queue drained from Dart)
+- Respect teardown order (e.g. remove stream output before `stopCapture`) to avoid callbacks after cancel
 
 ### 3. CMSampleBuffer handling
 
-- Video: `CMSampleBufferGetImageBuffer` → `CVPixelBuffer` → `IOSurface`
-- Metadata: `CMSampleBufferGetSampleAttachmentsArray` + `SCStreamFrameInfo` keys
-- Check `SCFrameStatus.complete` before processing
-- Audio: `CMSampleBuffer` → `AVAudioPCMBuffer` (or raw buffer list) for PCM data
+- Video: `CMSampleBufferGetImageBuffer` → `CVPixelBuffer` → BGRA bytes for Dart
+- Metadata: `CMSampleBufferGetSampleAttachmentsArray` + `SCStreamFrameInfo` keys where needed
+- Check frame status (e.g. complete) before processing when required
+- Audio: convert to PCM `Uint8List` for Dart consumers
 
 ### 4. Type mapping
 
-| Swift | Dart |
-|-------|------|
-| `SCDisplay` | `Display` (id, width, height, etc.) |
-| `SCWindow` | `Window` (id, frame, app, etc.) |
-| `SCRunningApplication` | `RunningApplication` (bundleId, name, etc.) |
-| `SCContentFilter` | `ContentFilter` (config object) |
-| `SCStreamConfiguration` | `StreamConfiguration` (config object) |
-| `CMSampleBuffer` | Raw bytes or `Uint8List` / custom frame type |
-| `CVPixelBuffer` | `Uint8List` (BGRA) or platform-specific handle |
+| Framework (conceptual) | Dart |
+|------------------------|------|
+| `SCDisplay` | `Display` (`DisplayId`, `FrameSize`) |
+| `SCWindow` | `Window` (`WindowId`, `PixelRect`, `RunningApplication`, …) |
+| `SCRunningApplication` | `RunningApplication` (`ProcessId`, bundle id, name) |
+| `SCContentFilter` | `ContentFilter` / `FilterId` after creation |
+| `SCStreamConfiguration` | `StreamConfiguration` |
+| `CMSampleBuffer` (video) | `CapturedFrame` / raw `Uint8List` BGRA |
+| `CMSampleBuffer` (audio) | `CapturedAudio` / PCM bytes |
 
 ### 5. Error handling
 
-- Map `SCStreamError` / `SCStreamError.Code` to Dart `Exception` or custom error type
-- Propagate errors through `Future` or `Stream` error channel
+- Map `SCStreamError` / failure paths to `ScreenCaptureKitException` (domain/code) or `UnsupportedError` on unsupported OS versions
+- Propagate through `Future` or `Stream` error channels
 
 ### 6. Lifecycle
 
-- Ensure `SCStream.stopCapture()` when Dart stream is cancelled
-- Release native resources when Dart object is disposed
+- Call `SCStream.stopCapture` when the Dart subscription ends
+- Release native resources and invalidates when filters are released from Dart
 
 ## Build Hooks
 
-This package uses Dart Build Hooks for native compilation. Native Swift code lives in the package's native asset directory and is compiled during `dart pub get` or build.
+Native Objective-C sources live in `native/` and are built through **Dart Build Hooks** (`hooks/`, `code_assets`, `native_toolchain_c`).
 
 Ref: https://dart.googlesource.com/native/+/refs/heads/main/pkgs/hooks
 

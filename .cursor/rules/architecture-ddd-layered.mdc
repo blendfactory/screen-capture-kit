@@ -177,7 +177,6 @@ flowchart LR
       ID["DisplayId, WindowId, ProcessId, FilterId"]
       GEO["FrameSize, PixelRect"]
       CAP["CapturedFrame, CapturedImage, CapturedAudio"]
-      FH["FilterId"]
     end
   end
   SC --> D
@@ -189,7 +188,6 @@ flowchart LR
   W --> GEO
   RA --> ID
   CAP --> GEO
-  FH --> ID
 ```
 
 - **Aggregate root**: `ShareableContent`; consistency boundary and invariants are described in doc/domain-model.md.
@@ -213,11 +211,11 @@ When moving code toward this architecture:
 - [ ] Identify each file’s layer (domain / application / infrastructure / presentation).
 - [ ] Move files into the target folders above; fix imports so they respect the dependency rule.
 - [ ] Ensure domain has zero dependencies on other layers.
-- [ ] Introduce ports (abstract interfaces) in application if infrastructure is invoked from application. Expose an abstract application port (e.g. `ScreenCaptureKitPort`) and have the facade implement it so that apps and CLI tools can inject mocks in tests.
+- [ ] (Optional) Introduce abstract ports in application if you want a formal DI boundary again (e.g. `ScreenCaptureKitPort` implemented by `ScreenCaptureKit`). Today tests use `implements ScreenCaptureKit` without a separate port type.
 - [ ] Keep the public barrel (`screen_capture_kit.dart`) exporting only the intended API surface.
 - [ ] Document filter lifecycle in API docs and README: every `FilterId` must be released with `releaseFilter(filterId)`; recommend `try/finally`.
 - [ ] Implement scalar identifier value objects as **extension types** per doc/domain-model.md (IDs on `int`) and multi-field value objects as immutable classes. Migrate existing value types (e.g. Display, Window dimensions; CapturedFrame, CapturedImage, CapturedAudio; FilterId) accordingly and have entities use them (e.g. Display uses DisplayId and FrameSize).
 
 ## Design review
 
-The layering is appropriate for this package; recommend exposing an application port for DI and documenting filter lifecycle clearly.
+The layering fits this package. Filter lifecycle is documented on the facade and in README; an explicit application port remains optional if stricter DI boundaries are needed later.
