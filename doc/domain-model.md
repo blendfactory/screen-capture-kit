@@ -146,8 +146,7 @@ flowchart TB
 
 ## File placement (domain layer)
 
-- `domain/shareable_content.dart` — aggregate root.
-- `domain/entities/` — entities: `display.dart`, `window.dart`, `running_application.dart`.
+- `domain/entities/` — entities: `display.dart`, `window.dart`, `running_application.dart`, `shareable_content.dart` (aggregate root).
 - `domain/value_objects/geometry/` — `frame_size.dart`, `pixel_rect.dart`.
 - `domain/value_objects/identifiers/` — `display_id.dart`, `window_id.dart`, `process_id.dart`, `filter_id.dart`.
 - `domain/value_objects/capture/` — `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`.

@@ -85,8 +85,7 @@ flowchart TB
     barrel["screen_capture_kit.dart\n(barrel, exports)"]
     subgraph src["src/"]
       subgraph domain["domain/"]
-        d_entities["entities: display, window, running_application"]
-        d_aggregates["shareable_content"]
+        d_entities["entities: display, window, running_application, shareable_content"]
         d_values["value objects: captured_frame, captured_image, captured_audio"]
         d_errors["errors/screen_capture_kit_exception"]
       end
@@ -120,8 +119,8 @@ lib/
   screen_capture_kit.dart          # Barrel: export public API only
   src/
     domain/                        # Domain layer (no deps on app/infra)
-      shareable_content.dart
       entities/
+        shareable_content.dart
         display.dart
         window.dart
         running_application.dart
