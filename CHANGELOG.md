@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking type updates**: stream configuration and stream APIs now use `FrameRate` (`1..120`) and `QueueDepth` (`1..8`) value objects instead of raw `int` for `frameRate`/`queueDepth`; invalid values throw `ArgumentError`.
+- **Breaking API naming updates**: stream output dimension parameter names were renamed from `outputSize` to `frameSize` across `captureScreenshot`, `startCaptureStream`, `startCaptureStreamWithUpdater`, and `StreamConfiguration`.
 
 ## [0.0.3] - 2026-03-19
 
