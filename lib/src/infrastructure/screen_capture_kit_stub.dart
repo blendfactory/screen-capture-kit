@@ -84,7 +84,7 @@ FilterId? presentContentSharingPickerImpl({
 
 CapturedImage captureScreenshotImpl(
   FilterId filterHandle, {
-  FrameSize outputSize = const FrameSize.zero(),
+  FrameSize frameSize = const FrameSize.zero(),
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -100,7 +100,7 @@ CapturedImage captureScreenshotImpl(
 
 Stream<CapturedFrame> startCaptureStreamImpl(
   FilterId filterHandle, {
-  FrameSize outputSize = const FrameSize.zero(),
+  FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
   bool showsCursor = true,
@@ -125,7 +125,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
 
 CaptureStream startCaptureStreamWithUpdaterImpl(
   FilterId filterHandle, {
-  FrameSize outputSize = const FrameSize.zero(),
+  FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
   bool showsCursor = true,

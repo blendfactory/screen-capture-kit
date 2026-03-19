@@ -10,7 +10,7 @@ import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.
 /// runtime.
 class StreamConfiguration {
   const StreamConfiguration({
-    this.outputSize = const FrameSize.zero(),
+    this.frameSize = const FrameSize.zero(),
     this.frameRate = const FrameRate.fps60(),
     this.sourceRect,
     this.showsCursor = true,
@@ -22,9 +22,10 @@ class StreamConfiguration {
     this.colorSpaceName,
   });
 
-  /// Output dimensions; [FrameSize.zero] leaves sizing to the native layer
-  /// (0×0 in the Objective-C bridge).
-  final FrameSize outputSize;
+  /// Capture output frame dimensions.
+  /// [FrameSize.zero] leaves sizing to the native layer (0×0 in the
+  /// Objective-C bridge).
+  final FrameSize frameSize;
 
   /// Target capture frame rate.
   final FrameRate frameRate;

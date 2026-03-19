@@ -450,7 +450,7 @@ void releaseFilterImpl(FilterId handle) {
 
 CapturedImage captureScreenshotImpl(
   FilterId filterHandle, {
-  FrameSize outputSize = const FrameSize.zero(),
+  FrameSize frameSize = const FrameSize.zero(),
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -461,8 +461,8 @@ CapturedImage captureScreenshotImpl(
 
   final ptr = _captureScreenshot(
     filterHandle.filterId,
-    outputSize.width,
-    outputSize.height,
+    frameSize.width,
+    frameSize.height,
   );
   if (ptr == nullptr) {
     throw const ScreenCaptureKitException(
@@ -722,7 +722,7 @@ Pointer<Utf8> _allocColorSpaceName(String? name) {
 
 Stream<CapturedFrame> startCaptureStreamImpl(
   FilterId filterHandle, {
-  FrameSize outputSize = const FrameSize.zero(),
+  FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
   bool showsCursor = true,
@@ -747,8 +747,8 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   try {
     streamId = _streamCreateAndStart(
       filterHandle.filterId,
-      outputSize.width,
-      outputSize.height,
+      frameSize.width,
+      frameSize.height,
       frameRate.value,
       src?.x ?? 0,
       src?.y ?? 0,
@@ -836,8 +836,8 @@ void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
   try {
     final result = _streamUpdateConfiguration(
       streamId,
-      options.outputSize.width,
-      options.outputSize.height,
+      options.frameSize.width,
+      options.frameSize.height,
       options.frameRate.value,
       src?.x ?? 0,
       src?.y ?? 0,
@@ -925,7 +925,7 @@ void streamUpdateContentFilterImpl(
 
 CaptureStream startCaptureStreamWithUpdaterImpl(
   FilterId filterHandle, {
-  FrameSize outputSize = const FrameSize.zero(),
+  FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
   bool showsCursor = true,
@@ -950,8 +950,8 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   try {
     streamId = _streamCreateAndStart(
       filterHandle.filterId,
-      outputSize.width,
-      outputSize.height,
+      frameSize.width,
+      frameSize.height,
       frameRate.value,
       src?.x ?? 0,
       src?.y ?? 0,

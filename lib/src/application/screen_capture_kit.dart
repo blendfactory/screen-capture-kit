@@ -116,18 +116,18 @@ class ScreenCaptureKit {
   /// Returns PNG-encoded image data. Requires macOS 14.0 or newer.
   /// On older macOS, throws [ScreenCaptureKitException].
   ///
-  /// [outputSize] optionally sets output dimensions; use [FrameSize.zero] to
+  /// [frameSize] optionally sets output dimensions; use [FrameSize.zero] to
   /// let the native layer choose.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager/captureimage(contentfilter:configuration:completionhandler:)
   Future<CapturedImage> captureScreenshot(
     FilterId filterHandle, {
-    FrameSize outputSize = const FrameSize.zero(),
+    FrameSize frameSize = const FrameSize.zero(),
   }) {
     return Isolate.run(
       () => captureScreenshotImpl(
         filterHandle,
-        outputSize: outputSize,
+        frameSize: frameSize,
       ),
     );
   }
@@ -152,7 +152,7 @@ class ScreenCaptureKit {
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
   Stream<CapturedFrame> startCaptureStream(
     FilterId filterHandle, {
-    FrameSize outputSize = const FrameSize.zero(),
+    FrameSize frameSize = const FrameSize.zero(),
     FrameRate frameRate = const FrameRate.fps60(),
     PixelRect? sourceRect,
     bool showsCursor = true,
@@ -165,7 +165,7 @@ class ScreenCaptureKit {
   }) {
     return startCaptureStreamImpl(
       filterHandle,
-      outputSize: outputSize,
+      frameSize: frameSize,
       frameRate: frameRate,
       sourceRect: sourceRect,
       showsCursor: showsCursor,
@@ -188,7 +188,7 @@ class ScreenCaptureKit {
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
   CaptureStream startCaptureStreamWithUpdater(
     FilterId filterHandle, {
-    FrameSize outputSize = const FrameSize.zero(),
+    FrameSize frameSize = const FrameSize.zero(),
     FrameRate frameRate = const FrameRate.fps60(),
     PixelRect? sourceRect,
     bool showsCursor = true,
@@ -201,7 +201,7 @@ class ScreenCaptureKit {
   }) {
     return startCaptureStreamWithUpdaterImpl(
       filterHandle,
-      outputSize: outputSize,
+      frameSize: frameSize,
       frameRate: frameRate,
       sourceRect: sourceRect,
       showsCursor: showsCursor,

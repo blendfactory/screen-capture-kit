@@ -182,9 +182,9 @@ void main() {
   group('StreamConfiguration', () {
     test('creates with defaults', () {
       const config = StreamConfiguration();
-      expect(config.outputSize, const FrameSize.zero());
-      expect(config.outputSize.width, 0);
-      expect(config.outputSize.height, 0);
+      expect(config.frameSize, const FrameSize.zero());
+      expect(config.frameSize.width, 0);
+      expect(config.frameSize.height, 0);
       expect(config.frameRate, const FrameRate.fps60());
       expect(config.sourceRect, isNull);
       expect(config.showsCursor, isTrue);
@@ -196,14 +196,14 @@ void main() {
 
     test('creates with custom values', () {
       final config = StreamConfiguration(
-        outputSize: FrameSize(width: 320, height: 240),
+        frameSize: FrameSize(width: 320, height: 240),
         frameRate: FrameRate(30),
         sourceRect: const PixelRect(x: 0, y: 0, width: 320, height: 240),
         showsCursor: false,
         queueDepth: QueueDepth(8),
       );
-      expect(config.outputSize.width, 320);
-      expect(config.outputSize.height, 240);
+      expect(config.frameSize.width, 320);
+      expect(config.frameSize.height, 240);
       expect(config.frameRate.value, 30);
       expect(config.sourceRect?.width, 320);
       expect(config.showsCursor, isFalse);
@@ -212,7 +212,7 @@ void main() {
 
     test('creates with custom audio values', () {
       final config = StreamConfiguration(
-        outputSize: FrameSize(width: 320, height: 240),
+        frameSize: FrameSize(width: 320, height: 240),
         capturesAudio: true,
         excludesCurrentProcessAudio: true,
         captureMicrophone: true,
@@ -247,7 +247,7 @@ void main() {
       expect(capture.stream, equals(controller.stream));
       capture.updateConfiguration(
         StreamConfiguration(
-          outputSize: FrameSize(width: 100, height: 100),
+          frameSize: FrameSize(width: 100, height: 100),
         ),
       );
       expect(updateCalled, isTrue);
@@ -638,7 +638,7 @@ void main() {
           try {
             final stream = ScreenCaptureKit().startCaptureStream(
               handle,
-              outputSize: FrameSize(width: 64, height: 64),
+              frameSize: FrameSize(width: 64, height: 64),
               frameRate: FrameRate(10),
               queueDepth: QueueDepth(3),
             );
@@ -695,7 +695,7 @@ void main() {
           try {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle,
-              outputSize: FrameSize(width: 64, height: 64),
+              frameSize: FrameSize(width: 64, height: 64),
               frameRate: FrameRate(10),
               queueDepth: QueueDepth(3),
             );
@@ -711,7 +711,7 @@ void main() {
               await Future<void>.delayed(const Duration(milliseconds: 200));
               capture.updateConfiguration(
                 StreamConfiguration(
-                  outputSize: FrameSize(width: 128, height: 128),
+                  frameSize: FrameSize(width: 128, height: 128),
                   frameRate: FrameRate(15),
                 ),
               );
@@ -756,7 +756,7 @@ void main() {
           try {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle,
-              outputSize: FrameSize(width: 64, height: 64),
+              frameSize: FrameSize(width: 64, height: 64),
               frameRate: FrameRate(10),
               queueDepth: QueueDepth(3),
               capturesAudio: true,
@@ -814,7 +814,7 @@ void main() {
           try {
             final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
               handle1,
-              outputSize: FrameSize(width: 64, height: 64),
+              frameSize: FrameSize(width: 64, height: 64),
               frameRate: FrameRate(10),
               queueDepth: QueueDepth(3),
             );
