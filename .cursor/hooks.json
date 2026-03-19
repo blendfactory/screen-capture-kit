@@ -4,7 +4,12 @@
     "afterFileEdit": [
       {
         "command": ".cursor/hooks/dart-fix.sh",
-        "matcher": "Write|TabWrite",
+        "timeout": 45
+      }
+    ],
+    "afterTabFileEdit": [
+      {
+        "command": ".cursor/hooks/dart-fix.sh",
         "timeout": 45
       }
     ],

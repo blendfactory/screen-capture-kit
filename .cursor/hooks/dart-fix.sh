@@ -1,6 +1,9 @@
 #!/bin/sh
-# afterFileEdit: when a Dart file was edited, run dart fix then dart format on that path only.
-# Cursor passes JSON on stdin; stdout must be JSON. Exit 0 so the hook result is applied.
+# afterFileEdit (any Agent file-edit tool) and afterTabFileEdit (Tab): when the
+# edited path is a .dart file, run dart fix then dart format on that path only.
+# No matcher in hooks.json: afterFileEdit matcher filters by tool *name* (regex),
+# which is easy to misconfigure; this script gates on file_path instead.
+# Cursor passes JSON on stdin; stdout must be JSON for Agent hooks. Exit 0.
 
 set -eu
 
