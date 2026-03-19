@@ -9,6 +9,7 @@ import 'package:screen_capture_kit/src/domain/display.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/display_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/filter_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/process_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/window_id.dart';
 import 'package:screen_capture_kit/src/domain/running_application.dart';
@@ -393,7 +394,7 @@ ContentFilterHandle createWindowFilterImpl(Window window) {
       'The window may no longer exist or may not be capturable.',
     );
   }
-  return ContentFilterHandle(filterId);
+  return ContentFilterHandle(FilterId(filterId));
 }
 
 ContentFilterHandle createDisplayFilterImpl(
@@ -435,7 +436,7 @@ ContentFilterHandle createDisplayFilterImpl(
       'The display may not exist or may not be capturable.',
     );
   }
-  return ContentFilterHandle(filterId);
+  return ContentFilterHandle(FilterId(filterId));
 }
 
 void releaseFilterImpl(ContentFilterHandle handle) {
@@ -550,11 +551,11 @@ ContentFilterHandle? presentContentSharingPickerImpl({
     if (json['cancelled'] == true) {
       return null;
     }
-    final filterId = (json['filterId'] as num?)?.toInt() ?? 0;
-    if (filterId <= 0) {
+    final id = (json['filterId'] as num?)?.toInt() ?? 0;
+    if (id <= 0) {
       return null;
     }
-    return ContentFilterHandle(filterId);
+    return ContentFilterHandle(FilterId(id));
   } finally {
     if (modesPtr != nullptr) {
       malloc.free(modesPtr);

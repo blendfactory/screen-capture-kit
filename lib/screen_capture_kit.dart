@@ -20,6 +20,7 @@ import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.
 export 'src/domain/display.dart';
 export 'src/domain/running_application.dart';
 export 'src/domain/value_objects/display_id.dart';
+export 'src/domain/value_objects/filter_id.dart';
 export 'src/domain/value_objects/frame_size.dart';
 export 'src/domain/value_objects/pixel_rect.dart';
 export 'src/domain/value_objects/process_id.dart';

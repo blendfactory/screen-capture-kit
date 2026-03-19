@@ -3,6 +3,8 @@ library;
 
 import 'package:meta/meta.dart';
 
+import 'package:screen_capture_kit/src/domain/value_objects/filter_id.dart';
+
 /// Opaque handle to a native SCContentFilter.
 ///
 /// Created by [ScreenCaptureKitPort.createWindowFilter] or
@@ -10,14 +12,17 @@ import 'package:meta/meta.dart';
 /// with [ScreenCaptureKitPort.releaseFilter] when no longer needed.
 ///
 /// This handle will be used when implementing capture streams.
+///
+/// The underlying [FilterId] must have a value greater than 0; callers
+/// (e.g. infrastructure) enforce this before construction.
 @immutable
 class ContentFilterHandle {
-  const ContentFilterHandle(this._filterId)
-    : assert(_filterId > 0, 'Invalid filter id');
+  const ContentFilterHandle(FilterId id) : _filterId = id;
 
-  final int _filterId;
+  final FilterId _filterId;
 
-  int get filterId => _filterId;
+  /// The underlying filter identifier for native calls.
+  int get filterId => _filterId.value;
 
   @override
   bool operator ==(Object other) =>
@@ -28,5 +33,5 @@ class ContentFilterHandle {
   int get hashCode => _filterId.hashCode;
 
   @override
-  String toString() => 'ContentFilterHandle($_filterId)';
+  String toString() => 'ContentFilterHandle(${_filterId.value})';
 }

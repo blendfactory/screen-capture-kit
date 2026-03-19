@@ -67,7 +67,7 @@ void main() {
 
   group('ContentFilterHandle', () {
     test('creates with positive filter id', () {
-      const handle = ContentFilterHandle(1);
+      const handle = ContentFilterHandle(FilterId(1));
       expect(handle.filterId, 1);
     });
   });
@@ -235,7 +235,7 @@ void main() {
         },
         setContentSharingPickerConfiguration: (_) {},
       );
-      const handle = ContentFilterHandle(42);
+      const handle = ContentFilterHandle(FilterId(42));
       capture.updateContentFilter(handle);
       expect(passedHandle, equals(handle));
       expect(passedHandle?.filterId, 42);
