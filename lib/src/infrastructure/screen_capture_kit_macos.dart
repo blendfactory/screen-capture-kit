@@ -6,6 +6,8 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:screen_capture_kit/src/domain/display.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/display_id.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/running_application.dart';
 import 'package:screen_capture_kit/src/domain/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/domain/shareable_content.dart';
@@ -321,9 +323,11 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
     final m = d as Map<String, dynamic>;
     displays.add(
       Display(
-        displayId: (m['displayId'] as num).toInt(),
-        width: (m['width'] as num).toInt(),
-        height: (m['height'] as num).toInt(),
+        displayId: DisplayId((m['displayId'] as num).toInt()),
+        size: FrameSize(
+          width: (m['width'] as num).toInt(),
+          height: (m['height'] as num).toInt(),
+        ),
       ),
     );
   }
@@ -412,19 +416,19 @@ ContentFilterHandle createDisplayFilterImpl(
     ptr[units.length] = 0;
     try {
       filterId = _createContentFilterForDisplayExcludingWindows(
-        display.displayId,
+        display.displayId.value,
         ptr.cast<Utf8>(),
       );
     } finally {
       malloc.free(ptr);
     }
   } else {
-    filterId = _createContentFilterForDisplay(display.displayId);
+    filterId = _createContentFilterForDisplay(display.displayId.value);
   }
 
   if (filterId <= 0) {
     throw ScreenCaptureKitException(
-      'Failed to create content filter for display ${display.displayId}. '
+      'Failed to create content filter for display ${display.displayId.value}. '
       'The display may not exist or may not be capturable.',
     );
   }

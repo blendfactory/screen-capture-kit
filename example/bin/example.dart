@@ -69,7 +69,7 @@ void main() async {
     // 1. Display filter: capture entire display
     if (content.displays.isNotEmpty) {
       final display = content.displays.first;
-      print('\n=== Display capture (displayId: ${display.displayId}) ===');
+      print('\n=== Display capture (displayId: ${display.displayId.value}) ===');
       final displayFilter = await kit.createDisplayFilter(display);
       print('Display filter created: ${displayFilter.filterId}');
       try {

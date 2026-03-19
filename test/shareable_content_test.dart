@@ -25,9 +25,8 @@ void main() {
 
     test('ContentFilter.display creates with display', () {
       const display = Display(
-        displayId: 1,
-        width: 1920,
-        height: 1080,
+        displayId: DisplayId(1),
+        size: FrameSize(width: 1920, height: 1080),
       );
       const filter = ContentFilter.display(display);
       expect(filter, isA<ContentFilter>());
@@ -38,9 +37,8 @@ void main() {
       'ContentFilter.displayExcludingWindows creates with display and list',
       () {
         const display = Display(
-          displayId: 1,
-          width: 1920,
-          height: 1080,
+          displayId: DisplayId(1),
+          size: FrameSize(width: 1920, height: 1080),
         );
         const app = RunningApplication(
           bundleIdentifier: 'com.example',
@@ -339,9 +337,8 @@ void main() {
 
     test('creates with display data', () {
       const display = Display(
-        displayId: 1,
-        width: 1920,
-        height: 1080,
+        displayId: DisplayId(1),
+        size: FrameSize(width: 1920, height: 1080),
       );
       const content = ShareableContent(
         displays: [display],
@@ -349,15 +346,24 @@ void main() {
         windows: [],
       );
       expect(content.displays, hasLength(1));
-      expect(content.displays.first.displayId, 1);
+      expect(content.displays.first.displayId.value, 1);
       expect(content.displays.first.width, 1920);
       expect(content.displays.first.height, 1080);
     });
 
     test('Display equality', () {
-      const a = Display(displayId: 1, width: 1920, height: 1080);
-      const b = Display(displayId: 1, width: 1920, height: 1080);
-      const c = Display(displayId: 2, width: 1920, height: 1080);
+      const a = Display(
+        displayId: DisplayId(1),
+        size: FrameSize(width: 1920, height: 1080),
+      );
+      const b = Display(
+        displayId: DisplayId(1),
+        size: FrameSize(width: 1920, height: 1080),
+      );
+      const c = Display(
+        displayId: DisplayId(2),
+        size: FrameSize(width: 1920, height: 1080),
+      );
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
     });
