@@ -1,5 +1,7 @@
 import 'package:meta/meta.dart';
 
+import 'package:screen_capture_kit/src/domain/value_objects/process_id.dart';
+
 /// A running application available for capture.
 ///
 /// Maps to [SCRunningApplication](https://developer.apple.com/documentation/screencapturekit/scrunningapplication).
@@ -19,7 +21,7 @@ class RunningApplication {
   final String applicationName;
 
   /// The process ID.
-  final int processId;
+  final ProcessId processId;
 
   @override
   bool operator ==(Object other) =>
@@ -36,5 +38,5 @@ class RunningApplication {
   @override
   String toString() =>
       'RunningApplication(bundleIdentifier: $bundleIdentifier, '
-      'applicationName: $applicationName, processId: $processId)';
+      'applicationName: $applicationName, processId: ${processId.value})';
 }

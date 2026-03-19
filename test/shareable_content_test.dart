@@ -11,7 +11,7 @@ void main() {
       const app = RunningApplication(
         bundleIdentifier: 'com.example',
         applicationName: 'Example',
-        processId: 1,
+        processId: ProcessId(1),
       );
       const window = Window(
         windowId: WindowId(100),
@@ -43,7 +43,7 @@ void main() {
         const app = RunningApplication(
           bundleIdentifier: 'com.example',
           applicationName: 'Example',
-          processId: 1,
+          processId: ProcessId(1),
         );
         const window = Window(
           windowId: WindowId(100),
@@ -374,23 +374,23 @@ void main() {
       const app = RunningApplication(
         bundleIdentifier: 'com.example.app',
         applicationName: 'Example',
-        processId: 1234,
+        processId: ProcessId(1234),
       );
       expect(app.bundleIdentifier, 'com.example.app');
       expect(app.applicationName, 'Example');
-      expect(app.processId, 1234);
+      expect(app.processId.value, 1234);
     });
 
     test('equality', () {
       const a = RunningApplication(
         bundleIdentifier: 'com.test',
         applicationName: 'Test',
-        processId: 1,
+        processId: ProcessId(1),
       );
       const b = RunningApplication(
         bundleIdentifier: 'com.test',
         applicationName: 'Test',
-        processId: 1,
+        processId: ProcessId(1),
       );
       expect(a, equals(b));
     });
@@ -401,7 +401,7 @@ void main() {
       const app = RunningApplication(
         bundleIdentifier: 'com.example',
         applicationName: 'Example',
-        processId: 1,
+        processId: ProcessId(1),
       );
       const window = Window(
         windowId: WindowId(100),

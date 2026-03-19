@@ -9,6 +9,7 @@ import 'package:screen_capture_kit/src/domain/display.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/display_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/process_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/window_id.dart';
 import 'package:screen_capture_kit/src/domain/running_application.dart';
 import 'package:screen_capture_kit/src/domain/screen_capture_kit_exception.dart';
@@ -341,7 +342,7 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
       RunningApplication(
         bundleIdentifier: m['bundleIdentifier'] as String? ?? '',
         applicationName: m['applicationName'] as String? ?? '',
-        processId: (m['processId'] as num).toInt(),
+        processId: ProcessId((m['processId'] as num).toInt()),
       ),
     );
   }
@@ -363,7 +364,7 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
         owningApplication: RunningApplication(
           bundleIdentifier: appJson['bundleIdentifier'] as String? ?? '',
           applicationName: appJson['applicationName'] as String? ?? '',
-          processId: (appJson['processId'] as num?)?.toInt() ?? 0,
+          processId: ProcessId((appJson['processId'] as num?)?.toInt() ?? 0),
         ),
         title: m['title'] as String?,
       ),
