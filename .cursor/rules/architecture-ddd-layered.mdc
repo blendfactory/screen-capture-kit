@@ -121,12 +121,14 @@ lib/
   src/
     domain/                        # Domain layer (no deps on app/infra)
       shareable_content.dart
-      display.dart
-      window.dart
-      running_application.dart
-      captured_frame.dart
-      captured_image.dart
-      captured_audio.dart
+      entities/
+        display.dart
+        window.dart
+        running_application.dart
+      value_objects/
+        geometry/
+        identifiers/
+        capture/
       errors/screen_capture_kit_exception.dart
     application/                   # Application layer
       screen_capture_kit.dart      # Main facade / application service

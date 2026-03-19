@@ -1,7 +1,7 @@
 import 'package:meta/meta.dart';
 
-import 'package:screen_capture_kit/src/domain/value_objects/display_id.dart';
-import 'package:screen_capture_kit/src/domain/value_objects/frame_size.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/identifiers/display_id.dart';
 
 /// A display device available for capture.
 ///

@@ -1,6 +1,6 @@
 import 'package:meta/meta.dart';
 
-import 'package:screen_capture_kit/src/domain/value_objects/process_id.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/identifiers/process_id.dart';
 
 /// A running application available for capture.
 ///

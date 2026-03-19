@@ -147,10 +147,10 @@ flowchart TB
 ## File placement (domain layer)
 
 - `domain/shareable_content.dart` — aggregate root.
-- `domain/display.dart` — entity `Display` (uses `DisplayId`, `FrameSize`).
-- `domain/window.dart` — entity `Window` (uses `WindowId`, `PixelRect`, references `RunningApplication`).
-- `domain/running_application.dart` — entity `RunningApplication` (uses `ProcessId`).
-- `domain/value_objects/` — value objects: `display_id.dart`, `window_id.dart`, `process_id.dart`, `filter_id.dart`, `frame_size.dart`, `pixel_rect.dart`, `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`.
+- `domain/entities/` — entities: `display.dart`, `window.dart`, `running_application.dart`.
+- `domain/value_objects/geometry/` — `frame_size.dart`, `pixel_rect.dart`.
+- `domain/value_objects/identifiers/` — `display_id.dart`, `window_id.dart`, `process_id.dart`, `filter_id.dart`.
+- `domain/value_objects/capture/` — `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`.
 - `domain/errors/screen_capture_kit_exception.dart` — domain exception (no extension type).
 
 Presentation/API may re-export `ContentFilterHandle` as an extension type on `FilterId` for the public API.

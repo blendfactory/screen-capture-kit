@@ -1,11 +1,11 @@
 import 'dart:isolate';
 
-import 'package:screen_capture_kit/src/domain/display.dart';
+import 'package:screen_capture_kit/src/domain/entities/display.dart';
+import 'package:screen_capture_kit/src/domain/entities/window.dart';
 import 'package:screen_capture_kit/src/domain/shareable_content.dart';
-import 'package:screen_capture_kit/src/domain/value_objects/captured_frame.dart';
-import 'package:screen_capture_kit/src/domain/value_objects/captured_image.dart';
-import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
-import 'package:screen_capture_kit/src/domain/window.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
 import 'package:screen_capture_kit/src/infrastructure/screen_capture_kit_stub.dart'
     if (dart.library.io)
       'package:screen_capture_kit/src/infrastructure/screen_capture_kit_macos.dart';

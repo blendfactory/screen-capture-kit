@@ -3,7 +3,7 @@ library;
 
 import 'package:meta/meta.dart';
 
-import 'package:screen_capture_kit/src/domain/value_objects/filter_id.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 
 /// Opaque handle to a native SCContentFilter.
 ///

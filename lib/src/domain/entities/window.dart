@@ -1,8 +1,8 @@
 import 'package:meta/meta.dart';
 
-import 'package:screen_capture_kit/src/domain/running_application.dart';
-import 'package:screen_capture_kit/src/domain/value_objects/pixel_rect.dart';
-import 'package:screen_capture_kit/src/domain/value_objects/window_id.dart';
+import 'package:screen_capture_kit/src/domain/entities/running_application.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/identifiers/window_id.dart';
 
 /// An onscreen window available for capture.
 ///
