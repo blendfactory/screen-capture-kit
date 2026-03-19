@@ -18,8 +18,10 @@ static void ensureCoreGraphicsInit(void) {
   (void)CGMainDisplayID();
 }
 
-@interface StreamFrameHandler : NSObject <SCStreamOutput>
-@property (nonatomic, strong) NSString* latestFrameJson;
+@interface StreamFrameHandler : NSObject <SCStreamOutput> {
+  @public
+  char* _latestFrameCStr;
+}
 @property (nonatomic, strong) dispatch_semaphore_t frameSemaphore;
 @property (nonatomic, assign) BOOL stopped;
 @property (nonatomic, strong) NSLock* lock;
@@ -29,6 +31,7 @@ static void ensureCoreGraphicsInit(void) {
 - (instancetype)init {
   self = [super init];
   if (self) {
+    _latestFrameCStr = NULL;
     _frameSemaphore = dispatch_semaphore_create(0);
     _stopped = NO;
     _lock = [[NSLock alloc] init];
@@ -103,8 +106,10 @@ static void ensureCoreGraphicsInit(void) {
         };
         NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
         NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        char* cstr = strdup(jsonStr.UTF8String);
         [_lock lock];
-        _latestFrameJson = jsonStr;
+        free(_latestFrameCStr);
+        _latestFrameCStr = cstr;
         [_lock unlock];
         dispatch_semaphore_signal(_frameSemaphore);
         return;
@@ -126,8 +131,10 @@ static void ensureCoreGraphicsInit(void) {
     };
     NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
     NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    char* cstr = strdup(jsonStr.UTF8String);
     [_lock lock];
-    _latestFrameJson = jsonStr;
+    free(_latestFrameCStr);
+    _latestFrameCStr = cstr;
     [_lock unlock];
     if (STREAM_DEBUG) fprintf(stderr, "[SCStream] SIGNAL semaphore\n");
     dispatch_semaphore_signal(_frameSemaphore);
@@ -823,16 +830,13 @@ char* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
   }
 
   if (STREAM_DEBUG) fprintf(stderr, "[SCStream] got frame from semaphore\n");
-  NSString* jsonStr = nil;
+  char* result = NULL;
   [handler.lock lock];
-  jsonStr = handler.latestFrameJson;
-  handler.latestFrameJson = nil;
+  result = handler->_latestFrameCStr;
+  handler->_latestFrameCStr = NULL;
   [handler.lock unlock];
 
-  if (!jsonStr || jsonStr.length == 0) {
-    return NULL;
-  }
-  return strdup(jsonStr.UTF8String);
+  return result;
 }
 
 /// Returns malloc'd JSON string for next audio buffer, or NULL on timeout/error.
@@ -930,7 +934,8 @@ void stream_stop_and_release(int64_t stream_id) {
   if (handler) {
     handler.stopped = YES;
     [handler.lock lock];
-    handler.latestFrameJson = nil;
+    free(handler->_latestFrameCStr);
+    handler->_latestFrameCStr = NULL;
     [handler.lock unlock];
     dispatch_semaphore_signal(handler.frameSemaphore);
   }
@@ -964,7 +969,11 @@ void stream_stop_and_release(int64_t stream_id) {
         (void)err;
       }
     }
-    [stream stopCaptureWithCompletionHandler:^(NSError* _Nullable error){
+    dispatch_semaphore_t stopSem = dispatch_semaphore_create(0);
+    [stream stopCaptureWithCompletionHandler:^(NSError* _Nullable error) {
+      dispatch_semaphore_signal(stopSem);
     }];
+    dispatch_semaphore_wait(stopSem,
+                            dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
   }
 }
