@@ -72,21 +72,6 @@ static SCContentSharingPickerMode picker_modes_from_json(const char* _Nullable m
 /// Returns malloc'd JSON. Success: {"cancelled":false,"filterId":N}. Cancel: {"cancelled":true}. Error: {"error":true,"domain","code","localizedDescription"}.
 /// Caller must free with free(). Requires macOS 14.0+.
 char* picker_present(const char* _Nullable allowed_modes_json) {
-  if (!@available(macOS 14.0, *)) {
-    NSDictionary* errDict = @{
-      @"error": @YES,
-      @"domain": @"ScreenCaptureKit",
-      @"code": @(-3),
-      @"localizedDescription": @"Content sharing picker requires macOS 14.0 or newer"
-    };
-    NSData* errData = [NSJSONSerialization dataWithJSONObject:errDict options:0 error:nil];
-    if (errData) {
-      NSString* errStr = [[NSString alloc] initWithData:errData encoding:NSUTF8StringEncoding];
-      return strdup(errStr.UTF8String);
-    }
-    return NULL;
-  }
-
   if (@available(macOS 14.0, *)) {
     _pickerResultFilterId = 0;
     _pickerCancelled = 1;
@@ -156,6 +141,18 @@ char* picker_present(const char* _Nullable allowed_modes_json) {
     if (data) {
       NSString* str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
       return strdup(str.UTF8String);
+    }
+  } else {
+    NSDictionary* errDict = @{
+      @"error": @YES,
+      @"domain": @"ScreenCaptureKit",
+      @"code": @(-3),
+      @"localizedDescription": @"Content sharing picker requires macOS 14.0 or newer"
+    };
+    NSData* errData = [NSJSONSerialization dataWithJSONObject:errDict options:0 error:nil];
+    if (errData) {
+      NSString* errStr = [[NSString alloc] initWithData:errData encoding:NSUTF8StringEncoding];
+      return strdup(errStr.UTF8String);
     }
   }
   return NULL;
