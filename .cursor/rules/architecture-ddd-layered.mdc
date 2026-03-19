@@ -98,7 +98,7 @@ flowchart TB
         impl_stub["screen_capture_kit_stub.dart"]
       end
       subgraph presentation["presentation/"]
-        config["content_filter, stream_config, picker_config"]
+        config["capture_stream"]
       end
     end
   end
@@ -137,11 +137,8 @@ lib/
     infrastructure/                # Infrastructure layer
       screen_capture_kit_macos.dart
       screen_capture_kit_stub.dart
-    presentation/                  # Optional: config DTOs used by API
-      content_filter.dart
-      content_sharing_picker_*.dart
+    presentation/                  # API contract for active capture
       capture_stream.dart
-      stream_configuration.dart
 ```
 
 ## Domain model (aggregate root, entities, value objects)

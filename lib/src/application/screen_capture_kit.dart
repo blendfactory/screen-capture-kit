@@ -5,13 +5,13 @@ import 'package:screen_capture_kit/src/domain/entities/shareable_content.dart';
 import 'package:screen_capture_kit/src/domain/entities/window.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 import 'package:screen_capture_kit/src/infrastructure/screen_capture_kit_stub.dart'
     if (dart.library.io)
       'package:screen_capture_kit/src/infrastructure/screen_capture_kit_macos.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
-import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 
 /// Application-layer port for ScreenCaptureKit operations.
 abstract class ScreenCaptureKitPort {

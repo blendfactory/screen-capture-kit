@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+
 import 'package:screen_capture_kit/src/domain/entities/display.dart';
 import 'package:screen_capture_kit/src/domain/entities/running_application.dart';
 import 'package:screen_capture_kit/src/domain/entities/window.dart';

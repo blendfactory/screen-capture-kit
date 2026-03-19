@@ -13,10 +13,10 @@ import 'package:screen_capture_kit/src/domain/errors/screen_capture_kit_exceptio
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
-import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 
 export 'src/domain/entities/display.dart';
 export 'src/domain/entities/running_application.dart';
@@ -26,6 +26,10 @@ export 'src/domain/errors/screen_capture_kit_exception.dart';
 export 'src/domain/value_objects/capture/captured_audio.dart';
 export 'src/domain/value_objects/capture/captured_frame.dart';
 export 'src/domain/value_objects/capture/captured_image.dart';
+export 'src/domain/value_objects/capture/content_filter.dart';
+export 'src/domain/value_objects/capture/content_sharing_picker_configuration.dart';
+export 'src/domain/value_objects/capture/content_sharing_picker_mode.dart';
+export 'src/domain/value_objects/capture/stream_configuration.dart';
 export 'src/domain/value_objects/geometry/frame_size.dart';
 export 'src/domain/value_objects/geometry/pixel_rect.dart';
 export 'src/domain/value_objects/identifiers/display_id.dart';
@@ -33,9 +37,6 @@ export 'src/domain/value_objects/identifiers/filter_id.dart';
 export 'src/domain/value_objects/identifiers/process_id.dart';
 export 'src/domain/value_objects/identifiers/window_id.dart';
 export 'src/presentation/capture_stream.dart';
-export 'src/presentation/content_filter.dart';
-export 'src/presentation/content_sharing_picker_configuration.dart';
-export 'src/presentation/content_sharing_picker_mode.dart';
 
 /// Client for macOS ScreenCaptureKit API.
 ///

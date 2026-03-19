@@ -13,6 +13,9 @@ import 'package:screen_capture_kit/src/domain/errors/screen_capture_kit_exceptio
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_configuration.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/stream_configuration.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/display_id.dart';
@@ -20,8 +23,6 @@ import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_i
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/process_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/window_id.dart';
 import 'package:screen_capture_kit/src/presentation/capture_stream.dart';
-import 'package:screen_capture_kit/src/presentation/content_sharing_picker_configuration.dart';
-import 'package:screen_capture_kit/src/presentation/content_sharing_picker_mode.dart';
 
 /// C function returning malloc'd JSON string. Caller must free.
 @Native<Pointer<Utf8> Function(Int32, Int32)>(

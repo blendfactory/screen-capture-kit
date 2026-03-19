@@ -1,8 +1,8 @@
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
-import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_configuration.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/stream_configuration.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
-import 'package:screen_capture_kit/src/presentation/content_sharing_picker_configuration.dart';
 
 /// A capture stream that supports updating configuration and filter at runtime.
 ///
@@ -47,46 +47,4 @@ class CaptureStream {
   /// system default.
   final void Function(ContentSharingPickerConfiguration? config)
   setContentSharingPickerConfiguration;
-}
-
-/// Options for [CaptureStream.updateConfiguration].
-class StreamConfiguration {
-  const StreamConfiguration({
-    this.width = 0,
-    this.height = 0,
-    this.frameRate = 60,
-    this.sourceRect,
-    this.showsCursor = true,
-    this.queueDepth = 5,
-    this.capturesAudio = false,
-    this.excludesCurrentProcessAudio = false,
-    this.captureMicrophone = false,
-    this.pixelFormat,
-    this.colorSpaceName,
-  });
-
-  final int width;
-  final int height;
-  final int frameRate;
-  final PixelRect? sourceRect;
-  final bool showsCursor;
-  final int queueDepth;
-
-  /// When true, system audio is captured and available on
-  /// [CaptureStream.audioStream].
-  final bool capturesAudio;
-
-  /// When true, this application's audio is excluded from capture.
-  final bool excludesCurrentProcessAudio;
-
-  /// When true, microphone input is included in the audio capture.
-  final bool captureMicrophone;
-
-  /// Optional CVPixelFormatType (e.g. 0x42475241 for BGRA). 0 or null =
-  /// default.
-  final int? pixelFormat;
-
-  /// Optional color space name (e.g. kCGColorSpaceSRGB). null or empty =
-  /// default.
-  final String? colorSpaceName;
 }

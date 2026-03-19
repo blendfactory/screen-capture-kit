@@ -149,7 +149,7 @@ flowchart TB
 - `domain/entities/` — entities: `display.dart`, `window.dart`, `running_application.dart`, `shareable_content.dart` (aggregate root).
 - `domain/value_objects/geometry/` — `frame_size.dart`, `pixel_rect.dart`.
 - `domain/value_objects/identifiers/` — `display_id.dart`, `window_id.dart`, `process_id.dart`, `filter_id.dart`.
-- `domain/value_objects/capture/` — `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`.
+- `domain/value_objects/capture/` — `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`, `content_filter.dart`, `content_sharing_picker_mode.dart`, `content_sharing_picker_configuration.dart`, `stream_configuration.dart`.
 - `domain/errors/screen_capture_kit_exception.dart` — domain exception (no extension type).
 
 `FilterId` is exported from the public API.
