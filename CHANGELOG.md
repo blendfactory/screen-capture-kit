@@ -7,7 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Audio sample timestamps (macOS)**: Native JSON now includes optional
+  `presentationTimeSeconds` and `durationSeconds` from each audio
+  `CMSampleBuffer` (system + microphone). `CapturedAudio` exposes these for
+  timeline-aligned consumers.
+
+### Changed
+
+- **Example `record_display_with_audio`**: System and microphone WAVs are
+  written **sequentially** in capture order again. PTS-based placement had been
+  able to **skip real microphone PCM** when overlap trimming thought the cursor
+  was ahead of the buffer’s presentation time—sequential append keeps every
+  native chunk. Optional `CapturedAudio` timestamps remain available for custom
+  alignment in other apps.
+
+- **Audio FFI polling (macOS)**: Increased per-tick audio JSON batch drain limit
+  (`_kMaxAudioChunksPerPollBatch` 24 → 96) so the isolate is less likely to lag
+  the microphone queue.
+
 ### Fixed
+
+- **Audio FFI `timeout_ms == 0` (macOS)**: `stream_get_next_audio` and
+  `stream_get_next_microphone` treated `0` as a **5 second** wait instead of a
+  non-blocking poll (unlike `stream_get_next_frame`). That stalled the event loop
+  and could **starve microphone** delivery when queues ran dry between chunks.
+
+- **Audio shutdown drain**: Canceling `audioStream` / `microphoneStream`
+  subscriptions stopped the Dart poll loop while native queues could still hold
+  PCM JSON. Added `CaptureStream.flushPendingAudio` (wired for
+  `startCaptureStreamWithUpdater`) and call it from the display+audio example
+  **after** canceling audio subscriptions and **before** finalizing WAVs so tail
+  buffers are not discarded. The flusher uses **capped bursts and yields** so it
+  cannot synchronously drain an ever-growing queue while capture is still live
+  (which previously **starved timers** and broke `--duration`).
 
 - **Example `record_display_with_audio`**: After capture, pad the microphone WAV
   with trailing silence when system audio is stereo Float32 and the mic is mono
