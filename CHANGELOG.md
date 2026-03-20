@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`Display.refreshRate`**: shareable-content JSON from macOS now includes each
+  display’s refresh rate (Hz) from `CGDisplayModeGetRefreshRate`; `0` when
+  unavailable. Included in `Display` equality / `hashCode` / `toString`.
+
+### Changed
+
+- **Stream video (macOS)**: `stream_get_next_frame` returns a malloc’d buffer
+  with a small binary header (width, height, `bytesPerRow`, data size) plus raw
+  **BGRA** pixels, instead of a JSON string with base64 payload. Native
+  `StreamFrameHandler` keeps a **bounded queue** of pending video frames.
+- **Dart macOS bridge**: `startCaptureStream` / `startCaptureStreamWithUpdater`
+  video delivery uses the raw frame path and **drains multiple frames per
+  event-loop turn** (capped batch + yields) so capture throughput stays high
+  while the isolate/event loop can still make progress.
+
 ## [0.0.4] - 2026-03-20
 
 ### Changed
