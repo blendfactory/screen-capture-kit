@@ -17,6 +17,8 @@ class CapturedAudio {
     required this.channelCount,
     required this.format,
     this.frameCount,
+    this.presentationTimeSeconds,
+    this.durationSeconds,
   });
 
   /// Raw PCM audio bytes (interleaved channels).
@@ -34,4 +36,16 @@ class CapturedAudio {
   /// Frame count for this PCM buffer from the native `CMSampleBuffer`, when
   /// available (system audio / microphone). Null for older native builds.
   final int? frameCount;
+
+  /// Presentation time of this buffer in seconds on the stream timeline
+  /// (`CMSampleBuffer` PTS), when provided by native. Aligns system audio
+  /// and microphone from the same ScreenCaptureKit capture stream.
+  ///
+  /// Ref: `CMSampleBufferGetPresentationTimeStamp`, ScreenCaptureKit media
+  /// timebase (`synchronizationClock`).
+  final double? presentationTimeSeconds;
+
+  /// Buffer duration in seconds when provided by native
+  /// (`CMSampleBufferGetDuration`).
+  final double? durationSeconds;
 }

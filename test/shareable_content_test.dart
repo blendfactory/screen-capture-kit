@@ -177,6 +177,19 @@ void main() {
       expect(audio.channelCount, 2);
       expect(audio.format, 'f32');
     });
+
+    test('optional presentation timing from native bridge', () {
+      final audio = CapturedAudio(
+        pcmData: Uint8List.fromList([0, 0, 0, 0]),
+        sampleRate: 48000,
+        channelCount: 1,
+        format: 'f32',
+        presentationTimeSeconds: 12345.25,
+        durationSeconds: 0.01,
+      );
+      expect(audio.presentationTimeSeconds, 12345.25);
+      expect(audio.durationSeconds, 0.01);
+    });
   });
 
   group('StreamConfiguration', () {
@@ -325,6 +338,21 @@ void main() {
       await videoController.close();
       await microphoneController.close();
     });
+
+    test(
+      'flushPendingAudio completes when pendingAudioFlush is null',
+      () async {
+        final controller = StreamController<CapturedFrame>.broadcast();
+        final capture = CaptureStream(
+          stream: controller.stream,
+          updateConfiguration: (_) {},
+          updateContentFilter: (_) {},
+          setContentSharingPickerConfiguration: (_) {},
+        );
+        await capture.flushPendingAudio();
+        await controller.close();
+      },
+    );
 
     test('invokes setContentSharingPickerConfiguration when called', () async {
       final controller = StreamController<CapturedFrame>.broadcast();

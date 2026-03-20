@@ -667,7 +667,10 @@ CapturedFrame? _getNextRawFrame(int streamId, int timeoutMs) {
 }
 
 const _kMaxVideoFramesPerPollBatch = 64;
-const _kMaxAudioChunksPerPollBatch = 24;
+
+/// Larger batches reduce risk of ScreenCaptureKit dropping microphone audio
+/// when the Dart isolate briefly falls behind.
+const _kMaxAudioChunksPerPollBatch = 96;
 
 /// Active capture stream IDs for unified system+mic polling (one event-loop
 /// owner).
@@ -929,13 +932,72 @@ CapturedAudio? _parseAudioJson(String jsonStr) {
   final channelCount = (json['channelCount'] as num?)?.toInt() ?? 0;
   final format = json['format'] as String? ?? 'raw';
   final frameCount = (json['numSamples'] as num?)?.toInt();
+  final presentationTimeSeconds = (json['presentationTimeSeconds'] as num?)
+      ?.toDouble();
+  final durationSeconds = (json['durationSeconds'] as num?)?.toDouble();
   return CapturedAudio(
     pcmData: pcmData,
     sampleRate: sampleRate,
     channelCount: channelCount,
     format: format,
     frameCount: frameCount,
+    presentationTimeSeconds: presentationTimeSeconds,
+    durationSeconds: durationSeconds,
   );
+}
+
+/// Drains native audio/microphone JSON queues after Dart audio stream
+/// listeners are canceled (poll loop stopped).
+///
+/// The SCStream may still be running; callbacks can refill queues. Unbounded
+/// synchronous draining would starve the event loop and block timers (e.g.
+/// `--duration`). Each pass is capped and yields between passes.
+Future<void> _flushCaptureStreamPendingAudio({
+  required int streamId,
+  required bool captureSystem,
+  required bool captureMicrophone,
+  void Function(CapturedAudio chunk)? onSystemAudio,
+  void Function(CapturedAudio chunk)? onMicrophoneAudio,
+}) async {
+  const maxPasses = 96;
+  const maxChunksPerStreamPerPass = 4096;
+
+  for (var pass = 0; pass < maxPasses; pass++) {
+    var progressed = false;
+
+    if (captureMicrophone && onMicrophoneAudio != null) {
+      for (var i = 0; i < maxChunksPerStreamPerPass; i++) {
+        final jsonStr = _getNextMicrophoneJson(streamId, 0);
+        if (jsonStr == null) {
+          break;
+        }
+        final audio = _parseAudioJson(jsonStr);
+        if (audio != null) {
+          onMicrophoneAudio(audio);
+          progressed = true;
+        }
+      }
+    }
+
+    if (captureSystem && onSystemAudio != null) {
+      for (var i = 0; i < maxChunksPerStreamPerPass; i++) {
+        final jsonStr = _getNextAudioJson(streamId, 0);
+        if (jsonStr == null) {
+          break;
+        }
+        final audio = _parseAudioJson(jsonStr);
+        if (audio != null) {
+          onSystemAudio(audio);
+          progressed = true;
+        }
+      }
+    }
+
+    if (!progressed) {
+      break;
+    }
+    await Future<void>.delayed(Duration.zero);
+  }
 }
 
 Pointer<Utf8> _allocColorSpaceName(String? name) {
@@ -1307,5 +1369,17 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
         streamUpdateContentFilterImpl(streamId, handle),
     setContentSharingPickerConfiguration: (config) =>
         streamSetPickerConfigurationImpl(streamId, config),
+    pendingAudioFlush: (capturesAudio || captureMicrophone)
+        ? ({
+            void Function(CapturedAudio chunk)? onSystemAudio,
+            void Function(CapturedAudio chunk)? onMicrophoneAudio,
+          }) => _flushCaptureStreamPendingAudio(
+            streamId: streamId,
+            captureSystem: capturesAudio,
+            captureMicrophone: captureMicrophone,
+            onSystemAudio: onSystemAudio,
+            onMicrophoneAudio: onMicrophoneAudio,
+          )
+        : null,
   );
 }

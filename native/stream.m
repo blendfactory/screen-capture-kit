@@ -284,6 +284,21 @@ static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
   return nil;
 }
 
+/// Adds CMSampleBuffer presentation timestamp and duration (seconds) for Dart
+/// timeline alignment. Keys are omitted when CoreMedia reports invalid times.
+/// Ref: CMSampleBufferGetPresentationTimeStamp, SCStream media timebase.
+static void SCRootAddSampleTiming(NSMutableDictionary* root,
+                                  CMSampleBufferRef sampleBuffer) {
+  CMTime pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
+  if (CMTIME_IS_VALID(pts) && !CMTIME_IS_INDEFINITE(pts)) {
+    root[@"presentationTimeSeconds"] = @(CMTimeGetSeconds(pts));
+  }
+  CMTime dur = CMSampleBufferGetDuration(sampleBuffer);
+  if (CMTIME_IS_VALID(dur) && !CMTIME_IS_INDEFINITE(dur) && dur.value != 0) {
+    root[@"durationSeconds"] = @(CMTimeGetSeconds(dur));
+  }
+}
+
 @interface StreamAudioHandler : NSObject <SCStreamOutput>
 @property (nonatomic, strong) NSMutableArray<NSString*>* queue;
 @property (nonatomic, strong) NSLock* lock;
@@ -379,7 +394,7 @@ static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
 
   NSString* base64 = [pcmData base64EncodedStringWithOptions:0];
   CMItemCount numSamples = CMSampleBufferGetNumSamples(sampleBuffer);
-  NSDictionary* root = @{
+  NSMutableDictionary* root = [NSMutableDictionary dictionaryWithDictionary:@{
     @"error" : @NO,
     @"pcmBase64" : base64 ?: @"",
     @"sampleRate" : @(sampleRate),
@@ -387,7 +402,8 @@ static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
     @"format" : formatId ?: @"raw",
     @"byteCount" : @((int)pcmData.length),
     @"numSamples" : @((int)numSamples)
-  };
+  }];
+  SCRootAddSampleTiming(root, sampleBuffer);
   NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
   NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 
@@ -542,7 +558,7 @@ static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
 
   NSString* base64 = [pcmData base64EncodedStringWithOptions:0];
   CMItemCount numSamples = CMSampleBufferGetNumSamples(sampleBuffer);
-  NSDictionary* root = @{
+  NSMutableDictionary* root = [NSMutableDictionary dictionaryWithDictionary:@{
     @"error" : @NO,
     @"pcmBase64" : base64 ?: @"",
     @"sampleRate" : @(sampleRate),
@@ -550,7 +566,8 @@ static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
     @"format" : formatId ?: @"raw",
     @"byteCount" : @((int)pcmData.length),
     @"numSamples" : @((int)numSamples)
-  };
+  }];
+  SCRootAddSampleTiming(root, sampleBuffer);
   NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
   NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 
@@ -1016,7 +1033,9 @@ void* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
 }
 
 /// Returns malloc'd JSON string for next audio buffer, or NULL on timeout/error.
-/// Format: {"error":false,"pcmBase64":"...","sampleRate":N,"channelCount":N,"format":"f32","byteCount":N,"numSamples":N}.
+/// Format: {"error":false,"pcmBase64":"...","sampleRate":N,"channelCount":N,
+/// "format":"f32","byteCount":N,"numSamples":N,
+/// optional "presentationTimeSeconds","durationSeconds"}.
 /// Caller must free.
 char* stream_get_next_audio(int64_t stream_id, int64_t timeout_ms) {
   if (stream_id <= 0 || _audioHandlerRegistry == nil) {
@@ -1028,10 +1047,13 @@ char* stream_get_next_audio(int64_t stream_id, int64_t timeout_ms) {
     return NULL;
   }
 
-  int64_t timeoutNsec = (timeout_ms > 0 ? timeout_ms : 5000) * NSEC_PER_MSEC;
-  long waitResult = dispatch_semaphore_wait(
-      handler.semaphore,
-      dispatch_time(DISPATCH_TIME_NOW, timeoutNsec));
+  // Match stream_get_next_frame: timeout_ms <= 0 means non-blocking wait
+  // (DISPATCH_TIME_NOW). Dart passes 0 when draining batch tails; using 5 s
+  // here starved the mic queue and the isolate event loop.
+  dispatch_time_t waitDeadline = (timeout_ms > 0)
+      ? dispatch_time(DISPATCH_TIME_NOW, timeout_ms * NSEC_PER_MSEC)
+      : DISPATCH_TIME_NOW;
+  long waitResult = dispatch_semaphore_wait(handler.semaphore, waitDeadline);
 
   if (waitResult != 0) {
     return NULL;
@@ -1063,10 +1085,10 @@ char* stream_get_next_microphone(int64_t stream_id, int64_t timeout_ms) {
     return NULL;
   }
 
-  int64_t timeoutNsec = (timeout_ms > 0 ? timeout_ms : 5000) * NSEC_PER_MSEC;
-  long waitResult = dispatch_semaphore_wait(
-      handler.semaphore,
-      dispatch_time(DISPATCH_TIME_NOW, timeoutNsec));
+  dispatch_time_t waitDeadline = (timeout_ms > 0)
+      ? dispatch_time(DISPATCH_TIME_NOW, timeout_ms * NSEC_PER_MSEC)
+      : DISPATCH_TIME_NOW;
+  long waitResult = dispatch_semaphore_wait(handler.semaphore, waitDeadline);
 
   if (waitResult != 0) {
     return NULL;

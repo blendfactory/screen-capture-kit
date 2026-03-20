@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_configuration.dart';
@@ -20,6 +22,7 @@ class CaptureStream {
     required this.setContentSharingPickerConfiguration,
     this.audioStream,
     this.microphoneStream,
+    this.pendingAudioFlush,
   });
 
   /// The stream of captured frames. Cancel the subscription to stop capture.
@@ -47,4 +50,29 @@ class CaptureStream {
   /// system default.
   final void Function(ContentSharingPickerConfiguration? config)
   setContentSharingPickerConfiguration;
+
+  /// When non-null, drains native audio JSON queues after the FFI poll loop has
+  /// stopped. Use with [flushPendingAudio].
+  final Future<void> Function({
+    void Function(CapturedAudio chunk)? onSystemAudio,
+    void Function(CapturedAudio chunk)? onMicrophoneAudio,
+  })?
+  pendingAudioFlush;
+
+  /// Empties system-audio and/or microphone buffers still queued natively
+  /// after canceling [audioStream] / [microphoneStream] subscriptions, so PCM
+  /// is not lost before the video [stream] is canceled.
+  Future<void> flushPendingAudio({
+    void Function(CapturedAudio chunk)? onSystemAudio,
+    void Function(CapturedAudio chunk)? onMicrophoneAudio,
+  }) async {
+    final flush = pendingAudioFlush;
+    if (flush == null) {
+      return;
+    }
+    await flush(
+      onSystemAudio: onSystemAudio,
+      onMicrophoneAudio: onMicrophoneAudio,
+    );
+  }
 }
