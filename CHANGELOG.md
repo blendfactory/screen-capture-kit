@@ -7,7 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Example `record_display_with_audio`**: After capture, pad the microphone WAV
+  with trailing silence when system audio is stereo Float32 and the mic is mono
+  Float32, so `*_mic.wav` duration matches `*_system.wav`. ScreenCaptureKit
+  often emits **fewer samples per microphone `CMSampleBuffer`** than per
+  system-audio buffer while **callback counts stay paired**, which previously
+  produced about **half the mic wall-clock** in raw PCM.
+
+- **Audio capture (macOS)**: Non-interleaved (planar) PCM from
+  `SCStreamOutputTypeAudio` / `Microphone` no longer uses only the first
+  `AudioBuffer`; channels are interleaved before base64 JSON so stereo WAV/FFmpeg
+  mux matches real duration (fixes playback sounding **2× fast**). Planar layout
+  is also detected when `kAudioFormatFlagIsNonInterleaved` is **not** set but
+  `mNumberBuffers == mChannelsPerFrame` and each buffer is at most one channel
+  (fixes **mic-only half duration** after mux with system audio).
+
+- **Audio + microphone Dart polling**: Replaced 100 ms blocking FFI reads with
+  short timeouts and per-tick batch draining (same idea as video frames), so
+  system-audio polling no longer **starves the microphone** on the same
+  isolate—avoids mic dropping out mid-recording.
+
+- **Dual audio poll loop**: When both system and microphone capture are enabled,
+  a **single** fair round-robin scheduler drains both streams (shared batch cap
+  lowered to 24 chunks/tick) so independent timers no longer monopolize the
+  isolate and starve video or the other audio stream.
+
+- **Microphone PCM (macOS)**: Mono samples split across multiple 1-channel
+  `AudioBuffer`s are concatenated (previously only `mBuffers[0]` was copied,
+  roughly **halving** mic WAV duration vs system audio).
+
+- **Microphone PCM (macOS)**: After interleaving/concat in `BuildInterleavedPCM`,
+  mic output is widened when summed buffer sizes still exceed `pcm` length
+  (mono concat bypassing per-buffer `mNumberChannels` edge cases), and when
+  `CMSampleBufferGetNumSamples` implies more bytes than written, copy from
+  `CMSampleBufferGetDataBuffer` when present so WAV duration can match system
+  audio.
+
+- **Dual audio scheduling**: Unified poll drains **microphone before** system
+  for each inner iteration and starts the alternating 1 ms blocking wait on
+  **mic**, reducing native mic backlog drops.
+
 ### Added
+
+- **`CapturedAudio`**: Optional `frameCount` from native JSON `numSamples`
+  (`CMSampleBufferGetNumSamples`) when the macOS bridge provides it.
 
 - **`BundleId`**: `extension type` wrapping an application bundle identifier
   (`String`); used by `RunningApplication.bundleIdentifier` and
