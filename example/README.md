@@ -42,9 +42,9 @@ the tool may keep writing queued frames afterward.
 Notes:
 
 - Output files are very large; use `--width` / `--height` to downscale if needed.
-- `--fps` (1..120, header timebase) is **capped** to
-  `Display.refreshRate` when the OS reports a positive Hz (e.g. 60 Hz display
-  ⇒ requested 120 becomes 60).
+- `--fps` (1..120, header timebase) is **capped** to `Display.refreshRate`
+  when `DisplayRefreshRate.isKnown` is true (e.g. 60 Hz display ⇒ requested
+  120 becomes 60).
 
 ```bash
 dart pub get

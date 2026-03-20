@@ -9,11 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`Display.refreshRate`**: shareable-content JSON from macOS now includes each
-  display’s refresh rate (Hz) from `CGDisplayModeGetRefreshRate`; `0` when
-  unavailable. Included in `Display` equality / `hashCode` / `toString`.
+- **`DisplayRefreshRate`**: `extension type` for a display refresh rate in whole
+  Hz (`unknown` sentinel or validated `1..480`), populated from shareable
+  content (`CGDisplayModeGetRefreshRate`). Reflected in `Display` equality,
+  `hashCode`, and `toString`.
 
 ### Changed
+
+- **`Display.refreshRate`** type is **`DisplayRefreshRate`** instead of
+  `double`; use `DisplayRefreshRate.fromNum` when building from raw values.
 
 - **Stream video (macOS)**: `stream_get_next_frame` returns a malloc’d buffer
   with a small binary header (width, height, `bytesPerRow`, data size) plus raw

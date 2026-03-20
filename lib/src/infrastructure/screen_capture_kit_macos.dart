@@ -15,6 +15,7 @@ import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_fra
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_configuration.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/display_refresh_rate.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/frame_rate.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/queue_depth.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/stream_configuration.dart';
@@ -334,7 +335,7 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
           width: (m['width'] as num).toInt(),
           height: (m['height'] as num).toInt(),
         ),
-        refreshRate: (m['refreshRate'] as num?)?.toDouble() ?? 0,
+        refreshRate: DisplayRefreshRate.fromNum(m['refreshRate'] as num?),
       ),
     );
   }

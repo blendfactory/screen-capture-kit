@@ -394,8 +394,38 @@ void main() {
         displayId: const DisplayId(2),
         size: FrameSize(width: 1920, height: 1080),
       );
+      final d = Display(
+        displayId: const DisplayId(1),
+        size: FrameSize(width: 1920, height: 1080),
+        refreshRate: DisplayRefreshRate(120),
+      );
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
+      expect(a, isNot(equals(d)));
+    });
+  });
+
+  group('DisplayRefreshRate', () {
+    test('unknown has value 0 and isKnown false', () {
+      const r = DisplayRefreshRate.unknown();
+      expect(r.value, 0);
+      expect(r.isKnown, isFalse);
+    });
+
+    test('factory accepts 1..480', () {
+      expect(DisplayRefreshRate(60).value, 60);
+      expect(DisplayRefreshRate(120).isKnown, isTrue);
+      expect(() => DisplayRefreshRate(0), throwsArgumentError);
+      expect(() => DisplayRefreshRate(481), throwsArgumentError);
+    });
+
+    test('fromNum rounds and treats invalid as unknown', () {
+      expect(DisplayRefreshRate.fromNum(59.94).value, 60);
+      expect(DisplayRefreshRate.fromNum(null).isKnown, isFalse);
+      expect(DisplayRefreshRate.fromNum(0).isKnown, isFalse);
+      expect(DisplayRefreshRate.fromNum(-1).isKnown, isFalse);
+      expect(DisplayRefreshRate.fromNum(481).isKnown, isFalse);
+      expect(DisplayRefreshRate.fromNum(double.nan).isKnown, isFalse);
     });
   });
 

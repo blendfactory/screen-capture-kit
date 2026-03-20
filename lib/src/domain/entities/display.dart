@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 
+import 'package:screen_capture_kit/src/domain/value_objects/capture/display_refresh_rate.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/display_id.dart';
 
@@ -12,7 +13,7 @@ class Display {
   const Display({
     required this.displayId,
     required this.size,
-    this.refreshRate = 0,
+    this.refreshRate = const DisplayRefreshRate.unknown(),
   });
 
   /// The display identifier.
@@ -21,11 +22,11 @@ class Display {
   /// The size of the display in pixels.
   final FrameSize size;
 
-  /// The display's refresh rate in Hz (e.g. 60, 120).
+  /// The display's refresh rate in whole Hz when [DisplayRefreshRate.isKnown].
   ///
-  /// Returns 0 when the refresh rate could not be determined.
-  /// Obtained via `CGDisplayModeGetRefreshRate` on macOS.
-  final double refreshRate;
+  /// Obtained via `CGDisplayModeGetRefreshRate` on macOS when loading
+  /// shareable content.
+  final DisplayRefreshRate refreshRate;
 
   /// The width of the display in pixels.
   int get width => size.width;

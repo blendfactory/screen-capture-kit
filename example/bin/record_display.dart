@@ -47,16 +47,16 @@ Future<void> main(List<String> args) async {
 
     // Cap fps to the display's refresh rate when it is known.
     var fps = parsed.fps;
-    final hz = display.refreshRate;
-    if (hz > 0 && fps > hz.toInt()) {
+    final refreshHz = display.refreshRate;
+    if (refreshHz.isKnown && fps > refreshHz.value) {
       stdout.writeln(
-        'Display refresh rate is ${hz.toStringAsFixed(0)} Hz; '
-        'capping --fps from $fps to ${hz.toInt()}.',
+        'Display refresh rate is ${refreshHz.value} Hz; '
+        'capping --fps from $fps to ${refreshHz.value}.',
       );
-      fps = hz.toInt();
+      fps = refreshHz.value;
     }
 
-    final hzLabel = hz > 0 ? '${hz.toStringAsFixed(0)}Hz' : '?Hz';
+    final hzLabel = refreshHz.isKnown ? '${refreshHz.value}Hz' : '?Hz';
     stdout.writeln(
       'Recording display ${index + 1}/${displays.length}: '
       'id=${display.displayId.value}  '
