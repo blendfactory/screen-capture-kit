@@ -19,9 +19,23 @@ dart run bin/example.dart
 
 The app prints menu-style options to stdout. Follow the prompts; grant permissions when macOS asks.
 
+### Display screenshot to PNG (CLI)
+
+`bin/screenshot_display.dart` lists available displays, lets you pick one (or pass
+`--display`), and writes a single PNG into an output directory. Requires macOS
+**14+** (same as `captureScreenshot`).
+
+```bash
+dart pub get
+dart run bin/screenshot_display.dart --out ./captures
+# non-interactive: second display
+dart run bin/screenshot_display.dart ./captures --display 2
+```
+
 ## Project layout
 
 | Path | Role |
 |------|------|
 | `bin/example.dart` | Interactive demo entrypoint |
+| `bin/screenshot_display.dart` | CLI: pick a display, save one PNG to a folder |
 | `pubspec.yaml` | Depends on `screen_capture_kit` via `path: ../` |
