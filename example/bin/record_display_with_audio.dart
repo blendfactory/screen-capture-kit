@@ -125,6 +125,10 @@ Future<void> main(List<String> args) async {
       return;
     }
 
+    // Append every buffer in callback order. PTS-based WAV placement
+    // (TimelinePcmWavWriter) can discard microphone chunks when presentation
+    // time trails an over-advanced sample cursor—use sequential writers so
+    // ScreenCaptureKit delivers the full mic recording.
     final sysWriter = PcmWavWriter(sysWavFile);
     final micWriter = PcmWavWriter(micWavFile);
 
@@ -166,9 +170,14 @@ Future<void> main(List<String> args) async {
       sysSub = null;
       micSub = null;
 
-      // ScreenCaptureKit often delivers fewer samples per mic buffer than per
-      // system-audio buffer while callbacks stay paired. Pad mic PCM so WAV
-      // duration matches system audio (stereo vs mono f32: mic bytes ~ sys/2).
+      await capture.flushPendingAudio(
+        onSystemAudio: sysWriter.add,
+        onMicrophoneAudio: micWriter.add,
+      );
+
+      // If mic track is still shorter in wall-clock after sequential capture,
+      // it is usually sample-layout / channel mismatch vs system—not missing
+      // intentional silence. Pad only for ffmpeg mux length alignment.
       if (sysWriter.hasAudio && micWriter.hasAudio) {
         final sysCh = sysWriter.channelCount;
         final micCh = micWriter.channelCount;
