@@ -249,9 +249,7 @@ class TimelinePcmWavWriter {
         b.presentationTimeSeconds!,
       ),
     );
-    for (final c in _pending) {
-      _writeAligned(c);
-    }
+    _pending.forEach(_writeAligned);
     _pending.clear();
   }
 
@@ -261,9 +259,7 @@ class TimelinePcmWavWriter {
       return;
     }
     _sequential = true;
-    for (final c in _pending) {
-      _inner.add(c);
-    }
+    _pending.forEach(_inner.add);
     _pending.clear();
   }
 
@@ -304,8 +300,8 @@ class TimelinePcmWavWriter {
 
   int get pcmBytesWritten => _inner.pcmBytesWritten;
 
-  /// Sample index at end of PCM data (excludes WAV header); stays in sync with
-  /// [_inner.pcmBytesWritten] whenever the inner format is known.
+  /// Sample index at end of PCM data (excludes WAV header); derived from the
+  /// wrapped [PcmWavWriter]'s `pcmBytesWritten` and frame size when known.
   void _syncSamplesWrittenFromInner() {
     final ch = _inner.channelCount;
     final bits = _inner.bitsPerSample;
@@ -500,7 +496,8 @@ class DualAudioWavTimelineCoordinator {
     microphone.setTimelineAnchorSec(_anchorSec!);
   }
 
-  /// Pads the shorter stream so both WAVs cover [wallClockEndSec].
+  /// Pads the shorter stream so both WAVs extend to the later wall-clock end
+  /// (`wallClockEndSec` on each [TimelinePcmWavWriter]).
   void padStreamsToCommonEnd() {
     if (!_locked || _timelineDisabled || _anchorSec == null) {
       return;
