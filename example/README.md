@@ -6,6 +6,8 @@ Sample command-line app demonstrating display, window, region, and system picker
 
 - macOS **12.3+** (some flows need **14+**, e.g. screenshot / system picker)
 - **Screen Recording** permission (System Settings → Privacy & Security)
+- **ffmpeg** on `PATH` for `record_display_with_audio` (e.g. `brew install ffmpeg`)
+- **Microphone** permission for microphone capture in `record_display_with_audio`
 - [Dart SDK](https://dart.dev/get-dart) **3.10+** (aligned with the main package)
 
 ## Run
@@ -53,6 +55,27 @@ dart run bin/record_display.dart ./recordings --display 1 --duration 5 \
   --fps 30 --width 640 --height 360
 ```
 
+### Display + system audio + microphone → MP4 (CLI, ffmpeg)
+
+`bin/record_display_with_audio.dart` captures a display with **system audio** and
+**microphone** (`startCaptureStreamWithUpdater` with `capturesAudio` and
+`captureMicrophone`), writes a temporary **BGRA AVI** and **two PCM WAV** files,
+then runs **ffmpeg** to produce **H.264 + AAC** MP4. Intermediate files are
+deleted unless you pass `--keep-temp`.
+
+Requirements:
+
+- **ffmpeg** available (e.g. Homebrew).
+- **macOS 13+** for system audio in ScreenCaptureKit; **macOS 15+** for
+  microphone via `SCStreamOutputTypeMicrophone`.
+- **Screen Recording** and **Microphone** permissions when prompted.
+
+```bash
+dart pub get
+dart run bin/record_display_with_audio.dart --out ./recordings --duration 10 --display 1
+dart run bin/record_display_with_audio.dart ./recordings --keep-temp
+```
+
 ## Project layout
 
 | Path | Role |
@@ -60,4 +83,7 @@ dart run bin/record_display.dart ./recordings --display 1 --duration 5 \
 | `bin/example.dart` | Interactive demo entrypoint |
 | `bin/screenshot_display.dart` | CLI: pick a display, save one PNG to a folder |
 | `bin/record_display.dart` | CLI: pick a display, record uncompressed AVI (Dart only) |
+| `bin/record_display_with_audio.dart` | CLI: display + system + mic → MP4 via ffmpeg |
+| `lib/avi_isolate_recorder.dart` | Shared isolate-based AVI writer for the record CLIs |
+| `lib/pcm_wav_writer.dart` | PCM → WAV helper for `record_display_with_audio` |
 | `pubspec.yaml` | Depends on `screen_capture_kit` via `path: ../` |
