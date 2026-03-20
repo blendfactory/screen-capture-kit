@@ -21,6 +21,7 @@ import 'package:screen_capture_kit/src/domain/value_objects/capture/queue_depth.
 import 'package:screen_capture_kit/src/domain/value_objects/capture/stream_configuration.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/pixel_rect.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/identifiers/bundle_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/display_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/process_id.dart';
@@ -345,7 +346,7 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
     final m = a as Map<String, dynamic>;
     applications.add(
       RunningApplication(
-        bundleIdentifier: m['bundleIdentifier'] as String? ?? '',
+        bundleIdentifier: BundleId(m['bundleIdentifier'] as String? ?? ''),
         applicationName: m['applicationName'] as String? ?? '',
         processId: ProcessId((m['processId'] as num).toInt()),
       ),
@@ -367,7 +368,9 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
           height: (frameJson['height'] as num?)?.toDouble() ?? 0,
         ),
         owningApplication: RunningApplication(
-          bundleIdentifier: appJson['bundleIdentifier'] as String? ?? '',
+          bundleIdentifier: BundleId(
+            appJson['bundleIdentifier'] as String? ?? '',
+          ),
           applicationName: appJson['applicationName'] as String? ?? '',
           processId: ProcessId((appJson['processId'] as num?)?.toInt() ?? 0),
         ),
@@ -616,7 +619,9 @@ void streamSetPickerConfigurationImpl(
   }
   if (config.excludedBundleIds != null &&
       config.excludedBundleIds!.isNotEmpty) {
-    map['excludedBundleIDs'] = config.excludedBundleIds;
+    map['excludedBundleIDs'] = config.excludedBundleIds!
+        .map((id) => id.value)
+        .toList();
   }
   if (config.excludedWindowIds != null &&
       config.excludedWindowIds!.isNotEmpty) {

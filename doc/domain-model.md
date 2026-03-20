@@ -34,7 +34,8 @@ flowchart TB
   E1 --> VO_S["FrameSize\n(immutable class)"]
   E2 --> VO_W["WindowId\n(value, extension type)"]
   E2 --> VO_R["PixelRect\n(value, extension type)"]
-  E3 --> VO_P["ProcessId\n(value, extension type)"]
+    E3 --> VO_P["ProcessId\n(value, extension type)"]
+    E3 --> VO_B["BundleId\n(value, extension type)"]
 ```
 
 ---
@@ -47,7 +48,7 @@ Entities have **identity** (stable id over time). They are immutable snapshots i
 |--------|----------|-------------|
 | **Display** | `DisplayId` | A display device. Contains `DisplayId`, `FrameSize` (width × height). |
 | **Window** | `WindowId` | An on-screen window. Contains `WindowId`, `PixelRect` (frame), `RunningApplication` (owner), optional title. |
-| **RunningApplication** | `ProcessId` (+ app name / bundle id for display) | A running app. Contains `ProcessId`, bundle identifier, application name. |
+| **RunningApplication** | `ProcessId` (+ `BundleId` / name for display) | A running app. Contains `ProcessId`, `BundleId`, application name. |
 
 Entities reference **value objects**: extension-type **identifiers** and immutable **geometry** types (`FrameSize`, `PixelRect`). They do **not** hold raw `int`/`double` for ids and dimensions where a value object exists.
 
@@ -57,7 +58,9 @@ Entities reference **value objects**: extension-type **identifiers** and immutab
 
 Value objects use **Dart extension types** for scalar identifiers, and **immutable classes** for multi-field structures (geometry, capture results).
 
-### Identifier value objects (extension type on `int`)
+### Identifier value objects (extension types)
+
+**Integer identifiers** (extension type on `int`):
 
 | Value object | Representation | Purpose |
 |--------------|----------------|---------|
@@ -65,6 +68,12 @@ Value objects use **Dart extension types** for scalar identifiers, and **immutab
 | **WindowId** | `int` | Window identifier (maps to native). |
 | **ProcessId** | `int` | Process identifier (maps to native). |
 | **FilterId** | `int` | Opaque filter handle id (must be > 0). Must be released via application service. |
+
+**String identifiers**:
+
+| Value object | Representation | Purpose |
+|--------------|----------------|---------|
+| **BundleId** | `String` | Application bundle identifier (reverse-DNS; may be empty when absent from native). |
 
 Example:
 
@@ -122,10 +131,10 @@ flowchart TB
   subgraph Entities["Entities"]
     D["Display\nDisplayId, FrameSize"]
     W["Window\nWindowId, PixelRect, RunningApplication"]
-    RA["RunningApplication\nProcessId, bundleId, name"]
+    RA["RunningApplication\nProcessId, BundleId, name"]
   end
   subgraph ValueObjects["Value objects"]
-    ID["IDs: DisplayId, WindowId, ProcessId, FilterId\n(extension types)"]
+    ID["IDs: DisplayId, WindowId, ProcessId, FilterId, BundleId\n(extension types)"]
     GEO["FrameSize, PixelRect\n(immutable classes)"]
     CAP["CapturedFrame, CapturedImage, CapturedAudio\n(immutable classes)"]
   end
@@ -144,7 +153,7 @@ flowchart TB
 
 ## Rules
 
-1. **Value objects**: Implement scalar identifier value objects as **Dart extension types** (e.g. `DisplayId`, `WindowId`, `ProcessId`, `FilterId`), and model multi-field value objects (e.g. `FrameSize`, `PixelRect`, `CapturedFrame`, `CapturedImage`, `CapturedAudio`) as immutable classes.
+1. **Value objects**: Implement scalar identifier value objects as **Dart extension types** (e.g. `DisplayId`, `WindowId`, `ProcessId`, `FilterId`, `BundleId`), and model multi-field value objects (e.g. `FrameSize`, `PixelRect`, `CapturedFrame`, `CapturedImage`, `CapturedAudio`) as immutable classes.
 2. **Entities**: Use value object types for ids and dimensions (e.g. `Display` has `DisplayId` and `FrameSize`, not raw `int`).
 3. **Aggregate root**: Only `ShareableContent` is the aggregate root. All reads of “what can be captured” go through it. Do not add another root for the same consistency boundary.
 4. **Capture results**: `CapturedFrame`, `CapturedImage`, and `CapturedAudio` are value objects implemented as **immutable classes** (not extension types); they are produced by the application/infrastructure layer and consumed by the caller; they do not belong to the ShareableContent aggregate.
@@ -156,7 +165,7 @@ flowchart TB
 
 - `domain/entities/` — entities: `display.dart`, `window.dart`, `running_application.dart`, `shareable_content.dart` (aggregate root).
 - `domain/value_objects/geometry/` — `frame_size.dart`, `pixel_rect.dart`.
-- `domain/value_objects/identifiers/` — `display_id.dart`, `window_id.dart`, `process_id.dart`, `filter_id.dart`.
+- `domain/value_objects/identifiers/` — `display_id.dart`, `window_id.dart`, `process_id.dart`, `filter_id.dart`, `bundle_id.dart`.
 - `domain/value_objects/capture/` — `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`, `content_filter.dart`, `content_sharing_picker_mode.dart`, `content_sharing_picker_configuration.dart`, `stream_configuration.dart`.
 - `domain/errors/screen_capture_kit_exception.dart` — domain exception (no extension type).
 

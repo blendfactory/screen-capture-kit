@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 
+import 'package:screen_capture_kit/src/domain/value_objects/identifiers/bundle_id.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/identifiers/process_id.dart';
 
 /// A running application available for capture.
@@ -15,7 +16,7 @@ class RunningApplication {
   });
 
   /// The bundle identifier of the application.
-  final String bundleIdentifier;
+  final BundleId bundleIdentifier;
 
   /// The display name of the application.
   final String applicationName;
@@ -37,6 +38,6 @@ class RunningApplication {
 
   @override
   String toString() =>
-      'RunningApplication(bundleIdentifier: $bundleIdentifier, '
+      'RunningApplication(bundleIdentifier: ${bundleIdentifier.value}, '
       'applicationName: $applicationName, processId: ${processId.value})';
 }

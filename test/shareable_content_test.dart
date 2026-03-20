@@ -9,7 +9,7 @@ void main() {
   group('ContentFilter', () {
     test('ContentFilter.window creates with window', () {
       const app = RunningApplication(
-        bundleIdentifier: 'com.example',
+        bundleIdentifier: BundleId('com.example'),
         applicationName: 'Example',
         processId: ProcessId(1),
       );
@@ -41,7 +41,7 @@ void main() {
           size: FrameSize(width: 1920, height: 1080),
         );
         const app = RunningApplication(
-          bundleIdentifier: 'com.example',
+          bundleIdentifier: BundleId('com.example'),
           applicationName: 'Example',
           processId: ProcessId(1),
         );
@@ -432,23 +432,23 @@ void main() {
   group('RunningApplication', () {
     test('creates with required fields', () {
       const app = RunningApplication(
-        bundleIdentifier: 'com.example.app',
+        bundleIdentifier: BundleId('com.example.app'),
         applicationName: 'Example',
         processId: ProcessId(1234),
       );
-      expect(app.bundleIdentifier, 'com.example.app');
+      expect(app.bundleIdentifier, const BundleId('com.example.app'));
       expect(app.applicationName, 'Example');
       expect(app.processId.value, 1234);
     });
 
     test('equality', () {
       const a = RunningApplication(
-        bundleIdentifier: 'com.test',
+        bundleIdentifier: BundleId('com.test'),
         applicationName: 'Test',
         processId: ProcessId(1),
       );
       const b = RunningApplication(
-        bundleIdentifier: 'com.test',
+        bundleIdentifier: BundleId('com.test'),
         applicationName: 'Test',
         processId: ProcessId(1),
       );
@@ -459,7 +459,7 @@ void main() {
   group('Window', () {
     test('creates with frame and owning app', () {
       const app = RunningApplication(
-        bundleIdentifier: 'com.example',
+        bundleIdentifier: BundleId('com.example'),
         applicationName: 'Example',
         processId: ProcessId(1),
       );
@@ -472,7 +472,10 @@ void main() {
       expect(window.windowId.value, 100);
       expect(window.frame.width, 800);
       expect(window.frame.height, 600);
-      expect(window.owningApplication.bundleIdentifier, 'com.example');
+      expect(
+        window.owningApplication.bundleIdentifier,
+        const BundleId('com.example'),
+      );
       expect(window.title, 'Test Window');
     });
   });

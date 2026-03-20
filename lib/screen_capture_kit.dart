@@ -22,6 +22,7 @@ export 'src/domain/value_objects/capture/queue_depth.dart';
 export 'src/domain/value_objects/capture/stream_configuration.dart';
 export 'src/domain/value_objects/geometry/frame_size.dart';
 export 'src/domain/value_objects/geometry/pixel_rect.dart';
+export 'src/domain/value_objects/identifiers/bundle_id.dart';
 export 'src/domain/value_objects/identifiers/display_id.dart';
 export 'src/domain/value_objects/identifiers/filter_id.dart';
 export 'src/domain/value_objects/identifiers/process_id.dart';

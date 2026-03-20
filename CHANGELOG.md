@@ -9,12 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`BundleId`**: `extension type` wrapping an application bundle identifier
+  (`String`); used by `RunningApplication.bundleIdentifier` and
+  `ContentSharingPickerConfiguration.excludedBundleIds`.
+
 - **`DisplayRefreshRate`**: `extension type` for a display refresh rate in whole
   Hz (`unknown` sentinel or validated `1..480`), populated from shareable
   content (`CGDisplayModeGetRefreshRate`). Reflected in `Display` equality,
   `hashCode`, and `toString`.
 
 ### Changed
+
+- **Breaking**: **`RunningApplication.bundleIdentifier`** is **`BundleId`**
+  (not `String`). **`ContentSharingPickerConfiguration.excludedBundleIds`**
+  is **`List<BundleId>?`** (not `List<String>?`).
 
 - **`Display.refreshRate`** type is **`DisplayRefreshRate`** instead of
   `double`; use `DisplayRefreshRate.fromNum` when building from raw values.
