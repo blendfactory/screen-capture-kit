@@ -667,6 +667,190 @@ CapturedFrame? _getNextRawFrame(int streamId, int timeoutMs) {
 }
 
 const _kMaxVideoFramesPerPollBatch = 64;
+const _kMaxAudioChunksPerPollBatch = 24;
+
+/// Active capture stream IDs for unified system+mic polling (one event-loop
+/// owner).
+final _unifiedAudioPollActive = <int>{};
+
+/// Batch-drain for PCM JSON chunks. Uses short native waits (never long blocks)
+/// so system-audio polling cannot starve the microphone poller on the same
+/// isolate.
+void _scheduleCapturedAudioPolling({
+  required int streamId,
+  required StreamController<CapturedAudio> controller,
+  required String? Function(int streamId, int timeoutMs) getNextJson,
+}) {
+  void poll({bool resumeDrain = false}) {
+    if (!controller.hasListener) {
+      return;
+    }
+
+    var jsonStr = getNextJson(streamId, resumeDrain ? 0 : 1);
+    var drained = 0;
+    var hitBatchLimit = false;
+
+    while (jsonStr != null && controller.hasListener) {
+      final audio = _parseAudioJson(jsonStr);
+      if (audio != null) {
+        controller.add(audio);
+      }
+      drained++;
+      if (drained >= _kMaxAudioChunksPerPollBatch) {
+        hitBatchLimit = true;
+        break;
+      }
+      jsonStr = getNextJson(streamId, 0);
+    }
+
+    if (!controller.hasListener) {
+      return;
+    }
+
+    if (hitBatchLimit) {
+      Future.delayed(Duration.zero, () => poll(resumeDrain: true));
+    } else {
+      Future.delayed(const Duration(milliseconds: 1), poll);
+    }
+  }
+
+  Future.delayed(Duration.zero, poll);
+}
+
+/// One poll loop for **both** system and microphone when both streams are used.
+/// Interleaves timeout-0 reads (fair round-robin) so neither stream monopolizes
+/// the isolate; alternating 1 ms blocking reads avoid starving one native
+/// queue.
+void _ensureUnifiedSystemAndMicrophonePolling({
+  required int streamId,
+  required StreamController<CapturedAudio> system,
+  required StreamController<CapturedAudio> microphone,
+}) {
+  if (_unifiedAudioPollActive.contains(streamId)) {
+    return;
+  }
+  if (!system.hasListener && !microphone.hasListener) {
+    return;
+  }
+  _unifiedAudioPollActive.add(streamId);
+
+  /// Prefer blocking wait on mic when alternating: fewer native mic drops.
+  var leadSystem = false;
+
+  void poll({bool resumeDrain = false}) {
+    if (!system.hasListener && !microphone.hasListener) {
+      _unifiedAudioPollActive.remove(streamId);
+      return;
+    }
+
+    var totalDrained = 0;
+    var hitBatchLimit = false;
+
+    while (totalDrained < _kMaxAudioChunksPerPollBatch) {
+      var progressed = false;
+
+      // Microphone first: system audio often yields larger bursts; mic backlogs
+      // drop samples in ScreenCaptureKit if we fall behind.
+      if (microphone.hasListener) {
+        final jsonStr = _getNextMicrophoneJson(streamId, 0);
+        if (jsonStr != null) {
+          final audio = _parseAudioJson(jsonStr);
+          if (audio != null) {
+            microphone.add(audio);
+          }
+          totalDrained++;
+          progressed = true;
+          if (totalDrained >= _kMaxAudioChunksPerPollBatch) {
+            hitBatchLimit = true;
+            break;
+          }
+        }
+      }
+
+      if (hitBatchLimit) {
+        break;
+      }
+
+      if (system.hasListener) {
+        final jsonStr = _getNextAudioJson(streamId, 0);
+        if (jsonStr != null) {
+          final audio = _parseAudioJson(jsonStr);
+          if (audio != null) {
+            system.add(audio);
+          }
+          totalDrained++;
+          progressed = true;
+          if (totalDrained >= _kMaxAudioChunksPerPollBatch) {
+            hitBatchLimit = true;
+            break;
+          }
+        }
+      }
+
+      if (!progressed) {
+        break;
+      }
+    }
+
+    if (!system.hasListener && !microphone.hasListener) {
+      _unifiedAudioPollActive.remove(streamId);
+      return;
+    }
+
+    if (!resumeDrain && !hitBatchLimit) {
+      const timeoutMs = 1;
+      if (system.hasListener && microphone.hasListener) {
+        if (leadSystem) {
+          final jsonStr = _getNextAudioJson(streamId, timeoutMs);
+          if (jsonStr != null) {
+            final audio = _parseAudioJson(jsonStr);
+            if (audio != null) {
+              system.add(audio);
+            }
+          }
+        } else {
+          final jsonStr = _getNextMicrophoneJson(streamId, timeoutMs);
+          if (jsonStr != null) {
+            final audio = _parseAudioJson(jsonStr);
+            if (audio != null) {
+              microphone.add(audio);
+            }
+          }
+        }
+        leadSystem = !leadSystem;
+      } else if (system.hasListener) {
+        final jsonStr = _getNextAudioJson(streamId, timeoutMs);
+        if (jsonStr != null) {
+          final audio = _parseAudioJson(jsonStr);
+          if (audio != null) {
+            system.add(audio);
+          }
+        }
+      } else if (microphone.hasListener) {
+        final jsonStr = _getNextMicrophoneJson(streamId, timeoutMs);
+        if (jsonStr != null) {
+          final audio = _parseAudioJson(jsonStr);
+          if (audio != null) {
+            microphone.add(audio);
+          }
+        }
+      }
+    }
+
+    if (!system.hasListener && !microphone.hasListener) {
+      _unifiedAudioPollActive.remove(streamId);
+      return;
+    }
+
+    if (hitBatchLimit) {
+      Future.delayed(Duration.zero, () => poll(resumeDrain: true));
+    } else {
+      Future.delayed(const Duration(milliseconds: 1), poll);
+    }
+  }
+
+  Future.delayed(Duration.zero, poll);
+}
 
 /// Batch-drain scheduler: pulls up to [_kMaxVideoFramesPerPollBatch] raw frames
 /// per event-loop tick, yielding between batches so the Dart event loop stays
@@ -744,11 +928,13 @@ CapturedAudio? _parseAudioJson(String jsonStr) {
   final sampleRate = (json['sampleRate'] as num?)?.toDouble() ?? 0.0;
   final channelCount = (json['channelCount'] as num?)?.toInt() ?? 0;
   final format = json['format'] as String? ?? 'raw';
+  final frameCount = (json['numSamples'] as num?)?.toInt();
   return CapturedAudio(
     pcmData: pcmData,
     sampleRate: sampleRate,
     channelCount: channelCount,
     format: format,
+    frameCount: frameCount,
   );
 }
 
@@ -1032,57 +1218,57 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   }
 
   StreamController<CapturedAudio>? audioController;
-  if (capturesAudio) {
-    // Closed in onCancel when stream subscription is cancelled.
-    // ignore: close_sinks
+  StreamController<CapturedAudio>? microphoneController;
+
+  if (capturesAudio && captureMicrophone) {
+    // Audio sinks close when the frame controller cancels (onCancel below).
+    // ignore: close_sinks -- see onCancel
     late final StreamController<CapturedAudio> ac;
+    // ignore: close_sinks -- see onCancel
+    late final StreamController<CapturedAudio> mc;
     ac = StreamController<CapturedAudio>(
       onListen: () {
-        void pollAudio() {
-          if (!ac.hasListener) {
-            return;
-          }
-          final jsonStr = _getNextAudioJson(streamId, 100);
-          if (jsonStr != null && ac.hasListener) {
-            final audio = _parseAudioJson(jsonStr);
-            if (audio != null) {
-              ac.add(audio);
-            }
-          }
-          if (ac.hasListener) {
-            Future.delayed(const Duration(milliseconds: 1), pollAudio);
-          }
-        }
-
-        Future.delayed(Duration.zero, pollAudio);
+        _ensureUnifiedSystemAndMicrophonePolling(
+          streamId: streamId,
+          system: ac,
+          microphone: mc,
+        );
+      },
+    );
+    mc = StreamController<CapturedAudio>(
+      onListen: () {
+        _ensureUnifiedSystemAndMicrophonePolling(
+          streamId: streamId,
+          system: ac,
+          microphone: mc,
+        );
       },
     );
     audioController = ac;
-  }
-
-  StreamController<CapturedAudio>? microphoneController;
-  if (captureMicrophone) {
-    // Closed in onCancel when stream subscription is cancelled.
-    late final StreamController<CapturedAudio> mc; // ignore: close_sinks
+    microphoneController = mc;
+  } else if (capturesAudio) {
+    // ignore: close_sinks -- see frame controller onCancel
+    late final StreamController<CapturedAudio> ac;
+    ac = StreamController<CapturedAudio>(
+      onListen: () {
+        _scheduleCapturedAudioPolling(
+          streamId: streamId,
+          controller: ac,
+          getNextJson: _getNextAudioJson,
+        );
+      },
+    );
+    audioController = ac;
+  } else if (captureMicrophone) {
+    // ignore: close_sinks -- see frame controller onCancel
+    late final StreamController<CapturedAudio> mc;
     mc = StreamController<CapturedAudio>(
       onListen: () {
-        void pollMic() {
-          if (!mc.hasListener) {
-            return;
-          }
-          final jsonStr = _getNextMicrophoneJson(streamId, 100);
-          if (jsonStr != null && mc.hasListener) {
-            final audio = _parseAudioJson(jsonStr);
-            if (audio != null) {
-              mc.add(audio);
-            }
-          }
-          if (mc.hasListener) {
-            Future.delayed(const Duration(milliseconds: 1), pollMic);
-          }
-        }
-
-        Future.delayed(Duration.zero, pollMic);
+        _scheduleCapturedAudioPolling(
+          streamId: streamId,
+          controller: mc,
+          getNextJson: _getNextMicrophoneJson,
+        );
       },
     );
     microphoneController = mc;
@@ -1097,6 +1283,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
       );
     },
     onCancel: () {
+      _unifiedAudioPollActive.remove(streamId);
       _streamStopAndRelease(streamId);
       unawaited(controller.close());
       final ac = audioController;

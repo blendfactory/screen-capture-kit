@@ -160,6 +160,130 @@ static void ensureCoreGraphicsInit(void) {
 }
 @end
 
+/// Interleave PCM for WAV/Dart: ScreenCaptureKit may deliver non-interleaved
+/// (planar) buffers (one AudioBuffer per channel). Using only mBuffers[0]
+/// then halving the payload breaks duration (2× speed if WAV still claims
+/// >1 channel, or half-length mic when amix pads with silence).
+///
+/// Some streams omit kAudioFormatFlagIsNonInterleaved but still use one buffer
+/// per channel; detect that by layout (mNumberBuffers == mChannelsPerFrame,
+/// each buffer single-channel, equal sizes).
+static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
+                                         const AudioStreamBasicDescription* asbd,
+                                         NSString* __autoreleasing* outFormatId) {
+  *outFormatId = @"raw";
+  if (!bufferList || bufferList->mNumberBuffers == 0 || !asbd) {
+    return nil;
+  }
+
+  UInt32 numChannels = asbd->mChannelsPerFrame;
+  BOOL isNonInterleaved = (asbd->mFormatFlags & kAudioFormatFlagIsNonInterleaved) != 0;
+
+  if (asbd->mFormatID != kAudioFormatLinearPCM) {
+    AudioBuffer buf = bufferList->mBuffers[0];
+    if (buf.mData && buf.mDataByteSize > 0) {
+      return [NSMutableData dataWithBytes:buf.mData length:buf.mDataByteSize];
+    }
+    return nil;
+  }
+
+  if (asbd->mFormatFlags & kAudioFormatFlagIsFloat) {
+    *outFormatId = @"f32";
+  } else if (asbd->mBitsPerChannel == 16) {
+    *outFormatId = @"s16";
+  }
+
+  UInt32 bits = asbd->mBitsPerChannel;
+  size_t bytesPerSample = bits / 8;
+
+  BOOL buffersMatchChannelCount =
+      (numChannels > 0 && bufferList->mNumberBuffers == numChannels);
+  BOOL eachBufferAtMostOneChannel = YES;
+  for (UInt32 i = 0; i < bufferList->mNumberBuffers; i++) {
+    UInt32 perBufCh = bufferList->mBuffers[i].mNumberChannels;
+    if (perBufCh > 1) {
+      eachBufferAtMostOneChannel = NO;
+      break;
+    }
+  }
+  /// Microphone output may be planar without setting IsNonInterleaved.
+  BOOL planarByLayout = buffersMatchChannelCount && numChannels > 1 &&
+      eachBufferAtMostOneChannel && bufferList->mNumberBuffers > 1;
+  BOOL shouldPlanarInterleave =
+      (isNonInterleaved && buffersMatchChannelCount) || planarByLayout;
+
+  if (shouldPlanarInterleave && bytesPerSample > 0) {
+    size_t frames = bufferList->mBuffers[0].mDataByteSize / bytesPerSample;
+    if (frames == 0) {
+      return nil;
+    }
+
+    for (UInt32 ch = 0; ch < numChannels; ch++) {
+      const AudioBuffer* b = &bufferList->mBuffers[ch];
+      if (!b->mData) {
+        return nil;
+      }
+      size_t chFrames = b->mDataByteSize / bytesPerSample;
+      if (chFrames != frames) {
+        return nil;
+      }
+    }
+
+    NSUInteger capacity = (NSUInteger)(frames * bytesPerSample * numChannels);
+    NSMutableData* out = [NSMutableData dataWithCapacity:capacity];
+
+    if (asbd->mFormatFlags & kAudioFormatFlagIsFloat) {
+      for (size_t f = 0; f < frames; f++) {
+        for (UInt32 ch = 0; ch < numChannels; ch++) {
+          float sample = ((const float*)bufferList->mBuffers[ch].mData)[f];
+          [out appendBytes:&sample length:sizeof(float)];
+        }
+      }
+    } else if (bits == 16) {
+      for (size_t f = 0; f < frames; f++) {
+        for (UInt32 ch = 0; ch < numChannels; ch++) {
+          int16_t sample = ((const int16_t*)bufferList->mBuffers[ch].mData)[f];
+          [out appendBytes:&sample length:sizeof(int16_t)];
+        }
+      }
+    } else {
+      return nil;
+    }
+    return out;
+  }
+
+  /// Mono split across several 1-channel buffers (seen on some microphone
+  /// CMSampleBuffer layouts). Copying only mBuffers[0] halves wall-clock audio.
+  if (numChannels == 1 && bufferList->mNumberBuffers > 1 &&
+      asbd->mFormatID == kAudioFormatLinearPCM && bytesPerSample > 0) {
+    BOOL okMonoBuffers = YES;
+    for (UInt32 i = 0; i < bufferList->mNumberBuffers; i++) {
+      if (bufferList->mBuffers[i].mNumberChannels > 1) {
+        okMonoBuffers = NO;
+        break;
+      }
+    }
+    if (okMonoBuffers) {
+      NSMutableData* out = [NSMutableData data];
+      for (UInt32 i = 0; i < bufferList->mNumberBuffers; i++) {
+        const AudioBuffer* b = &bufferList->mBuffers[i];
+        if (b->mData && b->mDataByteSize > 0) {
+          [out appendBytes:b->mData length:b->mDataByteSize];
+        }
+      }
+      if (out.length > 0) {
+        return out;
+      }
+    }
+  }
+
+  AudioBuffer buf = bufferList->mBuffers[0];
+  if (buf.mData && buf.mDataByteSize > 0) {
+    return [NSMutableData dataWithBytes:buf.mData length:buf.mDataByteSize];
+  }
+  return nil;
+}
+
 @interface StreamAudioHandler : NSObject <SCStreamOutput>
 @property (nonatomic, strong) NSMutableArray<NSString*>* queue;
 @property (nonatomic, strong) NSLock* lock;
@@ -238,24 +362,11 @@ static void ensureCoreGraphicsInit(void) {
     return;
   }
 
-  NSMutableData* pcmData = nil;
   UInt32 numChannels = asbd->mChannelsPerFrame;
   Float64 sampleRate = asbd->mSampleRate;
   NSString* formatId = @"raw";
 
-  if (bufferList->mNumberBuffers > 0) {
-    AudioBuffer buf = bufferList->mBuffers[0];
-    if (buf.mData && buf.mDataByteSize > 0) {
-      pcmData = [NSMutableData dataWithBytes:buf.mData length:buf.mDataByteSize];
-    }
-    if (asbd->mFormatID == kAudioFormatLinearPCM) {
-      if (asbd->mFormatFlags & kAudioFormatFlagIsFloat) {
-        formatId = @"f32";
-      } else if (asbd->mBitsPerChannel == 16) {
-        formatId = @"s16";
-      }
-    }
-  }
+  NSMutableData* pcmData = BuildInterleavedPCM(bufferList, asbd, &formatId);
 
   if (blockBuffer) {
     CFRelease(blockBuffer);
@@ -267,13 +378,15 @@ static void ensureCoreGraphicsInit(void) {
   }
 
   NSString* base64 = [pcmData base64EncodedStringWithOptions:0];
+  CMItemCount numSamples = CMSampleBufferGetNumSamples(sampleBuffer);
   NSDictionary* root = @{
     @"error" : @NO,
     @"pcmBase64" : base64 ?: @"",
     @"sampleRate" : @(sampleRate),
     @"channelCount" : @((int)numChannels),
     @"format" : formatId ?: @"raw",
-    @"byteCount" : @((int)pcmData.length)
+    @"byteCount" : @((int)pcmData.length),
+    @"numSamples" : @((int)numSamples)
   };
   NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
   NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
@@ -363,21 +476,57 @@ static void ensureCoreGraphicsInit(void) {
     return;
   }
 
-  NSMutableData* pcmData = nil;
   UInt32 numChannels = asbd->mChannelsPerFrame;
   Float64 sampleRate = asbd->mSampleRate;
   NSString* formatId = @"raw";
+  NSMutableData* pcmData = BuildInterleavedPCM(bufferList, asbd, &formatId);
 
-  if (bufferList->mNumberBuffers > 0) {
-    AudioBuffer buf = bufferList->mBuffers[0];
-    if (buf.mData && buf.mDataByteSize > 0) {
-      pcmData = [NSMutableData dataWithBytes:buf.mData length:buf.mDataByteSize];
+  // Microphone: recover full PCM when BuildInterleavedPCM under-reads (mono
+  // split across buffers with per-buffer mNumberChannels that prevented the
+  // mono-concat branch, or when buffer list total exceeds pcm length).
+  if (pcmData && asbd->mFormatID == kAudioFormatLinearPCM) {
+    size_t listedTotal = 0;
+    CMItemCount nFrames = CMSampleBufferGetNumSamples(sampleBuffer);
+    UInt32 bits = asbd->mBitsPerChannel;
+    size_t bps = bits / 8;
+    size_t expectedBytes =
+        (size_t)nFrames * (size_t)numChannels * (bps > 0 ? bps : 0);
+    for (UInt32 i = 0; i < bufferList->mNumberBuffers; i++) {
+      listedTotal += bufferList->mBuffers[i].mDataByteSize;
     }
-    if (asbd->mFormatID == kAudioFormatLinearPCM) {
-      if (asbd->mFormatFlags & kAudioFormatFlagIsFloat) {
-        formatId = @"f32";
-      } else if (asbd->mBitsPerChannel == 16) {
-        formatId = @"s16";
+    if (numChannels == 1 && listedTotal > pcmData.length) {
+      NSMutableData* concat = [NSMutableData data];
+      for (UInt32 i = 0; i < bufferList->mNumberBuffers; i++) {
+        const AudioBuffer* b = &bufferList->mBuffers[i];
+        if (b->mData && b->mDataByteSize > 0) {
+          [concat appendBytes:b->mData length:b->mDataByteSize];
+        }
+      }
+      if (concat.length > pcmData.length) {
+        pcmData = concat;
+      }
+    }
+
+    if (nFrames > 0 && bps > 0 && numChannels > 0) {
+      if (pcmData.length + 8 < expectedBytes) {
+        CMBlockBufferRef dataBuf = CMSampleBufferGetDataBuffer(sampleBuffer);
+        if (dataBuf) {
+          size_t bbLen = CMBlockBufferGetDataLength(dataBuf);
+          size_t n = expectedBytes <= bbLen ? expectedBytes : bbLen;
+          if (n > pcmData.length) {
+            NSMutableData* raw = [NSMutableData dataWithLength:n];
+            OSStatus cst =
+                CMBlockBufferCopyDataBytes(dataBuf, 0, n, raw.mutableBytes);
+            if (cst == noErr && raw.length > pcmData.length) {
+              pcmData = raw;
+              if (asbd->mFormatFlags & kAudioFormatFlagIsFloat) {
+                formatId = @"f32";
+              } else if (bits == 16) {
+                formatId = @"s16";
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -392,13 +541,15 @@ static void ensureCoreGraphicsInit(void) {
   }
 
   NSString* base64 = [pcmData base64EncodedStringWithOptions:0];
+  CMItemCount numSamples = CMSampleBufferGetNumSamples(sampleBuffer);
   NSDictionary* root = @{
     @"error" : @NO,
     @"pcmBase64" : base64 ?: @"",
     @"sampleRate" : @(sampleRate),
     @"channelCount" : @((int)numChannels),
     @"format" : formatId ?: @"raw",
-    @"byteCount" : @((int)pcmData.length)
+    @"byteCount" : @((int)pcmData.length),
+    @"numSamples" : @((int)numSamples)
   };
   NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
   NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
@@ -865,7 +1016,7 @@ void* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
 }
 
 /// Returns malloc'd JSON string for next audio buffer, or NULL on timeout/error.
-/// Format: {"error":false,"pcmBase64":"...","sampleRate":N,"channelCount":N,"format":"f32","byteCount":N}.
+/// Format: {"error":false,"pcmBase64":"...","sampleRate":N,"channelCount":N,"format":"f32","byteCount":N,"numSamples":N}.
 /// Caller must free.
 char* stream_get_next_audio(int64_t stream_id, int64_t timeout_ms) {
   if (stream_id <= 0 || _audioHandlerRegistry == nil) {

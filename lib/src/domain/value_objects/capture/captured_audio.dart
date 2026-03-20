@@ -16,6 +16,7 @@ class CapturedAudio {
     required this.sampleRate,
     required this.channelCount,
     required this.format,
+    this.frameCount,
   });
 
   /// Raw PCM audio bytes (interleaved channels).
@@ -29,4 +30,8 @@ class CapturedAudio {
 
   /// Format identifier: `f32` (float32), `s16` (int16), or `raw`.
   final String format;
+
+  /// Frame count for this PCM buffer from the native `CMSampleBuffer`, when
+  /// available (system audio / microphone). Null for older native builds.
+  final int? frameCount;
 }
