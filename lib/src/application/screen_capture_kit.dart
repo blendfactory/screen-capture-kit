@@ -143,8 +143,9 @@ class ScreenCaptureKit {
   /// [startCaptureStreamWithUpdater] to get [CaptureStream.audioStream]).
   /// [excludesCurrentProcessAudio] excludes this app's audio from capture.
   /// [captureMicrophone] includes microphone in the audio capture.
-  /// [pixelFormat] optional CVPixelFormatType (e.g. 0x42475241 for BGRA);
-  /// null = default.
+  /// [pixelFormat] optional `CVPixelFormatType` as `int`; null = default.
+  /// See [Pixel format identifiers](https://developer.apple.com/documentation/corevideo/pixel-format-identifiers)
+  /// and [CVPixelFormatType](https://developer.apple.com/documentation/corevideo/cvpixelformattype).
   /// [colorSpaceName] optional color space name (e.g. kCGColorSpaceSRGB);
   /// null = default.
   /// Cancel the stream subscription to stop capture.
@@ -184,6 +185,8 @@ class ScreenCaptureKit {
   /// Use [CaptureStream.stream] for frames. When [capturesAudio] is true,
   /// [CaptureStream.audioStream] yields [CapturedAudio] buffers. Cancel the
   /// video subscription to stop capture.
+  ///
+  /// [pixelFormat] and [colorSpaceName] match [startCaptureStream].
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
   CaptureStream startCaptureStreamWithUpdater(

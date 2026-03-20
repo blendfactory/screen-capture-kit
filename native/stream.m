@@ -499,7 +499,8 @@ static void ensureStreamRegistry(void) {
 /// captures_audio: 1 to capture system audio, 0 to disable.
 /// excludes_current_process_audio: 1 to exclude this app's audio from capture.
 /// capture_microphone: 1 to include microphone in capture.
-/// pixel_format: CVPixelFormatType (e.g. kCVPixelFormatType_32BGRA); 0 = default.
+/// pixel_format: CVPixelFormatType (OSType); 0 = default. All kCVPixelFormatType_*:
+/// https://developer.apple.com/documentation/corevideo/pixel-format-identifiers
 /// color_space_name: optional color space name (e.g. kCGColorSpaceSRGB); NULL = default.
 /// Returns stream_id on success, 0 on error.
 int64_t stream_create_and_start(int64_t filter_id, int width, int height,

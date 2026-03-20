@@ -45,8 +45,10 @@ class StreamConfiguration {
   /// When true, microphone input is included in the audio capture.
   final bool captureMicrophone;
 
-  /// Optional CVPixelFormatType (e.g. 0x42475241 for BGRA). 0 or null =
-  /// default.
+  /// Optional Core Video pixel format (`CVPixelFormatType` as `int`). `null`
+  /// or `0` = default. Full list of `kCVPixelFormatType_*` values:
+  /// [Pixel format identifiers](https://developer.apple.com/documentation/corevideo/pixel-format-identifiers);
+  /// type: [CVPixelFormatType](https://developer.apple.com/documentation/corevideo/cvpixelformattype).
   final int? pixelFormat;
 
   /// Optional color space name (e.g. kCGColorSpaceSRGB). null or empty =
