@@ -41,10 +41,17 @@ char* get_shareable_content_json(int exclude_desktop_windows, int on_screen_wind
 
       NSMutableArray* displaysJson = [NSMutableArray array];
       for (SCDisplay* d in content.displays) {
+        double refreshRate = 0;
+        CGDisplayModeRef mode = CGDisplayCopyDisplayMode(d.displayID);
+        if (mode) {
+          refreshRate = CGDisplayModeGetRefreshRate(mode);
+          CGDisplayModeRelease(mode);
+        }
         [displaysJson addObject:@{
           @"displayId": @(d.displayID),
           @"width": @((int)d.width),
-          @"height": @((int)d.height)
+          @"height": @((int)d.height),
+          @"refreshRate": @(refreshRate)
         }];
       }
 

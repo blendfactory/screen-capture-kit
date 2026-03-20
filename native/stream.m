@@ -14,13 +14,26 @@
 #error "ScreenCaptureKit requires macOS 12.3 or newer"
 #endif
 
+// Bounded queue of raw BGRA frame buffers.  Keeps Obj-C object churn to zero
+// in the hot path so the callback can run in < 2 ms even at high resolutions.
+#define MAX_RAW_FRAME_QUEUE 64
+
+// Each queued buffer layout (all little-endian):
+//   [0..3]   int32_t  width
+//   [4..7]   int32_t  height
+//   [8..11]  int32_t  bytesPerRow
+//   [12..15] int32_t  dataSize   (== bytesPerRow * height)
+//   [16..]   uint8_t  pixels[dataSize]
+#define RAW_FRAME_HEADER_SIZE 16
+
 static void ensureCoreGraphicsInit(void) {
   (void)CGMainDisplayID();
 }
 
 @interface StreamFrameHandler : NSObject <SCStreamOutput> {
   @public
-  char* _latestFrameCStr;
+  void* _frameQueue[MAX_RAW_FRAME_QUEUE];
+  int   _frameQueueCount;
 }
 @property (nonatomic, strong) dispatch_semaphore_t frameSemaphore;
 @property (nonatomic, assign) BOOL stopped;
@@ -31,12 +44,52 @@ static void ensureCoreGraphicsInit(void) {
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _latestFrameCStr = NULL;
+    memset(_frameQueue, 0, sizeof(_frameQueue));
+    _frameQueueCount = 0;
     _frameSemaphore = dispatch_semaphore_create(0);
     _stopped = NO;
     _lock = [[NSLock alloc] init];
   }
   return self;
+}
+
+- (void)dealloc {
+  for (int i = 0; i < _frameQueueCount; i++) {
+    free(_frameQueue[i]);
+  }
+  [super dealloc];
+}
+
+- (void)_enqueueRawData:(const void*)src
+               dataSize:(size_t)dataSize
+                  width:(size_t)width
+                 height:(size_t)height
+            bytesPerRow:(size_t)bytesPerRow {
+  int32_t totalSize = RAW_FRAME_HEADER_SIZE + (int32_t)dataSize;
+  void* buf = malloc(totalSize);
+  if (!buf) return;
+
+  int32_t w   = (int32_t)width;
+  int32_t h   = (int32_t)height;
+  int32_t bpr = (int32_t)bytesPerRow;
+  int32_t ds  = (int32_t)dataSize;
+  memcpy(buf,      &w,   4);
+  memcpy(buf + 4,  &h,   4);
+  memcpy(buf + 8,  &bpr, 4);
+  memcpy(buf + 12, &ds,  4);
+  memcpy(buf + RAW_FRAME_HEADER_SIZE, src, dataSize);
+
+  [_lock lock];
+  if (_frameQueueCount >= MAX_RAW_FRAME_QUEUE) {
+    free(_frameQueue[0]);
+    memmove(&_frameQueue[0], &_frameQueue[1],
+            sizeof(void*) * (size_t)(_frameQueueCount - 1));
+    _frameQueueCount--;
+  }
+  _frameQueue[_frameQueueCount] = buf;
+  _frameQueueCount++;
+  [_lock unlock];
+  dispatch_semaphore_signal(_frameSemaphore);
 }
 
 - (void)stream:(SCStream*)stream
@@ -61,7 +114,6 @@ static void ensureCoreGraphicsInit(void) {
     if (statusNum) {
       SCFrameStatus status = (SCFrameStatus)[statusNum integerValue];
       if (STREAM_DEBUG) fprintf(stderr, "[SCStream] status=%ld\n", (long)[statusNum integerValue]);
-      // Accept both Complete and Started (first frame after stream start).
       if (status != SCFrameStatusComplete && status != SCFrameStatusStarted) {
         return;
       }
@@ -84,60 +136,24 @@ static void ensureCoreGraphicsInit(void) {
   if (STREAM_DEBUG) fprintf(stderr, "[SCStream] %zux%zu bpr=%zu baseAddr=%p\n",
       width, height, bytesPerRow, baseAddress);
 
-  // ScreenCaptureKit uses IOSurface-backed CVPixelBuffers; baseAddress is often
-  // NULL. Fall back to IOSurface for CPU access.
   if (!baseAddress) {
     IOSurfaceRef surfaceRef = CVPixelBufferGetIOSurface(imageBuffer);
     if (surfaceRef) {
-      IOSurfaceLock((IOSurfaceRef)surfaceRef, kIOSurfaceLockReadOnly, NULL);
-      baseAddress = IOSurfaceGetBaseAddress((IOSurfaceRef)surfaceRef);
+      IOSurfaceLock(surfaceRef, kIOSurfaceLockReadOnly, NULL);
+      baseAddress = IOSurfaceGetBaseAddress(surfaceRef);
       if (baseAddress && dataSize > 0) {
-        NSMutableData* frameData =
-            [NSMutableData dataWithBytes:baseAddress length:dataSize];
-        IOSurfaceUnlock((IOSurfaceRef)surfaceRef, kIOSurfaceLockReadOnly, NULL);
-        CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-        NSString* base64 = [frameData base64EncodedStringWithOptions:0];
-        NSDictionary* root = @{
-          @"error" : @NO,
-          @"bgraBase64" : base64 ?: @"",
-          @"width" : @((int)width),
-          @"height" : @((int)height),
-          @"bytesPerRow" : @((int)bytesPerRow)
-        };
-        NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
-        NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-        char* cstr = strdup(jsonStr.UTF8String);
-        [_lock lock];
-        free(_latestFrameCStr);
-        _latestFrameCStr = cstr;
-        [_lock unlock];
-        dispatch_semaphore_signal(_frameSemaphore);
-        return;
+        [self _enqueueRawData:baseAddress dataSize:dataSize
+                        width:width height:height bytesPerRow:bytesPerRow];
       }
-      IOSurfaceUnlock((IOSurfaceRef)surfaceRef, kIOSurfaceLockReadOnly, NULL);
+      IOSurfaceUnlock(surfaceRef, kIOSurfaceLockReadOnly, NULL);
+      CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
+      return;
     }
     CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
   } else if (dataSize > 0) {
-    NSMutableData* frameData =
-        [NSMutableData dataWithBytes:baseAddress length:dataSize];
+    [self _enqueueRawData:baseAddress dataSize:dataSize
+                    width:width height:height bytesPerRow:bytesPerRow];
     CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-    NSString* base64 = [frameData base64EncodedStringWithOptions:0];
-    NSDictionary* root = @{
-      @"error" : @NO,
-      @"bgraBase64" : base64 ?: @"",
-      @"width" : @((int)width),
-      @"height" : @((int)height),
-      @"bytesPerRow" : @((int)bytesPerRow)
-    };
-    NSData* jsonData = [NSJSONSerialization dataWithJSONObject:root options:0 error:nil];
-    NSString* jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-    char* cstr = strdup(jsonStr.UTF8String);
-    [_lock lock];
-    free(_latestFrameCStr);
-    _latestFrameCStr = cstr;
-    [_lock unlock];
-    if (STREAM_DEBUG) fprintf(stderr, "[SCStream] SIGNAL semaphore\n");
-    dispatch_semaphore_signal(_frameSemaphore);
   } else {
     CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
   }
@@ -801,10 +817,16 @@ int stream_set_picker_configuration(int64_t stream_id, const char* _Nullable con
   return 0;
 }
 
-/// Returns malloc'd JSON string. On success: {"error":false,"bgraBase64":"...",
-/// "width":N,"height":N,"bytesPerRow":N}. On error: {"error":true,...}.
-/// Caller must free. Blocks until frame available or timeout.
-char* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
+/// Returns a malloc'd raw-frame buffer (header + BGRA pixels), or NULL on
+/// timeout / error.  Caller must free() the returned pointer.
+///
+/// Buffer layout (16-byte header, little-endian):
+///   [0..3]   int32  width
+///   [4..7]   int32  height
+///   [8..11]  int32  bytesPerRow
+///   [12..15] int32  dataSize
+///   [16..]   uint8  pixels[dataSize]
+void* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
   if (STREAM_DEBUG) fprintf(stderr, "[SCStream] get_next_frame stream_id=%lld\n", (long long)stream_id);
   if (stream_id <= 0 || _handlerRegistry == nil) {
     return NULL;
@@ -817,10 +839,10 @@ char* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
   }
 
   if (STREAM_DEBUG) fprintf(stderr, "[SCStream] waiting on semaphore...\n");
-  int64_t timeoutNsec = (timeout_ms > 0 ? timeout_ms : 5000) * NSEC_PER_MSEC;
-  long waitResult = dispatch_semaphore_wait(
-      handler.frameSemaphore,
-      dispatch_time(DISPATCH_TIME_NOW, timeoutNsec));
+  dispatch_time_t timeout = (timeout_ms > 0)
+      ? dispatch_time(DISPATCH_TIME_NOW, timeout_ms * NSEC_PER_MSEC)
+      : DISPATCH_TIME_NOW;
+  long waitResult = dispatch_semaphore_wait(handler.frameSemaphore, timeout);
 
   if (waitResult != 0) {
     if (STREAM_DEBUG) fprintf(stderr, "[SCStream] wait timeout\n");
@@ -828,10 +850,14 @@ char* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
   }
 
   if (STREAM_DEBUG) fprintf(stderr, "[SCStream] got frame from semaphore\n");
-  char* result = NULL;
+  void* result = NULL;
   [handler.lock lock];
-  result = handler->_latestFrameCStr;
-  handler->_latestFrameCStr = NULL;
+  if (handler->_frameQueueCount > 0) {
+    result = handler->_frameQueue[0];
+    memmove(&handler->_frameQueue[0], &handler->_frameQueue[1],
+            sizeof(void*) * (size_t)(handler->_frameQueueCount - 1));
+    handler->_frameQueueCount--;
+  }
   [handler.lock unlock];
 
   return result;
@@ -932,8 +958,10 @@ void stream_stop_and_release(int64_t stream_id) {
   if (handler) {
     handler.stopped = YES;
     [handler.lock lock];
-    free(handler->_latestFrameCStr);
-    handler->_latestFrameCStr = NULL;
+    for (int i = 0; i < handler->_frameQueueCount; i++) {
+      free(handler->_frameQueue[i]);
+    }
+    handler->_frameQueueCount = 0;
     [handler.lock unlock];
     dispatch_semaphore_signal(handler.frameSemaphore);
   }
@@ -971,7 +999,11 @@ void stream_stop_and_release(int64_t stream_id) {
     [stream stopCaptureWithCompletionHandler:^(NSError* _Nullable error) {
       dispatch_semaphore_signal(stopSem);
     }];
-    dispatch_semaphore_wait(stopSem,
-                            dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC));
+    // Stop cleanup can lag behind when the Dart side is concurrently
+    // handling large frame payloads (e.g. isolate writer).
+    dispatch_semaphore_wait(
+      stopSem,
+      dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC)
+    );
   }
 }

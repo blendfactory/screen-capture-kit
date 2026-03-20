@@ -114,11 +114,11 @@ external int _streamCreateAndStart(
   Pointer<Utf8> colorSpaceName,
 );
 
-@Native<Pointer<Utf8> Function(Int64, Int64)>(
+@Native<Pointer<Void> Function(Int64, Int64)>(
   symbol: 'stream_get_next_frame',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
-external Pointer<Utf8> _streamGetNextFrame(int streamId, int timeoutMs);
+external Pointer<Void> _streamGetNextFrame(int streamId, int timeoutMs);
 
 @Native<Pointer<Utf8> Function(Int64, Int64)>(
   symbol: 'stream_get_next_audio',
@@ -334,6 +334,7 @@ ShareableContent _parseShareableContent(Map<String, dynamic> json) {
           width: (m['width'] as num).toInt(),
           height: (m['height'] as num).toInt(),
         ),
+        refreshRate: (m['refreshRate'] as num?)?.toDouble() ?? 0,
       ),
     );
   }
@@ -631,36 +632,74 @@ void streamSetPickerConfigurationImpl(
   }
 }
 
-/// Returns JSON string from native (sendable for Isolate.run). Caller parses.
-String? _getNextFrameJson(int streamId, int timeoutMs) {
+/// Reads a raw-frame buffer from native (16-byte header + BGRA pixels).
+/// Returns null when no frame is available within [timeoutMs].
+CapturedFrame? _getNextRawFrame(int streamId, int timeoutMs) {
   final ptr = _streamGetNextFrame(streamId, timeoutMs);
   if (ptr == nullptr) {
     return null;
   }
   try {
-    return ptr.toDartString();
+    final header = ptr.cast<Int32>();
+    final w = header[0];
+    final h = header[1];
+    final bpr = header[2];
+    final dataSize = header[3];
+    if (dataSize <= 0 || w <= 0 || h <= 0) {
+      return null;
+    }
+    final dataPtr = ptr.cast<Uint8>() + 16;
+    final bgraData = Uint8List.fromList(dataPtr.asTypedList(dataSize));
+    return CapturedFrame(
+      bgraData: bgraData,
+      size: FrameSize(width: w, height: h),
+      bytesPerRow: bpr,
+    );
   } finally {
     malloc.free(ptr);
   }
 }
 
-CapturedFrame? _parseFrameJson(String jsonStr) {
-  final json = jsonDecode(jsonStr) as Map<String, dynamic>;
-  if (json['error'] == true) {
-    return null;
+const _kMaxVideoFramesPerPollBatch = 64;
+
+/// Batch-drain scheduler: pulls up to [_kMaxVideoFramesPerPollBatch] raw frames
+/// per event-loop tick, yielding between batches so the Dart event loop stays
+/// responsive.
+void _scheduleVideoFramePolling({
+  required int streamId,
+  required StreamController<CapturedFrame> controller,
+}) {
+  void poll({bool resumeDrain = false}) {
+    if (!controller.hasListener) {
+      return;
+    }
+
+    var frame = _getNextRawFrame(streamId, resumeDrain ? 0 : 1);
+    var drained = 0;
+    var hitBatchLimit = false;
+
+    while (frame != null && controller.hasListener) {
+      controller.add(frame);
+      drained++;
+      if (drained >= _kMaxVideoFramesPerPollBatch) {
+        hitBatchLimit = true;
+        break;
+      }
+      frame = _getNextRawFrame(streamId, 0);
+    }
+
+    if (!controller.hasListener) {
+      return;
+    }
+
+    if (hitBatchLimit) {
+      Future.delayed(Duration.zero, () => poll(resumeDrain: true));
+    } else {
+      Future.delayed(const Duration(milliseconds: 1), poll);
+    }
   }
-  final base64 = json['bgraBase64'] as String? ?? '';
-  final bgraData = base64.isNotEmpty
-      ? Uint8List.fromList(base64Decode(base64))
-      : Uint8List(0);
-  final w = (json['width'] as num?)?.toInt() ?? 0;
-  final h = (json['height'] as num?)?.toInt() ?? 0;
-  final bpr = (json['bytesPerRow'] as num?)?.toInt() ?? 0;
-  return CapturedFrame(
-    bgraData: bgraData,
-    size: FrameSize(width: w, height: h),
-    bytesPerRow: bpr,
-  );
+
+  Future.delayed(Duration.zero, poll);
 }
 
 String? _getNextAudioJson(int streamId, int timeoutMs) {
@@ -801,25 +840,10 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   late final StreamController<CapturedFrame> controller;
   controller = StreamController<CapturedFrame>(
     onListen: () {
-      // Poll with short timeout (100ms) so main thread can process events
-      // between blocks. FFI may require main thread; long blocks cause SEGV.
-      void poll() {
-        if (!controller.hasListener) {
-          return;
-        }
-        final jsonStr = _getNextFrameJson(streamId, 100);
-        if (jsonStr != null && controller.hasListener) {
-          final frame = _parseFrameJson(jsonStr);
-          if (frame != null) {
-            controller.add(frame);
-          }
-        }
-        if (controller.hasListener) {
-          Future.delayed(const Duration(milliseconds: 1), poll);
-        }
-      }
-
-      Future.delayed(Duration.zero, poll);
+      _scheduleVideoFramePolling(
+        streamId: streamId,
+        controller: controller,
+      );
     },
     onCancel: () {
       _streamStopAndRelease(streamId);
@@ -1061,23 +1085,10 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   late final StreamController<CapturedFrame> controller;
   controller = StreamController<CapturedFrame>(
     onListen: () {
-      void poll() {
-        if (!controller.hasListener) {
-          return;
-        }
-        final jsonStr = _getNextFrameJson(streamId, 100);
-        if (jsonStr != null && controller.hasListener) {
-          final frame = _parseFrameJson(jsonStr);
-          if (frame != null) {
-            controller.add(frame);
-          }
-        }
-        if (controller.hasListener) {
-          Future.delayed(const Duration(milliseconds: 1), poll);
-        }
-      }
-
-      Future.delayed(Duration.zero, poll);
+      _scheduleVideoFramePolling(
+        streamId: streamId,
+        controller: controller,
+      );
     },
     onCancel: () {
       _streamStopAndRelease(streamId);
