@@ -95,6 +95,8 @@ Represents a capture stream.
 
 Stream lifecycle events.
 
+In this package: a **subset** is available when starting a stream with `emitDelegateEvents: true` — see `CaptureStream.delegateEvents` and `CaptureStreamDelegateEvent` in the Dart API (not the full Objective-C protocol).
+
 ### SCStreamOutput
 
 Receives `CMSampleBuffer` via `stream(_:didOutputSampleBuffer:of:)`.

@@ -179,8 +179,30 @@ Future<void> recordFramesToAviIsolate({
   }
 }
 
+/// Prints delegate bridge events to stdout for manual verification when
+/// `emitDelegateEvents: true` is used.
+void logCaptureStreamDelegateEventToStdout(CaptureStreamDelegateEvent e) {
+  switch (e.kind) {
+    case CaptureStreamDelegateEventKind.didStopWithError:
+      stdout.writeln(
+        '[delegate] didStopWithError '
+        'domain=${e.errorDomain} code=${e.errorCode} '
+        'desc=${e.errorDescription}',
+      );
+    case CaptureStreamDelegateEventKind.outputVideoEffectDidStart:
+      stdout.writeln('[delegate] outputVideoEffectDidStart');
+    case CaptureStreamDelegateEventKind.outputVideoEffectDidStop:
+      stdout.writeln('[delegate] outputVideoEffectDidStop');
+  }
+}
+
 /// Same as [recordFramesToAviIsolate] after starting
-/// `ScreenCaptureKit.startCaptureStream`.
+/// `startCaptureStreamWithUpdater` with `emitDelegateEvents: true` so delegate
+/// events appear on stdout.
+///
+/// The delegate subscription is canceled **after** [recordFramesToAviIsolate]
+/// returns so `didStopWithError` is still delivered when the video subscription
+/// stops the native stream.
 Future<void> recordDisplayToAviIsolate({
   required ScreenCaptureKit kit,
   required FilterId filter,
@@ -191,17 +213,28 @@ Future<void> recordDisplayToAviIsolate({
   required int height,
   bool? scalesToFit,
   bool? preservesAspectRatio,
-}) {
-  final stream = kit.startCaptureStream(
+}) async {
+  stdout.writeln(
+    'SCStreamDelegate bridge: lines prefixed with [delegate] '
+    '(see emitDelegateEvents in startCaptureStreamWithUpdater).',
+  );
+
+  final capture = kit.startCaptureStreamWithUpdater(
     filter,
     frameSize: FrameSize(width: width, height: height),
     frameRate: FrameRate(fps),
     scalesToFit: scalesToFit,
     preservesAspectRatio: preservesAspectRatio,
     pixelFormat: cvPixelFormatType32Bgra,
+    emitDelegateEvents: true,
   );
-  return recordFramesToAviIsolate(
-    frames: stream,
+
+  StreamSubscription<CaptureStreamDelegateEvent>? delegateSub;
+  delegateSub =
+      capture.delegateEvents?.listen(logCaptureStreamDelegateEventToStdout);
+
+  await recordFramesToAviIsolate(
+    frames: capture.stream,
     outputFile: outputFile,
     fps: fps,
     durationSeconds: durationSeconds,
@@ -214,6 +247,7 @@ Future<void> recordDisplayToAviIsolate({
       );
     },
   );
+  await delegateSub?.cancel();
 }
 
 void _aviWriterIsolateMain(SendPort mainSendPort) {

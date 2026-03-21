@@ -16,6 +16,7 @@ It enables screen, window, and display capture on macOS with minimal overhead by
 - **Screenshot** — Single-frame capture (macOS 14+), optional `captureResolution` (automatic / best / nominal)
 - **System picker** — Native content-sharing picker UI (macOS 14+)
 - **Audio capture** — System audio (macOS 13+), optional microphone (macOS 15+)
+- **Stream delegate events (optional)** — `emitDelegateEvents: true` exposes `CaptureStream.delegateEvents` (`CaptureStreamDelegateEvent`: stop/error and video-effect start/stop on macOS 14+)
 - **Cursor capture** — Include or hide the system cursor
 - **Frame rate configuration** — 1–120 fps
 - **Multi-display** — Capture any connected display
@@ -104,7 +105,7 @@ See the `example/` directory for a full sample including display, window, region
 
 Major capability areas are **implemented** and listed under [Features](#features): display/window capture, region crop via `sourceRect`, cursor visibility, system and microphone audio (where supported by macOS version), frame rate, multi-display, screenshot (macOS 14+), and the system content-sharing picker (macOS 14+).
 
-**Not exposed** in the Dart API today includes many optional framework knobs (e.g. `SCStreamDelegate`, several advanced `SCStreamConfiguration` properties, include-only window filters). Maintainers track those gaps in the repository checklist [`.cursor/skills/screen-capture-kit-api-coverage/SKILL.md`](.cursor/skills/screen-capture-kit-api-coverage/SKILL.md).
+**Partially exposed or not exposed** in the Dart API today includes: a **subset** of [`SCStreamDelegate`](https://developer.apple.com/documentation/screencapturekit/scstreamdelegate) via `emitDelegateEvents` / `CaptureStream.delegateEvents` (not the full delegate protocol); many other optional framework knobs (several advanced `SCStreamConfiguration` properties, include-only window filters). Maintainers track those gaps in the repository checklist [`.cursor/skills/screen-capture-kit-api-coverage/SKILL.md`](.cursor/skills/screen-capture-kit-api-coverage/SKILL.md).
 
 ## Additional documentation
 

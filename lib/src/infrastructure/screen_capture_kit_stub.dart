@@ -147,6 +147,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   bool captureMicrophone = false,
   int? pixelFormat,
   String? colorSpaceName,
+  bool emitDelegateEvents = false,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(

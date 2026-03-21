@@ -108,17 +108,32 @@ Future<void> main(List<String> args) async {
       capturesAudio: true,
       excludesCurrentProcessAudio: true,
       captureMicrophone: true,
+      emitDelegateEvents: true,
+    );
+
+    stdout.writeln(
+      'SCStreamDelegate bridge: lines prefixed with [delegate] '
+      '(emitDelegateEvents: true).',
+    );
+
+    StreamSubscription<CaptureStreamDelegateEvent>? delegateSub;
+    delegateSub = capture.delegateEvents?.listen(
+      logCaptureStreamDelegateEventToStdout,
     );
 
     final audioStream = capture.audioStream;
     final micStream = capture.microphoneStream;
     if (audioStream == null) {
+      await delegateSub?.cancel();
+      delegateSub = null;
       stderr
           .writeln('Audio stream is unavailable (capturesAudio unsupported?).');
       exitCode = 1;
       return;
     }
     if (micStream == null) {
+      await delegateSub?.cancel();
+      delegateSub = null;
       stderr.writeln(
         'Microphone stream is unavailable. Use a macOS 15+ system with '
         'Microphone permission.',
@@ -215,6 +230,9 @@ Future<void> main(List<String> args) async {
         );
       },
     );
+
+    await delegateSub?.cancel();
+    delegateSub = null;
 
     if (audioErr != null) {
       stderr.writeln('Audio capture error: $audioErr\n$audioSt');

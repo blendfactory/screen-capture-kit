@@ -1,3 +1,6 @@
+/// @docImport 'package:screen_capture_kit/src/domain/value_objects/capture/capture_stream_delegate_event.dart';
+library;
+
 import 'dart:isolate';
 
 import 'package:screen_capture_kit/src/domain/entities/display.dart';
@@ -214,6 +217,11 @@ class ScreenCaptureKit {
   ///
   /// [pixelFormat] and [colorSpaceName] match [startCaptureStream].
   ///
+  /// [emitDelegateEvents] when true, delivers [CaptureStream.delegateEvents]
+  /// for [CaptureStreamDelegateEvent] values (Apple `SCStreamDelegate`;
+  /// e.g. stream stopped with error, Presenter Overlay on macOS 14+). See
+  /// https://developer.apple.com/documentation/screencapturekit/scstreamdelegate
+  ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
   CaptureStream startCaptureStreamWithUpdater(
     FilterId filterHandle, {
@@ -230,6 +238,7 @@ class ScreenCaptureKit {
     bool captureMicrophone = false,
     int? pixelFormat,
     String? colorSpaceName,
+    bool emitDelegateEvents = false,
   }) {
     return startCaptureStreamWithUpdaterImpl(
       filterHandle,
@@ -246,6 +255,7 @@ class ScreenCaptureKit {
       captureMicrophone: captureMicrophone,
       pixelFormat: pixelFormat,
       colorSpaceName: colorSpaceName,
+      emitDelegateEvents: emitDelegateEvents,
     );
   }
 }

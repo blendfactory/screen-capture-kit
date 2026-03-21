@@ -8,7 +8,7 @@ This document describes the use cases this package is designed to support. The p
    Capture several displays, windows, or regions (screenshots or streams). Use `getShareableContent` → `createDisplayFilter` / `createWindowFilter` / `presentContentSharingPicker` → `captureScreenshot` or `startCaptureStream`.
 
 2. **Recording video and audio**  
-   Record video calls, meetings, or screen+system audio. Use capture streams (`startCaptureStream` / `startCaptureStreamWithUpdater`) with `capturesAudio: true` and optionally `captureMicrophone: true`. Consumers pipe `Stream<CapturedFrame>` and `Stream<CapturedAudio>` into their own encoding/recording pipeline.
+   Record video calls, meetings, or screen+system audio. Use capture streams (`startCaptureStream` / `startCaptureStreamWithUpdater`) with `capturesAudio: true` and optionally `captureMicrophone: true`. Consumers pipe `Stream<CapturedFrame>` and `Stream<CapturedAudio>` into their own encoding/recording pipeline. Optionally pass `emitDelegateEvents: true` and listen to `CaptureStream.delegateEvents` for stop/error and video-effect lifecycle signals from `SCStreamDelegate`.
 
 3. **Real-time or post-hoc summarization and NextAction**  
    Feed captured content (frames and/or audio) into other tools for:

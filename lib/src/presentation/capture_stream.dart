@@ -1,5 +1,9 @@
+/// @docImport 'package:screen_capture_kit/src/application/screen_capture_kit.dart';
+library;
+
 import 'dart:async';
 
+import 'package:screen_capture_kit/src/domain/value_objects/capture/capture_stream_delegate_event.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_configuration.dart';
@@ -8,9 +12,12 @@ import 'package:screen_capture_kit/src/domain/value_objects/identifiers/filter_i
 
 /// A capture stream that supports updating configuration and filter at runtime.
 ///
-/// Create via the library's startCaptureStreamWithUpdater method. Listen to
+/// Create via [ScreenCaptureKit.startCaptureStreamWithUpdater]. Listen to
 /// [stream] for frames; when audio capture was enabled, listen to [audioStream]
-/// for system audio. Call [updateConfiguration], [updateContentFilter], or
+/// for system audio. When `emitDelegateEvents: true` was passed when starting
+/// the capture, listen to [delegateEvents] for events of type
+/// [CaptureStreamDelegateEvent] (native `SCStreamDelegate`). Call
+/// [updateConfiguration], [updateContentFilter], or
 /// [setContentSharingPickerConfiguration] to change without stopping.
 ///
 /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
@@ -22,6 +29,7 @@ class CaptureStream {
     required this.setContentSharingPickerConfiguration,
     this.audioStream,
     this.microphoneStream,
+    this.delegateEvents,
     this.pendingAudioFlush,
   });
 
@@ -35,6 +43,12 @@ class CaptureStream {
   /// Optional stream of microphone buffers. Non-null when started with
   /// [StreamConfiguration.captureMicrophone] set to true (macOS 15+).
   final Stream<CapturedAudio>? microphoneStream;
+
+  /// Optional stream of [CaptureStreamDelegateEvent] values (Apple
+  /// [SCStreamDelegate](https://developer.apple.com/documentation/screencapturekit/scstreamdelegate)).
+  /// Non-null only when the capture was started with
+  /// `emitDelegateEvents: true`.
+  final Stream<CaptureStreamDelegateEvent>? delegateEvents;
 
   /// Updates the stream configuration (e.g. width, height, frame rate).
   /// May block briefly; throws on error.

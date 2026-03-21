@@ -11,6 +11,7 @@ import 'package:screen_capture_kit/src/domain/entities/shareable_content.dart';
 import 'package:screen_capture_kit/src/domain/entities/window.dart';
 import 'package:screen_capture_kit/src/domain/errors/screen_capture_kit_exception.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/capture_resolution.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/capture_stream_delegate_event.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
@@ -157,6 +158,12 @@ external Pointer<Utf8> _streamGetNextMicrophone(int streamId, int timeoutMs);
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
 external void _streamStopAndRelease(int streamId);
+
+@Native<Pointer<Utf8> Function(Int64, Int64)>(
+  symbol: 'stream_get_next_delegate_event',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external Pointer<Utf8> _streamGetNextDelegateEvent(int streamId, int timeoutMs);
 
 /// Returns malloc'd JSON for last stream error, or null. Caller must free.
 @Native<Pointer<Utf8> Function()>(
@@ -731,6 +738,58 @@ const _kMaxVideoFramesPerPollBatch = 64;
 /// when the Dart isolate briefly falls behind.
 const _kMaxAudioChunksPerPollBatch = 96;
 
+const _kMaxDelegateEventsPerPollBatch = 32;
+
+/// When non-null, `SCStreamDelegate` events are delivered on this controller.
+final Map<int, StreamController<CaptureStreamDelegateEvent>>
+_delegateEventControllersByStreamId = {};
+
+/// Latest frame and delegate controllers for a capture stream id. Updated on
+/// every `_ensureCaptureOutputPolling` call so subscription order (delegate
+/// vs video first) does not drop one side of the poll loop.
+final Map<int, _CaptureOutputPollHandles> _captureOutputPollHandles = {};
+
+/// Video + delegate output polling is active for this native stream id.
+final Set<int> _captureOutputPollActive = {};
+
+class _CaptureOutputPollHandles {
+  StreamController<CapturedFrame>? frame;
+  StreamController<CaptureStreamDelegateEvent>? delegate;
+}
+
+/// Owns a broadcast [StreamController] so [close] is explicit (satisfies
+/// `close_sinks` for controllers created in
+/// [startCaptureStreamWithUpdaterImpl]).
+final class _BroadcastSink<T> {
+  _BroadcastSink({void Function()? onListen})
+    : _controller = StreamController<T>.broadcast(onListen: onListen);
+
+  final StreamController<T> _controller;
+
+  Stream<T> get stream => _controller.stream;
+
+  StreamController<T> get controller => _controller;
+
+  Future<void> close() => _controller.close();
+}
+
+/// Owns a single-subscription [StreamController] with explicit [close].
+final class _AsyncStreamSink<T> {
+  _AsyncStreamSink({void Function()? onListen, void Function()? onCancel})
+    : _controller = StreamController<T>(
+        onListen: onListen,
+        onCancel: onCancel,
+      );
+
+  final StreamController<T> _controller;
+
+  Stream<T> get stream => _controller.stream;
+
+  StreamController<T> get controller => _controller;
+
+  Future<void> close() => _controller.close();
+}
+
 /// Active capture stream IDs for unified system+mic polling (one event-loop
 /// owner).
 final _unifiedAudioPollActive = <int>{};
@@ -764,6 +823,8 @@ void _scheduleCapturedAudioPolling({
       }
       jsonStr = getNextJson(streamId, 0);
     }
+
+    _drainDelegateEventsIfAudioPollOwnsStream(streamId);
 
     if (!controller.hasListener) {
       return;
@@ -854,6 +915,8 @@ void _ensureUnifiedSystemAndMicrophonePolling({
       }
     }
 
+    _drainDelegateEventsIfAudioPollOwnsStream(streamId);
+
     if (!system.hasListener && !microphone.hasListener) {
       _unifiedAudioPollActive.remove(streamId);
       return;
@@ -914,33 +977,103 @@ void _ensureUnifiedSystemAndMicrophonePolling({
   Future.delayed(Duration.zero, poll);
 }
 
-/// Batch-drain scheduler: pulls up to [_kMaxVideoFramesPerPollBatch] raw frames
-/// per event-loop tick, yielding between batches so the Dart event loop stays
-/// responsive.
-void _scheduleVideoFramePolling({
+/// Batch-drain scheduler: pulls video frames and/or `SCStreamDelegate` events.
+///
+/// [frameController] and [delegateController] are merged into
+/// [_captureOutputPollHandles] so listeners can attach in any order (e.g.
+/// delegate before video) without starving frames or delegate events.
+void _ensureCaptureOutputPolling({
   required int streamId,
-  required StreamController<CapturedFrame> controller,
+  StreamController<CapturedFrame>? frameController,
+  StreamController<CaptureStreamDelegateEvent>? delegateController,
 }) {
+  final handles = _captureOutputPollHandles.putIfAbsent(
+    streamId,
+    _CaptureOutputPollHandles.new,
+  );
+  if (frameController != null) {
+    handles.frame = frameController;
+  }
+  if (delegateController != null) {
+    handles.delegate = delegateController;
+  }
+
+  if (_captureOutputPollActive.contains(streamId)) {
+    return;
+  }
+
+  final wantVideo = handles.frame != null && handles.frame!.hasListener;
+  final wantDelegate =
+      handles.delegate != null && handles.delegate!.hasListener;
+  if (!wantVideo && !wantDelegate) {
+    return;
+  }
+  _captureOutputPollActive.add(streamId);
+
   void poll({bool resumeDrain = false}) {
-    if (!controller.hasListener) {
+    final h = _captureOutputPollHandles[streamId];
+    if (h == null) {
+      _captureOutputPollActive.remove(streamId);
       return;
     }
 
-    var frame = _getNextRawFrame(streamId, resumeDrain ? 0 : 1);
-    var drained = 0;
-    var hitBatchLimit = false;
-
-    while (frame != null && controller.hasListener) {
-      controller.add(frame);
-      drained++;
-      if (drained >= _kMaxVideoFramesPerPollBatch) {
-        hitBatchLimit = true;
-        break;
-      }
-      frame = _getNextRawFrame(streamId, 0);
+    final stillWantVideo = h.frame != null && h.frame!.hasListener;
+    final stillWantDelegate = h.delegate != null && h.delegate!.hasListener;
+    if (!stillWantVideo && !stillWantDelegate) {
+      _captureOutputPollActive.remove(streamId);
+      return;
     }
 
-    if (!controller.hasListener) {
+    var hitBatchLimit = false;
+
+    if (stillWantVideo) {
+      var frame = _getNextRawFrame(streamId, resumeDrain ? 0 : 1);
+      var drained = 0;
+      while (frame != null) {
+        if (h.frame == null || !h.frame!.hasListener) {
+          break;
+        }
+        h.frame!.add(frame);
+        drained++;
+        if (drained >= _kMaxVideoFramesPerPollBatch) {
+          hitBatchLimit = true;
+          break;
+        }
+        frame = _getNextRawFrame(streamId, 0);
+      }
+    }
+
+    if (stillWantDelegate) {
+      var delegateDrained = 0;
+      while (true) {
+        if (h.delegate == null || !h.delegate!.hasListener) {
+          break;
+        }
+        final jsonStr = _getNextDelegateJson(streamId, 0);
+        if (jsonStr == null) {
+          break;
+        }
+        final ev = _parseDelegateEventJson(jsonStr);
+        if (ev != null) {
+          h.delegate!.add(ev);
+        }
+        delegateDrained++;
+        if (delegateDrained >= _kMaxDelegateEventsPerPollBatch) {
+          hitBatchLimit = true;
+          break;
+        }
+      }
+    }
+
+    final h2 = _captureOutputPollHandles[streamId];
+    if (h2 == null) {
+      _captureOutputPollActive.remove(streamId);
+      return;
+    }
+    final wantVideoAfter = h2.frame != null && h2.frame!.hasListener;
+    final wantDelegateAfter = h2.delegate != null && h2.delegate!.hasListener;
+    if (!wantVideoAfter && !wantDelegateAfter) {
+      _captureOutputPollActive.remove(streamId);
       return;
     }
 
@@ -952,6 +1085,61 @@ void _scheduleVideoFramePolling({
   }
 
   Future.delayed(Duration.zero, poll);
+}
+
+void _drainDelegateEventsIfAudioPollOwnsStream(int streamId) {
+  if (_delegateEventControllersByStreamId[streamId] == null ||
+      !_delegateEventControllersByStreamId[streamId]!.hasListener) {
+    return;
+  }
+  if (_captureOutputPollActive.contains(streamId)) {
+    return;
+  }
+  for (var i = 0; i < _kMaxDelegateEventsPerPollBatch; i++) {
+    final jsonStr = _getNextDelegateJson(streamId, 0);
+    if (jsonStr == null) {
+      break;
+    }
+    final ev = _parseDelegateEventJson(jsonStr);
+    if (ev != null) {
+      _delegateEventControllersByStreamId[streamId]!.add(ev);
+    }
+  }
+}
+
+String? _getNextDelegateJson(int streamId, int timeoutMs) {
+  final ptr = _streamGetNextDelegateEvent(streamId, timeoutMs);
+  if (ptr == nullptr) {
+    return null;
+  }
+  try {
+    return ptr.toDartString();
+  } finally {
+    malloc.free(ptr);
+  }
+}
+
+CaptureStreamDelegateEvent? _parseDelegateEventJson(String jsonStr) {
+  final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+  final type = json['type'] as String?;
+  switch (type) {
+    case 'didStopWithError':
+      final domain = json['domain'] as String? ?? '';
+      final code = (json['code'] as num?)?.toInt() ?? 0;
+      final desc = json['localizedDescription'] as String? ?? '';
+      final hasPayload = domain.isNotEmpty || code != 0 || desc.isNotEmpty;
+      return CaptureStreamDelegateEvent.didStopWithError(
+        errorDomain: hasPayload ? domain : null,
+        errorCode: hasPayload ? code : null,
+        errorDescription: hasPayload ? desc : null,
+      );
+    case 'outputVideoEffectDidStart':
+      return const CaptureStreamDelegateEvent.outputVideoEffectDidStart();
+    case 'outputVideoEffectDidStop':
+      return const CaptureStreamDelegateEvent.outputVideoEffectDidStop();
+    default:
+      return null;
+  }
 }
 
 String? _getNextAudioJson(int streamId, int timeoutMs) {
@@ -1207,12 +1395,14 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   late final StreamController<CapturedFrame> controller;
   controller = StreamController<CapturedFrame>(
     onListen: () {
-      _scheduleVideoFramePolling(
+      _ensureCaptureOutputPolling(
         streamId: streamId,
-        controller: controller,
+        frameController: controller,
       );
     },
     onCancel: () {
+      _captureOutputPollActive.remove(streamId);
+      _captureOutputPollHandles.remove(streamId);
       _streamStopAndRelease(streamId);
       unawaited(controller.close());
     },
@@ -1344,6 +1534,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   bool captureMicrophone = false,
   int? pixelFormat,
   String? colorSpaceName,
+  bool emitDelegateEvents = false,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -1421,90 +1612,109 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
     }
   }
 
-  StreamController<CapturedAudio>? audioController;
-  StreamController<CapturedAudio>? microphoneController;
+  _BroadcastSink<CaptureStreamDelegateEvent>? delegateSink;
+  if (emitDelegateEvents) {
+    late final _BroadcastSink<CaptureStreamDelegateEvent> dec;
+    dec = _BroadcastSink<CaptureStreamDelegateEvent>(
+      onListen: () {
+        _ensureCaptureOutputPolling(
+          streamId: streamId,
+          delegateController: dec.controller,
+        );
+      },
+    );
+    delegateSink = dec;
+    _delegateEventControllersByStreamId[streamId] = dec.controller;
+  }
+
+  _AsyncStreamSink<CapturedAudio>? audioSink;
+  _AsyncStreamSink<CapturedAudio>? microphoneSink;
 
   if (capturesAudio && captureMicrophone) {
-    // Audio sinks close when the frame controller cancels (onCancel below).
-    // ignore: close_sinks -- see onCancel
-    late final StreamController<CapturedAudio> ac;
-    // ignore: close_sinks -- see onCancel
-    late final StreamController<CapturedAudio> mc;
-    ac = StreamController<CapturedAudio>(
+    late final _AsyncStreamSink<CapturedAudio> ac;
+    late final _AsyncStreamSink<CapturedAudio> mc;
+    ac = _AsyncStreamSink<CapturedAudio>(
       onListen: () {
         _ensureUnifiedSystemAndMicrophonePolling(
           streamId: streamId,
-          system: ac,
-          microphone: mc,
+          system: ac.controller,
+          microphone: mc.controller,
         );
       },
     );
-    mc = StreamController<CapturedAudio>(
+    mc = _AsyncStreamSink<CapturedAudio>(
       onListen: () {
         _ensureUnifiedSystemAndMicrophonePolling(
           streamId: streamId,
-          system: ac,
-          microphone: mc,
+          system: ac.controller,
+          microphone: mc.controller,
         );
       },
     );
-    audioController = ac;
-    microphoneController = mc;
+    audioSink = ac;
+    microphoneSink = mc;
   } else if (capturesAudio) {
-    // ignore: close_sinks -- see frame controller onCancel
-    late final StreamController<CapturedAudio> ac;
-    ac = StreamController<CapturedAudio>(
+    late final _AsyncStreamSink<CapturedAudio> ac;
+    ac = _AsyncStreamSink<CapturedAudio>(
       onListen: () {
         _scheduleCapturedAudioPolling(
           streamId: streamId,
-          controller: ac,
+          controller: ac.controller,
           getNextJson: _getNextAudioJson,
         );
       },
     );
-    audioController = ac;
+    audioSink = ac;
   } else if (captureMicrophone) {
-    // ignore: close_sinks -- see frame controller onCancel
-    late final StreamController<CapturedAudio> mc;
-    mc = StreamController<CapturedAudio>(
+    late final _AsyncStreamSink<CapturedAudio> mc;
+    mc = _AsyncStreamSink<CapturedAudio>(
       onListen: () {
         _scheduleCapturedAudioPolling(
           streamId: streamId,
-          controller: mc,
+          controller: mc.controller,
           getNextJson: _getNextMicrophoneJson,
         );
       },
     );
-    microphoneController = mc;
+    microphoneSink = mc;
   }
 
-  late final StreamController<CapturedFrame> controller;
-  controller = StreamController<CapturedFrame>(
+  late final _AsyncStreamSink<CapturedFrame> frameSink;
+  frameSink = _AsyncStreamSink<CapturedFrame>(
     onListen: () {
-      _scheduleVideoFramePolling(
+      _ensureCaptureOutputPolling(
         streamId: streamId,
-        controller: controller,
+        frameController: frameSink.controller,
+        delegateController: delegateSink?.controller,
       );
     },
     onCancel: () {
       _unifiedAudioPollActive.remove(streamId);
+      _captureOutputPollActive.remove(streamId);
+      _captureOutputPollHandles.remove(streamId);
+      _delegateEventControllersByStreamId.remove(streamId);
       _streamStopAndRelease(streamId);
-      unawaited(controller.close());
-      final ac = audioController;
-      if (ac != null) {
-        unawaited(ac.close());
+      unawaited(frameSink.close());
+      final as = audioSink;
+      if (as != null) {
+        unawaited(as.close());
       }
-      final mc = microphoneController;
-      if (mc != null) {
-        unawaited(mc.close());
+      final ms = microphoneSink;
+      if (ms != null) {
+        unawaited(ms.close());
+      }
+      final ds = delegateSink;
+      if (ds != null) {
+        unawaited(ds.close());
       }
     },
   );
 
   return CaptureStream(
-    stream: controller.stream,
-    audioStream: audioController?.stream,
-    microphoneStream: microphoneController?.stream,
+    stream: frameSink.stream,
+    audioStream: audioSink?.stream,
+    microphoneStream: microphoneSink?.stream,
+    delegateEvents: delegateSink?.stream,
     updateConfiguration: (options) =>
         streamUpdateConfigurationImpl(streamId, options),
     updateContentFilter: (handle) =>

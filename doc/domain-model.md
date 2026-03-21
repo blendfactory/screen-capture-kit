@@ -113,6 +113,7 @@ These represent a single frame, image, or audio buffer. They are **immutable** a
 | **CapturedFrame** | `(Uint8List bgraData, FrameSize size, int bytesPerRow)` | One video frame (BGRA pixels). |
 | **CapturedImage** | `(Uint8List pngData, FrameSize size)` | One screenshot (PNG bytes). |
 | **CapturedAudio** | Record `(Uint8List pcmData, double sampleRate, int channelCount, String format)` | One audio buffer (PCM). |
+| **CaptureStreamDelegateEvent** | Variants (`didStopWithError`, `outputVideoEffectDidStart`, `outputVideoEffectDidStop`) | One native `SCStreamDelegate` callback surfaced to Dart when `emitDelegateEvents` is enabled (not a pixel/audio buffer). |
 
 These are modelled as immutable classes in the codebase; see the corresponding Dart files for concrete implementations.
 
@@ -166,7 +167,7 @@ flowchart TB
 - `domain/entities/` — entities: `display.dart`, `window.dart`, `running_application.dart`, `shareable_content.dart` (aggregate root).
 - `domain/value_objects/geometry/` — `frame_size.dart`, `pixel_rect.dart`.
 - `domain/value_objects/identifiers/` — `display_id.dart`, `window_id.dart`, `process_id.dart`, `filter_id.dart`, `bundle_id.dart`.
-- `domain/value_objects/capture/` — `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`, `content_filter.dart`, `content_sharing_picker_mode.dart`, `content_sharing_picker_configuration.dart`, `stream_configuration.dart`.
+- `domain/value_objects/capture/` — `captured_frame.dart`, `captured_image.dart`, `captured_audio.dart`, `capture_stream_delegate_event.dart`, `content_filter.dart`, `content_sharing_picker_mode.dart`, `content_sharing_picker_configuration.dart`, `stream_configuration.dart`.
 - `domain/errors/screen_capture_kit_exception.dart` — domain exception (no extension type).
 
 `FilterId` is exported from the public API.

@@ -40,6 +40,79 @@ static void ensureCoreGraphicsInit(void) {
 @property (nonatomic, strong) NSLock* lock;
 @end
 
+/// Forwards [SCStreamDelegate] lifecycle events to Dart via a JSON queue.
+@interface StreamDelegateHandler : NSObject <SCStreamDelegate>
+@property (nonatomic, assign) int64_t streamId;
+@property (nonatomic, strong) NSMutableArray<NSString*>* queue;
+@property (nonatomic, strong) NSLock* lock;
+@property (nonatomic, strong) dispatch_semaphore_t semaphore;
+@property (nonatomic, assign) BOOL stopped;
+@end
+
+@implementation StreamDelegateHandler
+- (instancetype)initWithStreamId:(int64_t)streamId {
+  self = [super init];
+  if (self) {
+    _streamId = streamId;
+    _queue = [NSMutableArray array];
+    _lock = [[NSLock alloc] init];
+    _semaphore = dispatch_semaphore_create(0);
+    _stopped = NO;
+  }
+  return self;
+}
+
+- (void)_enqueueJSON:(NSDictionary*)dict {
+  if (self.stopped) {
+    return;
+  }
+  NSData* data = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
+  if (!data) {
+    return;
+  }
+  NSString* jsonStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+  [self.lock lock];
+  [self.queue addObject:jsonStr];
+  [self.lock unlock];
+  dispatch_semaphore_signal(self.semaphore);
+}
+
+- (void)stream:(SCStream*)stream didStopWithError:(NSError*)error {
+  (void)stream;
+  if (self.stopped) {
+    return;
+  }
+  NSMutableDictionary* dict = [NSMutableDictionary dictionary];
+  dict[@"type"] = @"didStopWithError";
+  if (error) {
+    dict[@"domain"] = error.domain ?: @"";
+    dict[@"code"] = @(error.code);
+    dict[@"localizedDescription"] = error.localizedDescription ?: @"";
+  } else {
+    dict[@"domain"] = @"";
+    dict[@"code"] = @0;
+    dict[@"localizedDescription"] = @"";
+  }
+  [self _enqueueJSON:dict];
+}
+
+- (void)outputVideoEffectDidStartForStream:(SCStream*)stream API_AVAILABLE(macos(14.0)) {
+  (void)stream;
+  if (self.stopped) {
+    return;
+  }
+  [self _enqueueJSON:@{@"type" : @"outputVideoEffectDidStart"}];
+}
+
+- (void)outputVideoEffectDidStopForStream:(SCStream*)stream API_AVAILABLE(macos(14.0)) {
+  (void)stream;
+  if (self.stopped) {
+    return;
+  }
+  [self _enqueueJSON:@{@"type" : @"outputVideoEffectDidStop"}];
+}
+@end
+
 @implementation StreamFrameHandler
 - (instancetype)init {
   self = [super init];
@@ -631,6 +704,7 @@ static NSMutableDictionary<NSNumber*, SCStream*>* _streamRegistry = nil;
 static NSMutableDictionary<NSNumber*, StreamFrameHandler*>* _handlerRegistry = nil;
 static NSMutableDictionary<NSNumber*, StreamAudioHandler*>* _audioHandlerRegistry = nil;
 static NSMutableDictionary<NSNumber*, StreamMicrophoneHandler*>* _microphoneHandlerRegistry = nil;
+static NSMutableDictionary<NSNumber*, StreamDelegateHandler*>* _delegateHandlerRegistry = nil;
 static int64_t _nextStreamId = 1;
 
 /// Last stream error (set when stream_create_and_start fails). Cleared when read.
@@ -704,6 +778,7 @@ static void ensureStreamRegistry(void) {
     _handlerRegistry = [[NSMutableDictionary alloc] init];
     _audioHandlerRegistry = [[NSMutableDictionary alloc] init];
     _microphoneHandlerRegistry = [[NSMutableDictionary alloc] init];
+    _delegateHandlerRegistry = [[NSMutableDictionary alloc] init];
   }
 }
 
@@ -788,11 +863,18 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
     }
   }
 
+  int64_t streamId;
+  @synchronized(_streamRegistry) {
+    streamId = _nextStreamId++;
+  }
+
+  StreamDelegateHandler* delegateHandler =
+      [[StreamDelegateHandler alloc] initWithStreamId:streamId];
   StreamFrameHandler* handler = [[StreamFrameHandler alloc] init];
   SCStream* stream =
       [[SCStream alloc] initWithFilter:filter
                         configuration:config
-                             delegate:nil];
+                             delegate:delegateHandler];
 
   NSError* addError = nil;
   dispatch_queue_t queue =
@@ -855,11 +937,10 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
     return 0;
   }
 
-  int64_t streamId;
   @synchronized(_streamRegistry) {
-    streamId = _nextStreamId++;
     _streamRegistry[@(streamId)] = stream;
     _handlerRegistry[@(streamId)] = handler;
+    _delegateHandlerRegistry[@(streamId)] = delegateHandler;
     if (audioHandler) {
       _audioHandlerRegistry[@(streamId)] = audioHandler;
     }
@@ -1192,6 +1273,51 @@ char* stream_get_next_microphone(int64_t stream_id, int64_t timeout_ms) {
   return strdup(jsonStr.UTF8String);
 }
 
+/// Returns malloc'd JSON for the next [SCStreamDelegate] event, or NULL.
+/// Same timeout semantics as stream_get_next_audio (timeout_ms <= 0: non-blocking).
+char* stream_get_next_delegate_event(int64_t stream_id, int64_t timeout_ms) {
+  if (stream_id <= 0 || _delegateHandlerRegistry == nil) {
+    return NULL;
+  }
+
+  StreamDelegateHandler* handler = _delegateHandlerRegistry[@(stream_id)];
+  if (!handler) {
+    return NULL;
+  }
+
+  dispatch_time_t waitDeadline = (timeout_ms > 0)
+      ? dispatch_time(DISPATCH_TIME_NOW, timeout_ms * NSEC_PER_MSEC)
+      : DISPATCH_TIME_NOW;
+  long waitResult = dispatch_semaphore_wait(handler.semaphore, waitDeadline);
+
+  if (waitResult != 0) {
+    return NULL;
+  }
+
+  NSString* jsonStr = nil;
+  [handler.lock lock];
+  if (handler.queue.count > 0) {
+    jsonStr = handler.queue.firstObject;
+    [handler.queue removeObjectAtIndex:0];
+  }
+  [handler.lock unlock];
+
+  if (!jsonStr || jsonStr.length == 0) {
+    [handler.lock lock];
+    BOOL empty = handler.queue.count == 0;
+    [handler.lock unlock];
+    if (handler.stopped && empty) {
+      @synchronized(_delegateHandlerRegistry) {
+        if (_delegateHandlerRegistry) {
+          [_delegateHandlerRegistry removeObjectForKey:@(stream_id)];
+        }
+      }
+    }
+    return NULL;
+  }
+  return strdup(jsonStr.UTF8String);
+}
+
 /// Stops and releases a stream.
 void stream_stop_and_release(int64_t stream_id) {
   if (stream_id <= 0 || _streamRegistry == nil) {
@@ -1202,15 +1328,20 @@ void stream_stop_and_release(int64_t stream_id) {
   StreamFrameHandler* handler = nil;
   StreamAudioHandler* audioHandler = nil;
   StreamMicrophoneHandler* microphoneHandler = nil;
+  StreamDelegateHandler* delegateHandler = nil;
   @synchronized(_streamRegistry) {
     stream = _streamRegistry[@(stream_id)];
     handler = _handlerRegistry[@(stream_id)];
     audioHandler = _audioHandlerRegistry[@(stream_id)];
     microphoneHandler = _microphoneHandlerRegistry[@(stream_id)];
+    delegateHandler = _delegateHandlerRegistry[@(stream_id)];
     [_streamRegistry removeObjectForKey:@(stream_id)];
     [_handlerRegistry removeObjectForKey:@(stream_id)];
     [_audioHandlerRegistry removeObjectForKey:@(stream_id)];
     [_microphoneHandlerRegistry removeObjectForKey:@(stream_id)];
+    // Keep StreamDelegateHandler in _delegateHandlerRegistry until Dart drains
+    // delegate events (see stream_get_next_delegate_event). Setting stopped
+    // before stopCapture would drop didStopWithError and block Dart polling.
   }
 
   if (handler) {
@@ -1263,5 +1394,12 @@ void stream_stop_and_release(int64_t stream_id) {
       stopSem,
       dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC)
     );
+  }
+
+  // After capture stops, allow no further delegate callbacks and wake Dart so
+  // it can drain didStopWithError (enqueued during stopCapture).
+  if (delegateHandler) {
+    delegateHandler.stopped = YES;
+    dispatch_semaphore_signal(delegateHandler.semaphore);
   }
 }
