@@ -82,7 +82,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | SCContentSharingPicker | ✅ | presentContentSharingPicker(); present(), present(using:), isActive, maximumStreamCount; macOS 14+ |
 | SCContentSharingPickerConfiguration | ✅ | ContentSharingPickerConfiguration + CaptureStream.setContentSharingPickerConfiguration; setConfiguration(_:for:); macOS 14+ |
 | SCContentSharingPickerMode | ✅ | ContentSharingPickerMode enum + allowedModes in present |
-| SCContentSharingPickerObserver | ✅ | Used internally in native picker_present |
+| SCContentSharingPickerObserver | ✅ | Used internally in native `picker_start` / main-queue block |
 
 ### Errors
 
