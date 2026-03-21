@@ -46,8 +46,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and event loop on the **FFI / calling thread** (no GCD `dispatch_sync` to the
   main queue; main-queue `dispatch_sync` prevented the picker UI from appearing).
   **`picker_poll`** returns the result JSON
-  after **`picker_start`** completes. Off-main `nextEventMatchingMask` can still
-  assert; see native comments in `picker.m`.
+  after **`picker_start`** completes.
+
+- **Picker `nextEventMatchingMask` crash (macOS)**: `picker_start` called
+  `-[NSApplication nextEventMatchingMask:…]` from a Dart worker thread, which
+  is restricted to the main thread. Replaced the AppKit event loop with
+  sleep-polling; observer callbacks are delivered by the system via GCD and do
+  not require explicit event pumping.
+
+- **Content filter registry (macOS)**: `ensureFilterRegistry` used
+  `[NSMutableDictionary dictionary]` (autoreleased); the GCD thread's
+  autorelease pool could drain the dictionary before the Dart thread read it.
+  Switched to `[[NSMutableDictionary alloc] init]` for direct ownership.
+  Also added `@synchronized` to `get_content_filter` for thread-safe reads.
 
 - **Native content-sharing picker (macOS)**: Use Objective-C API `+[SCContentSharingPicker sharedPicker]` and `defaultConfiguration.allowedPickerModes` + `present` instead of nonexistent `+[SCContentSharingPicker shared]` and `presentUsing:` (Swift-only names), which caused `NSInvalidArgumentException` at runtime.
 
