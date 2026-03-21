@@ -92,7 +92,7 @@ void main() {
                     throw TimeoutException('createWindowFilter timed out'),
               );
           expect(handle, isA<FilterId>());
-          expect(handle.filterId, greaterThan(0));
+          expect(handle.value, greaterThan(0));
           ScreenCaptureKit().releaseFilter(handle);
         } on UnsupportedError catch (e) {
           print(e);
@@ -130,7 +130,7 @@ void main() {
                     throw TimeoutException('createDisplayFilter timed out'),
               );
           expect(handle, isA<FilterId>());
-          expect(handle.filterId, greaterThan(0));
+          expect(handle.value, greaterThan(0));
           ScreenCaptureKit().releaseFilter(handle);
 
           if (content.windows.isNotEmpty) {
@@ -142,7 +142,7 @@ void main() {
                     'createDisplayFilter(excludingWindows) timed out',
                   ),
                 );
-            expect(handleExcluding.filterId, greaterThan(0));
+            expect(handleExcluding.value, greaterThan(0));
             ScreenCaptureKit().releaseFilter(handleExcluding);
           }
         } on UnsupportedError catch (e) {

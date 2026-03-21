@@ -78,14 +78,10 @@ Value objects use **Dart extension types** for scalar identifiers, and **immutab
 Example:
 
 ```dart
-extension type const DisplayId(int value) {
-  int get displayId => value;
-}
+extension type const DisplayId(int value) {}
 
-extension type const FilterId(int value) {
-  int get filterId => value;
-  // Creation sites must enforce FilterId(id) with id > 0.
-}
+extension type const FilterId(int value) {}
+// Creation sites must enforce FilterId(id) with id > 0.
 ```
 
 `FilterId` is the public API type for a content filter; it must be released with `releaseFilter` when no longer needed.

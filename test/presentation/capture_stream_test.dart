@@ -40,7 +40,7 @@ void main() {
       const handle = FilterId(42);
       capture.updateContentFilter(handle);
       expect(passedHandle, equals(handle));
-      expect(passedHandle?.filterId, 42);
+      expect(passedHandle?.value, 42);
       await controller.close();
     });
 

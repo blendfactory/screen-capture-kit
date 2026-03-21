@@ -457,7 +457,7 @@ void releaseFilterImpl(FilterId handle) {
   if (!Platform.isMacOS) {
     return;
   }
-  _releaseContentFilter(handle.filterId);
+  _releaseContentFilter(handle.value);
 }
 
 CapturedImage captureScreenshotImpl(
@@ -472,7 +472,7 @@ CapturedImage captureScreenshotImpl(
   }
 
   final ptr = _captureScreenshot(
-    filterHandle.filterId,
+    filterHandle.value,
     frameSize.width,
     frameSize.height,
   );
@@ -1066,7 +1066,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   int streamId;
   try {
     streamId = _streamCreateAndStart(
-      filterHandle.filterId,
+      filterHandle.value,
       frameSize.width,
       frameSize.height,
       frameRate.value,
@@ -1196,7 +1196,7 @@ void streamUpdateContentFilterImpl(
   int streamId,
   FilterId handle,
 ) {
-  final result = _streamUpdateContentFilter(streamId, handle.filterId);
+  final result = _streamUpdateContentFilter(streamId, handle.value);
   if (result != 0) {
     final ptr = _streamGetLastError();
     if (ptr != nullptr) {
@@ -1254,7 +1254,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   int streamId;
   try {
     streamId = _streamCreateAndStart(
-      filterHandle.filterId,
+      filterHandle.value,
       frameSize.width,
       frameSize.height,
       frameRate.value,

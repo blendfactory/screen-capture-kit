@@ -5,7 +5,7 @@ void main() {
   group('FilterId', () {
     test('creates with positive filter id', () {
       const filterId = FilterId(1);
-      expect(filterId.filterId, 1);
+      expect(filterId.value, 1);
     });
   });
 }

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: Identifier extension types **`DisplayId`**, **`FilterId`**, **`ProcessId`**, and **`WindowId`** no longer define getters that duplicated the primary field (e.g. `filterId`, `displayId`). Use **`value`** for the underlying `int`, consistent with **`BundleId`** using **`value`** for the `String`.
+
 ## [0.0.5] - 2026-03-21
 
 ### Added
