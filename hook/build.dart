@@ -23,6 +23,8 @@ void main(List<String> args) async {
             'native/picker.m',
           ],
           frameworks: [
+            'AppKit',
+            'CoreFoundation',
             'ScreenCaptureKit',
             'Foundation',
             'CoreGraphics',
