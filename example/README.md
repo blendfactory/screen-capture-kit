@@ -84,9 +84,9 @@ to **H.264 + AAC** MP4 with ffmpeg (same pattern as `record_display_with_audio`)
 - **FPS**: defaults to **120** and is **capped** by the highest known display
   refresh rate from `ShareableContent` (same idea as the display record CLIs).
 - **Audio**: `--audio none|system|mic|both` (default `both` when omitted).
-- **Size**: omit `--width` / `--height` to use **native / first-frame** dimensions
-  (AVI header is written after the first video sample). Or pass both for a fixed
-  scale hint.
+- **Size**: omit `--width` / `--height` to use the **reference display** size
+  (highest known refresh rate, then largest area among connected displays). Or
+  pass both for a fixed output size.
 
 Requirements: **macOS 14+** for the picker; **macOS 15+** for microphone;
 **ffmpeg** on `PATH`.

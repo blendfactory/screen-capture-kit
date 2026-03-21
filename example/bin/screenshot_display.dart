@@ -50,6 +50,7 @@ Future<void> main(List<String> args) async {
     filter = await kit.createDisplayFilter(display);
     final image = await kit.captureScreenshot(
       filter,
+      frameSize: FrameSize(width: display.width, height: display.height),
       captureResolution: parsed.captureResolution,
     );
     final file = _writePng(parsed.outputDir, display, image);

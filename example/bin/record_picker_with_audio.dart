@@ -89,26 +89,26 @@ Future<void> main(List<String> args) async {
     final micWavFile = File('$dir/${base}_mic.wav');
     final mp4File = File('$dir/$base.mp4');
 
-    final outWidth = parsed.width ?? 0;
-    final outHeight = parsed.height ?? 0;
-    if (outWidth < 0 || outHeight < 0) {
-      stderr.writeln('Invalid frame size.');
-      exitCode = 64;
-      return;
-    }
-    if ((outWidth > 0) != (outHeight > 0)) {
+    if ((parsed.width != null) != (parsed.height != null)) {
       stderr.writeln('Use both --width and --height, or omit both.');
       exitCode = 64;
       return;
     }
 
-    final useExplicitSize = outWidth > 0 && outHeight > 0;
-    final frameSize = useExplicitSize
-        ? FrameSize(width: outWidth, height: outHeight)
-        : const FrameSize.zero();
-    if (!useExplicitSize) {
+    final refDisplay = _referenceDisplayForPicker(content.displays);
+    final outWidth = parsed.width ?? refDisplay.width;
+    final outHeight = parsed.height ?? refDisplay.height;
+    if (outWidth <= 0 || outHeight <= 0) {
+      stderr.writeln('Invalid frame size: ${outWidth}x$outHeight');
+      exitCode = 64;
+      return;
+    }
+
+    final frameSize = FrameSize(width: outWidth, height: outHeight);
+    if (parsed.width == null && parsed.height == null) {
       stdout.writeln(
-        'Frame size: native / first frame (AVI header from first sample).',
+        'Frame size: ${outWidth}x$outHeight '
+        '(default: reference display id=${refDisplay.displayId.value}).',
       );
     }
 
@@ -205,9 +205,8 @@ Future<void> main(List<String> args) async {
       outputFile: aviFile,
       fps: fps,
       durationSeconds: parsed.durationSeconds,
-      width: useExplicitSize ? outWidth : 0,
-      height: useExplicitSize ? outHeight : 0,
-      deferDimensionsFromFirstFrame: !useExplicitSize,
+      width: outWidth,
+      height: outHeight,
       onBeforeCancelFrameSubscription: sealAudio,
       onCaptureStopped: (captured, dropped, inFlight) {
         stdout.writeln(
@@ -303,6 +302,22 @@ class _ParsedArgs {
   final bool? scalesToFit;
   final bool? preservesAspectRatio;
   final _AudioMode audioMode;
+}
+
+/// Display used for default `--width`/`--height` when both are omitted: prefer
+/// the highest known refresh rate, break ties by largest pixel area.
+Display _referenceDisplayForPicker(List<Display> displays) {
+  assert(displays.isNotEmpty, 'displays must not be empty');
+  return displays.reduce((a, b) {
+    final ar = a.refreshRate.isKnown ? a.refreshRate.value : -1;
+    final br = b.refreshRate.isKnown ? b.refreshRate.value : -1;
+    if (br != ar) {
+      return br > ar ? b : a;
+    }
+    final aa = a.width * a.height;
+    final ba = b.width * b.height;
+    return ba > aa ? b : a;
+  });
 }
 
 /// Caps [desired] to at most 120 and to the highest known display refresh rate.
@@ -523,7 +538,7 @@ Options:
   --out, -o <dir>     Output directory (created if missing)
   --duration, -t <s>  Stop after seconds (omit → Ctrl+C)
   --fps <n>           Requested FPS (default 120; 1..120, then capped to display)
-  --width, --height   Fixed output size (pass both; omit → first frame sets AVI)
+  --width, --height   Fixed output size (pass both; omit → reference display size)
   --audio <mode>      none | system | mic | both (default: both)
   --scales-to-fit <b> Map to SCStreamConfiguration.scalesToFit (true/false; omit to keep native default)
   --preserves-aspect-ratio <b> Map to SCStreamConfiguration.preservesAspectRatio (true/false; macOS 14+; omit to keep native default)

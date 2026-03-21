@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Example CLIs (`screenshot_display`, `record_picker_with_audio`)**: When `--width`/`--height` are omitted, use the selected or reference **display pixel size** (`captureScreenshot` now passes **`FrameSize`** for the chosen display; **`record_picker_with_audio`** defaults to a reference display: highest known refresh rate, then largest area). **`record_display`** / **`record_display_with_audio`** already defaulted to the chosen display’s size when both are omitted.
 - **Breaking**: Identifier extension types **`DisplayId`**, **`FilterId`**, **`ProcessId`**, and **`WindowId`** no longer define getters that duplicated the primary field (e.g. `filterId`, `displayId`). Use **`value`** for the underlying `int`, consistent with **`BundleId`** using **`value`** for the `String`.
 - **Breaking**: **`DisplayId`**, **`FilterId`**, and **`WindowId`** factories require **`value > 0`**; **`ProcessId`** requires **`value >= 0`**. Invalid values throw **`ArgumentError`**. These types are no longer **`const`**-constructible (use e.g. `DisplayId(1)`).
 - **`PixelRect`**: Factory validates **finite** `x`, `y`, `width`, `height` and **non-negative** `width`/`height`; throws **`ArgumentError`** otherwise.
