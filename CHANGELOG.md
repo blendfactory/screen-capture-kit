@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **macOS audio JSON (`_parseAudioJson`)**: When native sends **`format: raw`** (e.g. non–Linear PCM path in the bridge), the Dart layer now maps it to **`f32`** or **`s16`** using **`numSamples`**, **`channelCount`**, and PCM byte length so `CapturedAudio.format` is always a concrete label for interleaved PCM.
-- **Example `pcm_wav_writer`**: Float32 samples written to WAV are **sanitized** (non-finite values → `0`; amplitudes **clamped to [-1, 1]**) so **`record_display_with_audio`** can mux to AAC/MP4 with ffmpeg when microphone buffers contain extreme float magnitudes (which previously caused AAC encode failures).
+- **Example `pcm_wav_writer`**: Float32 samples written to WAV are **sanitized** (non-finite values → `0`; amplitudes **clamped to [-1, 1]**) so **`record_display_with_audio`** can mux to AAC/MP4 with ffmpeg when float magnitudes exceed unity.
+- **Microphone 24-bit PCM (macOS)**: ScreenCaptureKit microphone on macOS delivers **24-bit signed integer packed PCM** (`s24le`), not float32. The native bridge (`BuildInterleavedPCM`) now detects this format and **converts to float32** (normalized to [-1, 1]) before sending to Dart. Previously the raw 3-byte-per-sample data was misinterpreted as float32, producing noise/garbage audio in the WAV output.
 
 ## [0.0.5] - 2026-03-21
 

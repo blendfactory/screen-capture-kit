@@ -8,7 +8,7 @@ import 'package:screen_capture_kit/screen_capture_kit.dart';
 
 /// Core Audio / WAV IEEE float PCM is little-endian. Replace non-finite
 /// samples and clamp to **[-1, 1]** so ffmpeg AAC does not fail on extreme
-/// float values (e.g. microphone buffers scaled to ~FLT_MAX).
+/// float values.
 Uint8List _coerceFiniteFloat32Pcm(Uint8List pcm) {
   if (pcm.length < 4 || pcm.length % 4 != 0) {
     return pcm;

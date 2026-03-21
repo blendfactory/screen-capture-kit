@@ -160,6 +160,28 @@ static void ensureCoreGraphicsInit(void) {
 }
 @end
 
+/// Convert packed 24-bit signed integer PCM (little-endian) to 32-bit float.
+/// Each 3-byte sample [low, mid, high] is sign-extended to int32 and
+/// normalized to [-1.0, 1.0] by dividing by 2^23 (8388608).
+static NSMutableData* ConvertS24LEToFloat32(const void* data, size_t byteCount) {
+  size_t numSamples = byteCount / 3;
+  if (numSamples == 0) {
+    return nil;
+  }
+  NSMutableData* out = [NSMutableData dataWithCapacity:numSamples * sizeof(float)];
+  const uint8_t* p = (const uint8_t*)data;
+  for (size_t i = 0; i < numSamples; i++) {
+    int32_t sample = (int32_t)(p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16));
+    if (sample & 0x800000) {
+      sample |= (int32_t)0xFF000000;
+    }
+    float normalized = (float)sample / 8388608.0f;
+    [out appendBytes:&normalized length:sizeof(float)];
+    p += 3;
+  }
+  return out;
+}
+
 /// Interleave PCM for WAV/Dart: ScreenCaptureKit may deliver non-interleaved
 /// (planar) buffers (one AudioBuffer per channel). Using only mBuffers[0]
 /// then halving the payload breaks duration (2× speed if WAV still claims
@@ -168,6 +190,9 @@ static void ensureCoreGraphicsInit(void) {
 /// Some streams omit kAudioFormatFlagIsNonInterleaved but still use one buffer
 /// per channel; detect that by layout (mNumberBuffers == mChannelsPerFrame,
 /// each buffer single-channel, equal sizes).
+///
+/// 24-bit signed integer packed PCM (common for macOS microphone via
+/// ScreenCaptureKit) is converted to float32 so Dart always receives f32/s16.
 static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
                                          const AudioStreamBasicDescription* asbd,
                                          NSString* __autoreleasing* outFormatId) {
@@ -187,14 +212,19 @@ static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
     return nil;
   }
 
-  if (asbd->mFormatFlags & kAudioFormatFlagIsFloat) {
-    *outFormatId = @"f32";
-  } else if (asbd->mBitsPerChannel == 16) {
-    *outFormatId = @"s16";
-  }
-
   UInt32 bits = asbd->mBitsPerChannel;
   size_t bytesPerSample = bits / 8;
+  BOOL isFloat = (asbd->mFormatFlags & kAudioFormatFlagIsFloat) != 0;
+  BOOL isSignedInt = (asbd->mFormatFlags & kAudioFormatFlagIsSignedInteger) != 0;
+  BOOL is24BitInt = !isFloat && bits == 24 && isSignedInt && bytesPerSample == 3;
+
+  if (isFloat) {
+    *outFormatId = @"f32";
+  } else if (bits == 16) {
+    *outFormatId = @"s16";
+  } else if (is24BitInt) {
+    *outFormatId = @"f32";
+  }
 
   BOOL buffersMatchChannelCount =
       (numChannels > 0 && bufferList->mNumberBuffers == numChannels);
@@ -229,10 +259,22 @@ static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
       }
     }
 
+    if (is24BitInt) {
+      NSMutableData* interleaved =
+          [NSMutableData dataWithCapacity:(NSUInteger)(frames * 3 * numChannels)];
+      for (size_t f = 0; f < frames; f++) {
+        for (UInt32 ch = 0; ch < numChannels; ch++) {
+          const uint8_t* p = (const uint8_t*)bufferList->mBuffers[ch].mData;
+          [interleaved appendBytes:&p[f * 3] length:3];
+        }
+      }
+      return ConvertS24LEToFloat32(interleaved.bytes, interleaved.length);
+    }
+
     NSUInteger capacity = (NSUInteger)(frames * bytesPerSample * numChannels);
     NSMutableData* out = [NSMutableData dataWithCapacity:capacity];
 
-    if (asbd->mFormatFlags & kAudioFormatFlagIsFloat) {
+    if (isFloat) {
       for (size_t f = 0; f < frames; f++) {
         for (UInt32 ch = 0; ch < numChannels; ch++) {
           float sample = ((const float*)bufferList->mBuffers[ch].mData)[f];
@@ -272,6 +314,9 @@ static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
         }
       }
       if (out.length > 0) {
+        if (is24BitInt) {
+          return ConvertS24LEToFloat32(out.bytes, out.length);
+        }
         return out;
       }
     }
@@ -279,6 +324,9 @@ static NSMutableData* BuildInterleavedPCM(const AudioBufferList* bufferList,
 
   AudioBuffer buf = bufferList->mBuffers[0];
   if (buf.mData && buf.mDataByteSize > 0) {
+    if (is24BitInt) {
+      return ConvertS24LEToFloat32(buf.mData, buf.mDataByteSize);
+    }
     return [NSMutableData dataWithBytes:buf.mData length:buf.mDataByteSize];
   }
   return nil;
@@ -495,6 +543,7 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
   UInt32 numChannels = asbd->mChannelsPerFrame;
   Float64 sampleRate = asbd->mSampleRate;
   NSString* formatId = @"raw";
+
   NSMutableData* pcmData = BuildInterleavedPCM(bufferList, asbd, &formatId);
 
   // Microphone: recover full PCM when BuildInterleavedPCM under-reads (mono
