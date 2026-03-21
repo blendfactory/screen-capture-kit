@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:screen_capture_kit/screen_capture_kit.dart';
 import 'package:screen_capture_kit_example/avi_isolate_recorder.dart';
+import 'package:screen_capture_kit_example/cli_capture_resolution.dart';
 import 'package:screen_capture_kit_example/pcm_wav_writer.dart';
 
 Future<void> main(List<String> args) async {
@@ -105,7 +106,7 @@ Future<void> main(List<String> args) async {
       pixelFormat: cvPixelFormatType32Bgra,
       scalesToFit: parsed.scalesToFit,
       preservesAspectRatio: parsed.preservesAspectRatio,
-      captureResolution: CaptureResolution.best,
+      captureResolution: parsed.captureResolution,
       capturesAudio: true,
       excludesCurrentProcessAudio: true,
       captureMicrophone: true,
@@ -312,6 +313,7 @@ class _ParsedArgs {
     this.keepTemp = false,
     this.scalesToFit,
     this.preservesAspectRatio,
+    this.captureResolution = CaptureResolution.automatic,
   });
 
   final Directory outputDir;
@@ -323,6 +325,7 @@ class _ParsedArgs {
   final bool keepTemp;
   final bool? scalesToFit;
   final bool? preservesAspectRatio;
+  final CaptureResolution captureResolution;
 }
 
 _ParsedArgs? _parseArgs(List<String> args) {
@@ -335,6 +338,7 @@ _ParsedArgs? _parseArgs(List<String> args) {
   var keepTemp = false;
   bool? scalesToFit;
   bool? preservesAspectRatio;
+  var quality = CaptureResolution.automatic;
 
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
@@ -461,6 +465,21 @@ _ParsedArgs? _parseArgs(List<String> args) {
       }
       continue;
     }
+    if (a == '--quality' || a == '-q') {
+      if (i + 1 >= args.length) {
+        stderr.writeln('Missing value for $a');
+        return null;
+      }
+      final parsedQuality = tryParseCaptureResolutionCli(args[++i]);
+      if (parsedQuality == null) {
+        stderr.writeln(
+          'Invalid --quality (use automatic, best, or nominal).',
+        );
+        return null;
+      }
+      quality = parsedQuality;
+      continue;
+    }
     if (a.startsWith('-')) {
       stderr.writeln('Unknown option: $a');
       return null;
@@ -488,6 +507,7 @@ _ParsedArgs? _parseArgs(List<String> args) {
     keepTemp: keepTemp,
     scalesToFit: scalesToFit,
     preservesAspectRatio: preservesAspectRatio,
+    captureResolution: quality,
   );
 }
 
@@ -513,6 +533,7 @@ Options:
   --width, --height  Output size (default: display size)
   --scales-to-fit <b> Map to SCStreamConfiguration.scalesToFit (true/false; omit to keep native default)
   --preserves-aspect-ratio <b> Map to SCStreamConfiguration.preservesAspectRatio (true/false; macOS 14+; omit to keep native default)
+  --quality, -q <m>  automatic|best|nominal (SCStreamConfiguration.captureResolution; macOS 14+; default automatic)
   --keep-temp        Keep AVI and WAV files after mux
 ''');
 }

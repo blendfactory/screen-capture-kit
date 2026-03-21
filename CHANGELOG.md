@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Example record CLIs** (`record_display` via `avi_isolate_recorder`, `record_display_with_audio`, `record_picker_with_audio`): Live capture uses **`captureResolution: CaptureResolution.best`** (macOS 14+).
+- **Example record CLIs** (`record_display`, `record_display_with_audio`, `record_picker_with_audio`): **`--quality`** / **`-q`** (`automatic` \| `best` \| `nominal`) for live **`captureResolution`**, aligned with **`screenshot_display`** (default **`automatic`**; macOS 14+).
 - **macOS capture streams (internal)**: Video, audio, microphone, and delegate **`StreamController`** instances are owned by small wrappers with explicit **`close()`**, so lifecycle matches subscription teardown without relying on `// ignore: close_sinks` for the main capture setup path.
 - **Example CLIs (`screenshot_display`, `record_picker_with_audio`)**: When `--width`/`--height` are omitted, use the selected or reference **display pixel size** (`captureScreenshot` now passes **`FrameSize`** for the chosen display; **`record_picker_with_audio`** defaults to a reference display: highest known refresh rate, then largest area). **`record_display`** / **`record_display_with_audio`** already defaulted to the chosen display’s size when both are omitted.
 - **Breaking**: Identifier extension types **`DisplayId`**, **`FilterId`**, **`ProcessId`**, and **`WindowId`** no longer define getters that duplicated the primary field (e.g. `filterId`, `displayId`). Use **`value`** for the underlying `int`, consistent with **`BundleId`** using **`value`** for the `String`.

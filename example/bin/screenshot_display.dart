@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:screen_capture_kit/screen_capture_kit.dart';
+import 'package:screen_capture_kit_example/cli_capture_resolution.dart';
 
 /// Captures one display to a PNG file in the given output directory.
 ///
@@ -121,19 +122,14 @@ _ParsedArgs? _parseArgs(List<String> args) {
         stderr.writeln('Missing value for $a');
         return null;
       }
-      final raw = args[++i].toLowerCase();
-      if (raw == 'automatic' || raw == 'auto') {
-        quality = CaptureResolution.automatic;
-      } else if (raw == 'best') {
-        quality = CaptureResolution.best;
-      } else if (raw == 'nominal') {
-        quality = CaptureResolution.nominal;
-      } else {
+      final parsedQuality = tryParseCaptureResolutionCli(args[++i]);
+      if (parsedQuality == null) {
         stderr.writeln(
           'Invalid --quality (use automatic, best, or nominal).',
         );
         return null;
       }
+      quality = parsedQuality;
       continue;
     }
     if (a.startsWith('-')) {

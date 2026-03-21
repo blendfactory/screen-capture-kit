@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:screen_capture_kit/screen_capture_kit.dart';
 import 'package:screen_capture_kit_example/avi_isolate_recorder.dart';
+import 'package:screen_capture_kit_example/cli_capture_resolution.dart';
 
 Future<void> main(List<String> args) async {
   final parsed = _parseArgs(args);
@@ -84,6 +85,7 @@ Future<void> main(List<String> args) async {
       height: outHeight,
       scalesToFit: parsed.scalesToFit,
       preservesAspectRatio: parsed.preservesAspectRatio,
+      captureResolution: parsed.captureResolution,
     );
 
     stdout.writeln('Wrote: ${outFile.path}');
@@ -113,6 +115,7 @@ class _ParsedArgs {
     this.height,
     this.scalesToFit,
     this.preservesAspectRatio,
+    this.captureResolution = CaptureResolution.automatic,
   });
 
   final Directory outputDir;
@@ -123,6 +126,7 @@ class _ParsedArgs {
   final int? height;
   final bool? scalesToFit;
   final bool? preservesAspectRatio;
+  final CaptureResolution captureResolution;
 }
 
 _ParsedArgs? _parseArgs(List<String> args) {
@@ -134,6 +138,7 @@ _ParsedArgs? _parseArgs(List<String> args) {
   int? height;
   bool? scalesToFit;
   bool? preservesAspectRatio;
+  var quality = CaptureResolution.automatic;
 
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
@@ -256,6 +261,21 @@ _ParsedArgs? _parseArgs(List<String> args) {
       }
       continue;
     }
+    if (a == '--quality' || a == '-q') {
+      if (i + 1 >= args.length) {
+        stderr.writeln('Missing value for $a');
+        return null;
+      }
+      final parsedQuality = tryParseCaptureResolutionCli(args[++i]);
+      if (parsedQuality == null) {
+        stderr.writeln(
+          'Invalid --quality (use automatic, best, or nominal).',
+        );
+        return null;
+      }
+      quality = parsedQuality;
+      continue;
+    }
     if (a.startsWith('-')) {
       stderr.writeln('Unknown option: $a');
       return null;
@@ -282,6 +302,7 @@ _ParsedArgs? _parseArgs(List<String> args) {
     height: height,
     scalesToFit: scalesToFit,
     preservesAspectRatio: preservesAspectRatio,
+    captureResolution: quality,
   );
 }
 
@@ -302,6 +323,7 @@ Options:
   --height <px>        Output height in pixels (optional; default: display height)
   --scales-to-fit <b>  Map to SCStreamConfiguration.scalesToFit (true/false; omit to keep native default)
   --preserves-aspect-ratio <b> Map to SCStreamConfiguration.preservesAspectRatio (true/false; macOS 14+; omit to keep native default)
+  --quality, -q <m>    automatic|best|nominal (SCStreamConfiguration.captureResolution; macOS 14+; default automatic)
 ''');
 }
 

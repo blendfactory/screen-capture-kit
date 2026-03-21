@@ -200,6 +200,10 @@ void logCaptureStreamDelegateEventToStdout(CaptureStreamDelegateEvent e) {
 /// `startCaptureStreamWithUpdater` with `emitDelegateEvents: true` so delegate
 /// events appear on stdout.
 ///
+/// [captureResolution] maps to `SCStreamConfiguration.captureResolution`
+/// (macOS 14+); defaults to [CaptureResolution.automatic] (same default as the
+/// screenshot example CLI).
+///
 /// The delegate subscription is canceled **after** [recordFramesToAviIsolate]
 /// returns so `didStopWithError` is still delivered when the video subscription
 /// stops the native stream.
@@ -213,6 +217,7 @@ Future<void> recordDisplayToAviIsolate({
   required int height,
   bool? scalesToFit,
   bool? preservesAspectRatio,
+  CaptureResolution captureResolution = CaptureResolution.automatic,
 }) async {
   stdout.writeln(
     'SCStreamDelegate bridge: lines prefixed with [delegate] '
@@ -226,7 +231,7 @@ Future<void> recordDisplayToAviIsolate({
     scalesToFit: scalesToFit,
     preservesAspectRatio: preservesAspectRatio,
     pixelFormat: cvPixelFormatType32Bgra,
-    captureResolution: CaptureResolution.best,
+    captureResolution: captureResolution,
     emitDelegateEvents: true,
   );
 

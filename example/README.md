@@ -40,9 +40,9 @@ dart run bin/screenshot_display.dart ./captures --display 2
 only—no external encoder. Recording stops on **Ctrl+C** or `--duration` / `-t`;
 the tool may keep writing queued frames afterward.
 
-The shared helper passes **`captureResolution: CaptureResolution.best`** for the
-live stream (macOS 14+), matching the quality tier used in the other record
-CLIs below.
+Use **`--quality`** / **`-q`** (`automatic` \| `best` \| `nominal`, default
+`automatic`) for [`SCStreamConfiguration.captureResolution`](https://developer.apple.com/documentation/screencapturekit/scstreamconfiguration/captureresolution)
+on the live stream (macOS 14+), same as `screenshot_display.dart`.
 
 Notes:
 
@@ -62,7 +62,8 @@ dart run bin/record_display.dart ./recordings --display 1 --duration 5 \
 
 `bin/record_display_with_audio.dart` captures a display with **system audio** and
 **microphone** (`startCaptureStreamWithUpdater` with `capturesAudio` and
-`captureMicrophone`, **`captureResolution: CaptureResolution.best`** on macOS 14+),
+`captureMicrophone`; optional **`--quality`** / **`-q`** for live
+`captureResolution`, macOS 14+),
 writes a temporary **BGRA AVI** and **two PCM WAV** files,
 then runs **ffmpeg** to produce **H.264 + AAC** MP4. Intermediate files are
 deleted unless you pass `--keep-temp`.
@@ -86,7 +87,7 @@ dart run bin/record_display_with_audio.dart ./recordings --keep-temp
 (`presentContentSharingPicker`), then records the chosen display, window, or app
 with **BGRA AVI** + optional **system audio** and/or **microphone**, and muxes
 to **H.264 + AAC** MP4 with ffmpeg (same pattern as `record_display_with_audio`).
-The stream uses **`captureResolution: CaptureResolution.best`** (macOS 14+).
+Optional **`--quality`** / **`-q`** sets live **`captureResolution`** (macOS 14+).
 
 - **FPS**: defaults to **120** and is **capped** by the highest known display
   refresh rate from `ShareableContent` (same idea as the display record CLIs).
@@ -119,5 +120,6 @@ dart run bin/record_picker_with_audio.dart ./recordings --width 1920 --height 10
 | `bin/record_display_with_audio.dart` | CLI: display + system + mic → MP4 via ffmpeg |
 | `bin/record_picker_with_audio.dart` | CLI: picker + optional audio → MP4 via ffmpeg |
 | `lib/avi_isolate_recorder.dart` | Shared isolate-based AVI writer for the record CLIs |
+| `lib/cli_capture_resolution.dart` | Shared `--quality` / `-q` parsing for screenshot + record CLIs |
 | `lib/pcm_wav_writer.dart` | PCM → WAV helper for `record_display_with_audio` |
 | `pubspec.yaml` | Depends on `screen_capture_kit` via `path: ../` |
