@@ -4,8 +4,8 @@ import 'package:test/test.dart';
 void main() {
   group('RunningApplication', () {
     test('creates with required fields', () {
-      const app = RunningApplication(
-        bundleIdentifier: BundleId('com.example.app'),
+      final app = RunningApplication(
+        bundleIdentifier: const BundleId('com.example.app'),
         applicationName: 'Example',
         processId: ProcessId(1234),
       );
@@ -15,13 +15,13 @@ void main() {
     });
 
     test('equality', () {
-      const a = RunningApplication(
-        bundleIdentifier: BundleId('com.test'),
+      final a = RunningApplication(
+        bundleIdentifier: const BundleId('com.test'),
         applicationName: 'Test',
         processId: ProcessId(1),
       );
-      const b = RunningApplication(
-        bundleIdentifier: BundleId('com.test'),
+      final b = RunningApplication(
+        bundleIdentifier: const BundleId('com.test'),
         applicationName: 'Test',
         processId: ProcessId(1),
       );

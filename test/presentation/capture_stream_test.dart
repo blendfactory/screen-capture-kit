@@ -37,7 +37,7 @@ void main() {
         },
         setContentSharingPickerConfiguration: (_) {},
       );
-      const handle = FilterId(42);
+      final handle = FilterId(42);
       capture.updateContentFilter(handle);
       expect(passedHandle, equals(handle));
       expect(passedHandle?.value, 42);

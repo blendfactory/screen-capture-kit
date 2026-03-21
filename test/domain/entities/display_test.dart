@@ -5,19 +5,19 @@ void main() {
   group('Display', () {
     test('equality', () {
       final a = Display(
-        displayId: const DisplayId(1),
+        displayId: DisplayId(1),
         size: FrameSize(width: 1920, height: 1080),
       );
       final b = Display(
-        displayId: const DisplayId(1),
+        displayId: DisplayId(1),
         size: FrameSize(width: 1920, height: 1080),
       );
       final c = Display(
-        displayId: const DisplayId(2),
+        displayId: DisplayId(2),
         size: FrameSize(width: 1920, height: 1080),
       );
       final d = Display(
-        displayId: const DisplayId(1),
+        displayId: DisplayId(1),
         size: FrameSize(width: 1920, height: 1080),
         refreshRate: DisplayRefreshRate(120),
       );

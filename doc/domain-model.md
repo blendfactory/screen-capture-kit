@@ -64,10 +64,10 @@ Value objects use **Dart extension types** for scalar identifiers, and **immutab
 
 | Value object | Representation | Purpose |
 |--------------|----------------|---------|
-| **DisplayId** | `int` | Display identifier (maps to native). |
-| **WindowId** | `int` | Window identifier (maps to native). |
-| **ProcessId** | `int` | Process identifier (maps to native). |
-| **FilterId** | `int` | Opaque filter handle id (must be > 0). Must be released via application service. |
+| **DisplayId** | `int` | Display identifier (maps to native). Factory requires **value > 0**. |
+| **WindowId** | `int` | Window identifier (maps to native). Factory requires **value > 0**. |
+| **ProcessId** | `int` | Process identifier (maps to native). Factory requires **value ≥ 0** (`0` when native omits PID). |
+| **FilterId** | `int` | Opaque filter handle id. Factory requires **value > 0**. Must be released via application service. |
 
 **String identifiers**:
 
@@ -78,10 +78,13 @@ Value objects use **Dart extension types** for scalar identifiers, and **immutab
 Example:
 
 ```dart
-extension type const DisplayId(int value) {}
+extension type DisplayId._(int value) {
+  factory DisplayId(int value) { /* throws if value <= 0 */ }
+}
 
-extension type const FilterId(int value) {}
-// Creation sites must enforce FilterId(id) with id > 0.
+extension type FilterId._(int value) {
+  factory FilterId(int value) { /* throws if value <= 0 */ }
+}
 ```
 
 `FilterId` is the public API type for a content filter; it must be released with `releaseFilter` when no longer needed.
@@ -91,7 +94,7 @@ extension type const FilterId(int value) {}
 | Value object | Representation | Purpose |
 |--------------|----------------|---------|
 | **FrameSize** | `(int width, int height)` | Width and height in pixels; use the [`FrameSize`] factory — **non-negative**, and either **0×0** ([`FrameSize.zero`]) or **both strictly positive**; otherwise [`ArgumentError`]. |
-| **PixelRect** | `(double x, double y, double width, double height)` | Rectangle in screen points (e.g. window frame, source rect). |
+| **PixelRect** | `(double x, double y, double width, double height)` | Rectangle in screen points (e.g. window frame, source rect). Factory requires **finite** components and **width, height ≥ 0**. |
 
 ### Stream configuration value objects (immutable classes)
 

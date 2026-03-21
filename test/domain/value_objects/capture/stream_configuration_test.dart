@@ -21,7 +21,7 @@ void main() {
       final config = StreamConfiguration(
         frameSize: FrameSize(width: 320, height: 240),
         frameRate: FrameRate(30),
-        sourceRect: const PixelRect(x: 0, y: 0, width: 320, height: 240),
+        sourceRect: PixelRect(x: 0, y: 0, width: 320, height: 240),
         showsCursor: false,
         queueDepth: QueueDepth(8),
       );

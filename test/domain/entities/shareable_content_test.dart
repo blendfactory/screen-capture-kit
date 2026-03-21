@@ -16,7 +16,7 @@ void main() {
 
     test('creates with display data', () {
       final display = Display(
-        displayId: const DisplayId(1),
+        displayId: DisplayId(1),
         size: FrameSize(width: 1920, height: 1080),
       );
       final content = ShareableContent(
