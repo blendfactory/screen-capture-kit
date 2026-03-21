@@ -194,13 +194,20 @@ external int _streamUpdateConfiguration(
 )
 external int _streamUpdateContentFilter(int streamId, int filterId);
 
-/// Presents the system content-sharing picker.
-/// Returns malloc'd JSON. Caller must free.
-@Native<Pointer<Utf8> Function(Pointer<Utf8>)>(
-  symbol: 'picker_present',
+/// Starts the system content-sharing picker asynchronously; poll until
+/// non-null.
+@Native<Int32 Function(Pointer<Utf8>)>(
+  symbol: 'picker_start',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
-external Pointer<Utf8> _pickerPresent(Pointer<Utf8> allowedModesJson);
+external int _pickerStart(Pointer<Utf8> allowedModesJson);
+
+/// Returns malloc'd JSON when ready, or nullptr if still pending.
+@Native<Pointer<Utf8> Function()>(
+  symbol: 'picker_poll',
+  assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
+)
+external Pointer<Utf8> _pickerPoll();
 
 @Native<Int32 Function()>(
   symbol: 'picker_is_active',
@@ -507,9 +514,9 @@ CapturedImage captureScreenshotImpl(
   );
 }
 
-FilterId? presentContentSharingPickerImpl({
+Future<FilterId?> presentContentSharingPickerImpl({
   List<ContentSharingPickerMode>? allowedModes,
-}) {
+}) async {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
       'screen_capture_kit only supports macOS. '
@@ -537,9 +544,29 @@ FilterId? presentContentSharingPickerImpl({
     modesPtr = jsonStr.toNativeUtf8();
   }
   try {
-    final ptr = _pickerPresent(modesPtr);
+    final startCode = _pickerStart(modesPtr);
+    if (startCode == -1) {
+      throw const ScreenCaptureKitException(
+        'Content sharing picker session already in progress.',
+        domain: 'ScreenCaptureKit',
+        code: -1,
+      );
+    }
+    final deadline = DateTime.now().add(const Duration(minutes: 5));
+    Pointer<Utf8> ptr = nullptr;
+    while (DateTime.now().isBefore(deadline)) {
+      ptr = _pickerPoll();
+      if (ptr != nullptr) {
+        break;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+    }
     if (ptr == nullptr) {
-      return null;
+      throw const ScreenCaptureKitException(
+        'Content sharing picker timed out waiting for result.',
+        domain: 'ScreenCaptureKit',
+        code: -1,
+      );
     }
     String resultJson;
     try {

@@ -67,18 +67,22 @@ void releaseFilterImpl(FilterId handle) {
   // No-op in stub; native impl would release the filter.
 }
 
-FilterId? presentContentSharingPickerImpl({
+Future<FilterId?> presentContentSharingPickerImpl({
   List<ContentSharingPickerMode>? allowedModes,
 }) {
   if (!Platform.isMacOS) {
-    throw UnsupportedError(
-      'screen_capture_kit only supports macOS. '
-      'Current platform: ${Platform.operatingSystem}',
+    return Future<FilterId?>.error(
+      UnsupportedError(
+        'screen_capture_kit only supports macOS. '
+        'Current platform: ${Platform.operatingSystem}',
+      ),
     );
   }
-  throw UnimplementedError(
-    'Native implementation not yet loaded. '
-    'Ensure the native library is built.',
+  return Future<FilterId?>.error(
+    UnimplementedError(
+      'Native implementation not yet loaded. '
+      'Ensure the native library is built.',
+    ),
   );
 }
 
