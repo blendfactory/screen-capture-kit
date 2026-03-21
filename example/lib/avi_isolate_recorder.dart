@@ -189,11 +189,15 @@ Future<void> recordDisplayToAviIsolate({
   required double? durationSeconds,
   required int width,
   required int height,
+  bool? scalesToFit,
+  bool? preservesAspectRatio,
 }) {
   final stream = kit.startCaptureStream(
     filter,
     frameSize: FrameSize(width: width, height: height),
     frameRate: FrameRate(fps),
+    scalesToFit: scalesToFit,
+    preservesAspectRatio: preservesAspectRatio,
     pixelFormat: cvPixelFormatType32Bgra,
   );
   return recordFramesToAviIsolate(

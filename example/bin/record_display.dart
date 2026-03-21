@@ -82,6 +82,8 @@ Future<void> main(List<String> args) async {
       durationSeconds: parsed.durationSeconds,
       width: outWidth,
       height: outHeight,
+      scalesToFit: parsed.scalesToFit,
+      preservesAspectRatio: parsed.preservesAspectRatio,
     );
 
     stdout.writeln('Wrote: ${outFile.path}');
@@ -109,6 +111,8 @@ class _ParsedArgs {
     this.durationSeconds,
     this.width,
     this.height,
+    this.scalesToFit,
+    this.preservesAspectRatio,
   });
 
   final Directory outputDir;
@@ -117,6 +121,8 @@ class _ParsedArgs {
   final int fps;
   final int? width;
   final int? height;
+  final bool? scalesToFit;
+  final bool? preservesAspectRatio;
 }
 
 _ParsedArgs? _parseArgs(List<String> args) {
@@ -126,6 +132,8 @@ _ParsedArgs? _parseArgs(List<String> args) {
   var fps = 30;
   int? width;
   int? height;
+  bool? scalesToFit;
+  bool? preservesAspectRatio;
 
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
@@ -200,6 +208,54 @@ _ParsedArgs? _parseArgs(List<String> args) {
       }
       continue;
     }
+    if (a == '--scales-to-fit') {
+      if (i + 1 >= args.length) {
+        stderr.writeln('Missing value for $a');
+        return null;
+      }
+      final v = args[++i].toLowerCase();
+      switch (v) {
+        case 'true':
+        case '1':
+        case 'on':
+        case 'yes':
+          scalesToFit = true;
+        case 'false':
+        case '0':
+        case 'off':
+        case 'no':
+          scalesToFit = false;
+        default:
+          stderr.writeln('Invalid --scales-to-fit (use true/false).');
+          return null;
+      }
+      continue;
+    }
+    if (a == '--preserves-aspect-ratio') {
+      if (i + 1 >= args.length) {
+        stderr.writeln('Missing value for $a');
+        return null;
+      }
+      final v = args[++i].toLowerCase();
+      switch (v) {
+        case 'true':
+        case '1':
+        case 'on':
+        case 'yes':
+          preservesAspectRatio = true;
+        case 'false':
+        case '0':
+        case 'off':
+        case 'no':
+          preservesAspectRatio = false;
+        default:
+          stderr.writeln(
+            'Invalid --preserves-aspect-ratio (use true/false).',
+          );
+          return null;
+      }
+      continue;
+    }
     if (a.startsWith('-')) {
       stderr.writeln('Unknown option: $a');
       return null;
@@ -224,6 +280,8 @@ _ParsedArgs? _parseArgs(List<String> args) {
     fps: fps,
     width: width,
     height: height,
+    scalesToFit: scalesToFit,
+    preservesAspectRatio: preservesAspectRatio,
   );
 }
 
@@ -242,6 +300,8 @@ Options:
   --fps <n>            Frame rate for the AVI header (default 30; 1..120)
   --width <px>         Output width in pixels (optional; default: display width)
   --height <px>        Output height in pixels (optional; default: display height)
+  --scales-to-fit <b>  Map to SCStreamConfiguration.scalesToFit (true/false; omit to keep native default)
+  --preserves-aspect-ratio <b> Map to SCStreamConfiguration.preservesAspectRatio (true/false; macOS 14+; omit to keep native default)
 ''');
 }
 
