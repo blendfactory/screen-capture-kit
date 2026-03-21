@@ -120,7 +120,7 @@ Items from the framework spec that are not in the checklist above. Low priority 
 | Shareable content | SCShareableContent.info(for:) | ❌ | Content info for a filter |
 | Content filter | SCContentFilter(display:including:) | ❌ | Capture only specific windows (include list) |
 | Content filter | contentRect, pointPixelScale, streamType, style | ⚠️ | contentRect via sourceRect ✅; pointPixelScale, streamType, style not exposed |
-| Stream config | scalesToFit, destinationRect, preservesAspectRatio | ❌ | |
+| Stream config | scalesToFit, destinationRect, preservesAspectRatio | ✅ | Dart `StreamConfiguration` + `startCaptureStream*` forwards to `SCStreamConfiguration` |
 | Stream config | colorMatrix, backgroundColor, shouldBeOpaque | ❌ | |
 | Stream config | capturesShadowsOnly, ignoreShadows*, ignoreGlobalClip* | ❌ | |
 | Stream config | captureResolution (live SCStream), sampleRate, channelCount | ❌ | Screenshot sets `captureResolution` via `captureScreenshot`; live stream does not. sampleRate/channelCount from device; we don't set |

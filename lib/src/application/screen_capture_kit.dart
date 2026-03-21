@@ -146,6 +146,13 @@ class ScreenCaptureKit {
   /// [frameRate] sets the target fps (1–120).
   /// [sourceRect] optionally crops to a region (x, y, width, height) in screen
   /// points. Use with display filter for region capture.
+  /// [scalesToFit] controls `SCStreamConfiguration.scalesToFit`. When `null`,
+  /// native defaults remain unchanged.
+  /// [destinationRect] specifies `SCStreamConfiguration.destinationRect` in
+  /// *pixel* coordinates. When `null`, native defaults remain unchanged.
+  /// [preservesAspectRatio] controls
+  /// `SCStreamConfiguration.preservesAspectRatio` (macOS 14+). When `null`,
+  /// native defaults remain unchanged.
   /// [showsCursor] includes the system cursor in capture when true (default).
   /// [queueDepth] sets the frame queue depth (1–8).
   /// [capturesAudio] when true, system audio is captured (use with
@@ -165,6 +172,9 @@ class ScreenCaptureKit {
     FrameSize frameSize = const FrameSize.zero(),
     FrameRate frameRate = const FrameRate.fps60(),
     PixelRect? sourceRect,
+    bool? scalesToFit,
+    PixelRect? destinationRect,
+    bool? preservesAspectRatio,
     bool showsCursor = true,
     QueueDepth queueDepth = const QueueDepth.depth5(),
     bool capturesAudio = false,
@@ -178,6 +188,9 @@ class ScreenCaptureKit {
       frameSize: frameSize,
       frameRate: frameRate,
       sourceRect: sourceRect,
+      scalesToFit: scalesToFit,
+      destinationRect: destinationRect,
+      preservesAspectRatio: preservesAspectRatio,
       showsCursor: showsCursor,
       queueDepth: queueDepth,
       capturesAudio: capturesAudio,
@@ -195,6 +208,10 @@ class ScreenCaptureKit {
   /// [CaptureStream.audioStream] yields [CapturedAudio] buffers. Cancel the
   /// video subscription to stop capture.
   ///
+  /// [scalesToFit], [destinationRect], and [preservesAspectRatio] control
+  /// the corresponding `SCStreamConfiguration` layout properties (see
+  /// [startCaptureStream]).
+  ///
   /// [pixelFormat] and [colorSpaceName] match [startCaptureStream].
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
@@ -203,6 +220,9 @@ class ScreenCaptureKit {
     FrameSize frameSize = const FrameSize.zero(),
     FrameRate frameRate = const FrameRate.fps60(),
     PixelRect? sourceRect,
+    bool? scalesToFit,
+    PixelRect? destinationRect,
+    bool? preservesAspectRatio,
     bool showsCursor = true,
     QueueDepth queueDepth = const QueueDepth.depth5(),
     bool capturesAudio = false,
@@ -216,6 +236,9 @@ class ScreenCaptureKit {
       frameSize: frameSize,
       frameRate: frameRate,
       sourceRect: sourceRect,
+      scalesToFit: scalesToFit,
+      destinationRect: destinationRect,
+      preservesAspectRatio: preservesAspectRatio,
       showsCursor: showsCursor,
       queueDepth: queueDepth,
       capturesAudio: capturesAudio,

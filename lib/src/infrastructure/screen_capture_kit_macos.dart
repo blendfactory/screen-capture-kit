@@ -93,6 +93,12 @@ external Pointer<Utf8> _captureScreenshot(
     Float,
     Float,
     Int32,
+    Float,
+    Float,
+    Float,
+    Float,
+    Int32,
+    Int32,
     Int32,
     Int32,
     Int32,
@@ -113,6 +119,12 @@ external int _streamCreateAndStart(
   double srcY,
   double srcWidth,
   double srcHeight,
+  int scalesToFit,
+  double destX,
+  double destY,
+  double destWidth,
+  double destHeight,
+  int preservesAspectRatio,
   int showsCursor,
   int queueDepth,
   int capturesAudio,
@@ -165,6 +177,12 @@ external Pointer<Utf8> _streamGetLastError();
     Float,
     Float,
     Int32,
+    Float,
+    Float,
+    Float,
+    Float,
+    Int32,
+    Int32,
     Int32,
     Int32,
     Int32,
@@ -185,6 +203,12 @@ external int _streamUpdateConfiguration(
   double srcY,
   double srcWidth,
   double srcHeight,
+  int scalesToFit,
+  double destX,
+  double destY,
+  double destWidth,
+  double destHeight,
+  int preservesAspectRatio,
   int showsCursor,
   int queueDepth,
   int capturesAudio,
@@ -1093,6 +1117,9 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
+  bool? scalesToFit,
+  PixelRect? destinationRect,
+  bool? preservesAspectRatio,
   bool showsCursor = true,
   QueueDepth queueDepth = const QueueDepth.depth5(),
   bool capturesAudio = false,
@@ -1109,6 +1136,11 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   }
 
   final src = sourceRect;
+  final scalesToFitParam = scalesToFit == null ? -1 : (scalesToFit ? 1 : 0);
+  final preservesAspectRatioParam = preservesAspectRatio == null
+      ? -1
+      : (preservesAspectRatio ? 1 : 0);
+  final dst = destinationRect;
   final depth = queueDepth;
   final colorSpacePtr = _allocColorSpaceName(colorSpaceName);
   int streamId;
@@ -1122,6 +1154,12 @@ Stream<CapturedFrame> startCaptureStreamImpl(
       src?.y ?? 0,
       src?.width ?? 0,
       src?.height ?? 0,
+      scalesToFitParam,
+      dst?.x ?? 0,
+      dst?.y ?? 0,
+      dst?.width ?? 0,
+      dst?.height ?? 0,
+      preservesAspectRatioParam,
       showsCursor ? 1 : 0,
       depth.value,
       capturesAudio ? 1 : 0,
@@ -1184,7 +1222,16 @@ Stream<CapturedFrame> startCaptureStreamImpl(
 
 void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
   final src = options.sourceRect;
+  final dst = options.destinationRect;
   final depth = options.queueDepth.value;
+  final scalesToFitValue = options.scalesToFit;
+  final preservesAspectRatioValue = options.preservesAspectRatio;
+  final scalesToFitParam = scalesToFitValue == null
+      ? -1
+      : (scalesToFitValue ? 1 : 0);
+  final preservesAspectRatioParam = preservesAspectRatioValue == null
+      ? -1
+      : (preservesAspectRatioValue ? 1 : 0);
   final colorSpacePtr = _allocColorSpaceName(options.colorSpaceName);
   try {
     final result = _streamUpdateConfiguration(
@@ -1196,6 +1243,12 @@ void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
       src?.y ?? 0,
       src?.width ?? 0,
       src?.height ?? 0,
+      scalesToFitParam,
+      dst?.x ?? 0,
+      dst?.y ?? 0,
+      dst?.width ?? 0,
+      dst?.height ?? 0,
+      preservesAspectRatioParam,
       options.showsCursor ? 1 : 0,
       depth,
       options.capturesAudio ? 1 : 0,
@@ -1281,6 +1334,9 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),
   PixelRect? sourceRect,
+  bool? scalesToFit,
+  PixelRect? destinationRect,
+  bool? preservesAspectRatio,
   bool showsCursor = true,
   QueueDepth queueDepth = const QueueDepth.depth5(),
   bool capturesAudio = false,
@@ -1297,6 +1353,11 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   }
 
   final src = sourceRect;
+  final scalesToFitParam = scalesToFit == null ? -1 : (scalesToFit ? 1 : 0);
+  final preservesAspectRatioParam = preservesAspectRatio == null
+      ? -1
+      : (preservesAspectRatio ? 1 : 0);
+  final dst = destinationRect;
   final depth = queueDepth;
   final colorSpacePtr = _allocColorSpaceName(colorSpaceName);
   int streamId;
@@ -1310,6 +1371,12 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
       src?.y ?? 0,
       src?.width ?? 0,
       src?.height ?? 0,
+      scalesToFitParam,
+      dst?.x ?? 0,
+      dst?.y ?? 0,
+      dst?.width ?? 0,
+      dst?.height ?? 0,
+      preservesAspectRatioParam,
       showsCursor ? 1 : 0,
       depth.value,
       capturesAudio ? 1 : 0,

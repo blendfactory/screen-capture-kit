@@ -10,6 +10,9 @@ void main() {
       expect(config.frameSize.height, 0);
       expect(config.frameRate, const FrameRate.fps60());
       expect(config.sourceRect, isNull);
+      expect(config.scalesToFit, isNull);
+      expect(config.destinationRect, isNull);
+      expect(config.preservesAspectRatio, isNull);
       expect(config.showsCursor, isTrue);
       expect(config.queueDepth, const QueueDepth.depth5());
       expect(config.capturesAudio, isFalse);
@@ -22,6 +25,14 @@ void main() {
         frameSize: FrameSize(width: 320, height: 240),
         frameRate: FrameRate(30),
         sourceRect: PixelRect(x: 0, y: 0, width: 320, height: 240),
+        scalesToFit: false,
+        destinationRect: PixelRect(
+          x: 0,
+          y: 0,
+          width: 320,
+          height: 240,
+        ),
+        preservesAspectRatio: false,
         showsCursor: false,
         queueDepth: QueueDepth(8),
       );
@@ -29,6 +40,9 @@ void main() {
       expect(config.frameSize.height, 240);
       expect(config.frameRate.value, 30);
       expect(config.sourceRect?.width, 320);
+      expect(config.scalesToFit, isFalse);
+      expect(config.destinationRect?.width, 320);
+      expect(config.preservesAspectRatio, isFalse);
       expect(config.showsCursor, isFalse);
       expect(config.queueDepth.value, 8);
     });

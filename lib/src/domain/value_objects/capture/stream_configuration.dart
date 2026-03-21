@@ -18,6 +18,9 @@ class StreamConfiguration {
     this.capturesAudio = false,
     this.excludesCurrentProcessAudio = false,
     this.captureMicrophone = false,
+    this.scalesToFit,
+    this.destinationRect,
+    this.preservesAspectRatio,
     this.pixelFormat,
     this.colorSpaceName,
   });
@@ -44,6 +47,30 @@ class StreamConfiguration {
 
   /// When true, microphone input is included in the audio capture.
   final bool captureMicrophone;
+
+  /// When set, controls whether the output is scaled to fit the provided
+  /// width and height.
+  ///
+  /// Maps to `SCStreamConfiguration.scalesToFit`.
+  ///
+  /// When `null`, the native defaults remain unchanged.
+  final bool? scalesToFit;
+
+  /// When set, specifies the output subset in the pixel coordinate system.
+  ///
+  /// Maps to `SCStreamConfiguration.destinationRect`.
+  ///
+  /// Note: this is in the *pixel* coordinate space (not points).
+  /// When `null`, the native defaults remain unchanged.
+  final PixelRect? destinationRect;
+
+  /// When set, controls whether the stream preserves the aspect ratio of the
+  /// source pixel data.
+  ///
+  /// Maps to `SCStreamConfiguration.preservesAspectRatio`.
+  ///
+  /// When `null`, the native defaults remain unchanged.
+  final bool? preservesAspectRatio;
 
   /// Optional Core Video pixel format (`CVPixelFormatType` as `int`). `null`
   /// or `0` = default. Full list of `kCVPixelFormatType_*` values:

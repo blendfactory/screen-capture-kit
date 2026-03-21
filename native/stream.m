@@ -711,6 +711,11 @@ static void ensureStreamRegistry(void) {
 /// frame_rate: target fps; 0 or invalid uses 60.
 /// src_x, src_y, src_width, src_height: source rect in content points; if
 /// src_width > 0 and src_height > 0, config.sourceRect is set for region capture.
+/// scales_to_fit: -1 to keep native defaults, otherwise 1/0 to set config.scalesToFit.
+/// dest_x, dest_y, dest_width, dest_height: destination rect in pixels; if
+/// dest_width > 0 and dest_height > 0, config.destinationRect is set.
+/// preserves_aspect_ratio: -1 to keep native defaults, otherwise 1/0 to set
+/// config.preservesAspectRatio (macOS 14+).
 /// shows_cursor: 1 to include cursor in capture, 0 to hide.
 /// queue_depth: frame queue depth (1–8); 0 or invalid uses 5.
 /// captures_audio: 1 to capture system audio, 0 to disable.
@@ -724,6 +729,10 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                                 int frame_rate,
                                 double src_x, double src_y,
                                 double src_width, double src_height,
+                                int scales_to_fit,
+                                double dest_x, double dest_y,
+                                double dest_width, double dest_height,
+                                int preserves_aspect_ratio,
                                 int shows_cursor, int queue_depth,
                                 int captures_audio, int excludes_current_process_audio,
                                 int capture_microphone,
@@ -747,6 +756,17 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
   }
   if (src_width > 0 && src_height > 0) {
     config.sourceRect = CGRectMake(src_x, src_y, src_width, src_height);
+  }
+  if (scales_to_fit != -1) {
+    config.scalesToFit = (scales_to_fit != 0);
+  }
+  if (dest_width > 0 && dest_height > 0) {
+    config.destinationRect = CGRectMake(dest_x, dest_y, dest_width, dest_height);
+  }
+  if (preserves_aspect_ratio != -1) {
+    if (@available(macos 14.0, *)) {
+      config.preservesAspectRatio = (preserves_aspect_ratio != 0);
+    }
   }
   config.showsCursor = (shows_cursor != 0);
   config.minimumFrameInterval = CMTimeMake(1, fps);
@@ -856,6 +876,10 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
                                 int frame_rate,
                                 double src_x, double src_y,
                                 double src_width, double src_height,
+                                int scales_to_fit,
+                                double dest_x, double dest_y,
+                                double dest_width, double dest_height,
+                                int preserves_aspect_ratio,
                                 int shows_cursor, int queue_depth,
                                 int captures_audio, int excludes_current_process_audio,
                                 int capture_microphone,
@@ -882,6 +906,17 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
   }
   if (src_width > 0 && src_height > 0) {
     config.sourceRect = CGRectMake(src_x, src_y, src_width, src_height);
+  }
+  if (scales_to_fit != -1) {
+    config.scalesToFit = (scales_to_fit != 0);
+  }
+  if (dest_width > 0 && dest_height > 0) {
+    config.destinationRect = CGRectMake(dest_x, dest_y, dest_width, dest_height);
+  }
+  if (preserves_aspect_ratio != -1) {
+    if (@available(macos 14.0, *)) {
+      config.preservesAspectRatio = (preserves_aspect_ratio != 0);
+    }
   }
   config.showsCursor = (shows_cursor != 0);
   config.minimumFrameInterval = CMTimeMake(1, fps);
