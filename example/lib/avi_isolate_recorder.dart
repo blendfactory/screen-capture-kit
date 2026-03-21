@@ -13,6 +13,10 @@ const cvPixelFormatType32Bgra = 0x42475241;
 /// [onBeforeCancelFrameSubscription] runs in `finally` **before** the frame
 /// subscription is canceled (which stops the native capture stream). Use this
 /// to finalize parallel audio writers while the stream is still active.
+///
+/// When [deferDimensionsFromFirstFrame] is true, pass [width] and [height] as
+/// `0`; the AVI header is written after the first [CapturedFrame] so picker or
+/// variable-size capture does not need a known resolution up front.
 Future<void> recordFramesToAviIsolate({
   required Stream<CapturedFrame> frames,
   required File outputFile,
@@ -20,6 +24,7 @@ Future<void> recordFramesToAviIsolate({
   required double? durationSeconds,
   required int width,
   required int height,
+  bool deferDimensionsFromFirstFrame = false,
   Future<void> Function()? onBeforeCancelFrameSubscription,
   void Function(int captured, int dropped, int inFlight)? onCaptureStopped,
 }) async {
@@ -98,6 +103,7 @@ Future<void> recordFramesToAviIsolate({
     'width': width,
     'height': height,
     'fps': fps,
+    'deferHeaderUntilFirstFrame': deferDimensionsFromFirstFrame,
   });
 
   final sigSub = ProcessSignal.sigint.watch().listen((_) => requestStop());
@@ -115,7 +121,8 @@ Future<void> recordFramesToAviIsolate({
           requestStop,
         );
       }
-      if (frame.size.width != width || frame.size.height != height) {
+      if (!deferDimensionsFromFirstFrame &&
+          (frame.size.width != width || frame.size.height != height)) {
         return;
       }
 
@@ -132,6 +139,8 @@ Future<void> recordFramesToAviIsolate({
         'type': 'frame',
         'bgra': ttd,
         'bytesPerRow': frame.bytesPerRow,
+        'frameWidth': frame.size.width,
+        'frameHeight': frame.size.height,
       });
     },
     onError: (Object e, StackTrace st) {
@@ -317,7 +326,11 @@ void _aviWriterIsolateMain(SendPort mainSendPort) {
   }
 
   void patchAndFinalize() {
-    if (raf == null || width == null || height == null || fps == null) {
+    if (raf == null ||
+        width == null ||
+        height == null ||
+        fps == null ||
+        packedFrameBytes == null) {
       return;
     }
     final packedFrame = packedFrameBytes!;
@@ -361,9 +374,13 @@ void _aviWriterIsolateMain(SendPort mainSendPort) {
       width = message['width'] as int;
       height = message['height'] as int;
       fps = message['fps'] as int;
+      final deferHeader =
+          message['deferHeaderUntilFirstFrame'] as bool? ?? false;
       final outputPath = message['outputPath'] as String;
       raf = await File(outputPath).open(mode: FileMode.write);
-      writeHeader();
+      if (!deferHeader && width! > 0 && height! > 0) {
+        writeHeader();
+      }
       return;
     }
 
@@ -374,6 +391,20 @@ void _aviWriterIsolateMain(SendPort mainSendPort) {
       final bytesPerRow = message['bytesPerRow'] as int;
       final ttd = message['bgra'] as TransferableTypedData;
       final bgra = ttd.materialize().asUint8List();
+      final frameW = message['frameWidth'] as int?;
+      final frameH = message['frameHeight'] as int?;
+      if (packedFrameBytes == null &&
+          frameW != null &&
+          frameH != null &&
+          frameW > 0 &&
+          frameH > 0) {
+        width = frameW;
+        height = frameH;
+        writeHeader();
+      }
+      if (packedFrameBytes == null) {
+        return;
+      }
 
       final dataStartAbsolute = raf!.positionSync() + 8;
       raf!.writeFromSync(_fourccBytes('00db'));

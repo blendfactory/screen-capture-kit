@@ -6,7 +6,8 @@ Sample command-line app demonstrating display, window, region, and system picker
 
 - macOS **12.3+** (some flows need **14+**, e.g. screenshot / system picker)
 - **Screen Recording** permission (System Settings → Privacy & Security)
-- **ffmpeg** on `PATH` for `record_display_with_audio` (e.g. `brew install ffmpeg`)
+- **ffmpeg** on `PATH` for `record_display_with_audio` / `record_picker_with_audio`
+  (e.g. `brew install ffmpeg`)
 - **Microphone** permission for microphone capture in `record_display_with_audio`
 - [Dart SDK](https://dart.dev/get-dart) **3.10+** (aligned with the main package)
 
@@ -76,6 +77,35 @@ dart run bin/record_display_with_audio.dart --out ./recordings --duration 10 --d
 dart run bin/record_display_with_audio.dart ./recordings --keep-temp
 ```
 
+### Content-sharing picker → MP4 (CLI, ffmpeg, macOS 14+)
+
+`bin/record_picker_with_audio.dart` opens the **system content-sharing picker**
+(`presentContentSharingPicker`), then records the chosen display, window, or app
+with **BGRA AVI** + optional **system audio** and/or **microphone**, and muxes
+to **H.264 + AAC** MP4 with ffmpeg (same pattern as `record_display_with_audio`).
+
+- **FPS**: defaults to **120** and is **capped** by the highest known display
+  refresh rate from `ShareableContent` (same idea as the display record CLIs).
+- **Audio**: `--audio none|system|mic|both` (default `both` when omitted).
+- **Size**: omit `--width` / `--height` to use **native / first-frame** dimensions
+  (AVI header is written after the first video sample). Or pass both for a fixed
+  scale hint.
+
+Requirements: **macOS 14+** for the picker; **macOS 15+** for microphone;
+**ffmpeg** on `PATH`.
+
+The picker is **system UI** (often surfaced via **Control Center** in the menu
+bar, per Apple’s ScreenCaptureKit design). If nothing appears in front of the
+terminal, open **Control Center** and look for the screen-sharing / capture
+controls.
+
+```bash
+dart pub get
+dart run bin/record_picker_with_audio.dart --out ./recordings --duration 10
+dart run bin/record_picker_with_audio.dart ./recordings --audio system --fps 120
+dart run bin/record_picker_with_audio.dart ./recordings --width 1920 --height 1080
+```
+
 ## Project layout
 
 | Path | Role |
@@ -84,6 +114,7 @@ dart run bin/record_display_with_audio.dart ./recordings --keep-temp
 | `bin/screenshot_display.dart` | CLI: pick a display, save one PNG to a folder |
 | `bin/record_display.dart` | CLI: pick a display, record uncompressed AVI (Dart only) |
 | `bin/record_display_with_audio.dart` | CLI: display + system + mic → MP4 via ffmpeg |
+| `bin/record_picker_with_audio.dart` | CLI: picker + optional audio → MP4 via ffmpeg |
 | `lib/avi_isolate_recorder.dart` | Shared isolate-based AVI writer for the record CLIs |
 | `lib/pcm_wav_writer.dart` | PCM → WAV helper for `record_display_with_audio` |
 | `pubspec.yaml` | Depends on `screen_capture_kit` via `path: ../` |
