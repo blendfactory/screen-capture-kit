@@ -11,7 +11,7 @@ static int64_t _nextFilterId = 1;
 
 static void ensureFilterRegistry(void) {
   if (_filterRegistry == nil) {
-    _filterRegistry = [NSMutableDictionary dictionary];
+    _filterRegistry = [[NSMutableDictionary alloc] init];
   }
 }
 
@@ -198,7 +198,9 @@ SCContentFilter* get_content_filter(int64_t filter_id) {
   if (filter_id <= 0 || _filterRegistry == nil) {
     return nil;
   }
-  return _filterRegistry[@(filter_id)];
+  @synchronized (_filterRegistry) {
+    return _filterRegistry[@(filter_id)];
+  }
 }
 
 /// Registers an existing SCContentFilter and returns a new filter id.

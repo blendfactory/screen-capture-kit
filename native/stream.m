@@ -651,10 +651,10 @@ char* stream_get_last_error(void) {
 
 static void ensureStreamRegistry(void) {
   if (_streamRegistry == nil) {
-    _streamRegistry = [NSMutableDictionary dictionary];
-    _handlerRegistry = [NSMutableDictionary dictionary];
-    _audioHandlerRegistry = [NSMutableDictionary dictionary];
-    _microphoneHandlerRegistry = [NSMutableDictionary dictionary];
+    _streamRegistry = [[NSMutableDictionary alloc] init];
+    _handlerRegistry = [[NSMutableDictionary alloc] init];
+    _audioHandlerRegistry = [[NSMutableDictionary alloc] init];
+    _microphoneHandlerRegistry = [[NSMutableDictionary alloc] init];
   }
 }
 
