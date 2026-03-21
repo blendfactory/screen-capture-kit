@@ -33,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`_kMaxAudioChunksPerPollBatch` 24 → 96) so the isolate is less likely to lag
   the microphone queue.
 
+### Removed
+
+- **Example `example.dart`**: Removed the interactive kitchen-sink demo.
+  Display/window/region capture and screenshots are covered by the dedicated
+  CLI examples (`screenshot_display`, `record_display`, etc.).
+
 ### Fixed
 
 - **`presentContentSharingPicker` deadlock (macOS)**: The API was wrapped in

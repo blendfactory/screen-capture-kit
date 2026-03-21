@@ -1,6 +1,6 @@
 # screen_capture_kit example
 
-Sample command-line app demonstrating display, window, region, and system picker capture with `screen_capture_kit`.
+Sample command-line apps demonstrating display capture, screenshot, audio recording, and system picker capture with `screen_capture_kit`.
 
 ## Requirements
 
@@ -17,10 +17,7 @@ From this directory:
 
 ```bash
 dart pub get
-dart run bin/example.dart
 ```
-
-The app prints menu-style options to stdout. Follow the prompts; grant permissions when macOS asks.
 
 ### Display screenshot to PNG (CLI)
 
@@ -110,7 +107,6 @@ dart run bin/record_picker_with_audio.dart ./recordings --width 1920 --height 10
 
 | Path | Role |
 |------|------|
-| `bin/example.dart` | Interactive demo entrypoint |
 | `bin/screenshot_display.dart` | CLI: pick a display, save one PNG to a folder |
 | `bin/record_display.dart` | CLI: pick a display, record uncompressed AVI (Dart only) |
 | `bin/record_display_with_audio.dart` | CLI: display + system + mic → MP4 via ffmpeg |
