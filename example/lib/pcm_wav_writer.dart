@@ -6,6 +6,41 @@ import 'dart:typed_data';
 
 import 'package:screen_capture_kit/screen_capture_kit.dart';
 
+/// Core Audio / WAV IEEE float PCM is little-endian. Replace non-finite
+/// samples and clamp to **[-1, 1]** so ffmpeg AAC does not fail on extreme
+/// float values (e.g. microphone buffers scaled to ~FLT_MAX).
+Uint8List _coerceFiniteFloat32Pcm(Uint8List pcm) {
+  if (pcm.length < 4 || pcm.length % 4 != 0) {
+    return pcm;
+  }
+  final bd = ByteData.sublistView(pcm);
+  var dirty = false;
+  for (var i = 0; i < pcm.length; i += 4) {
+    final v = bd.getFloat32(i, Endian.little);
+    if (!v.isFinite || v > 1.0 || v < -1.0) {
+      dirty = true;
+      break;
+    }
+  }
+  if (!dirty) {
+    return pcm;
+  }
+  final out = Uint8List(pcm.length);
+  final outBd = ByteData.sublistView(out);
+  for (var i = 0; i < pcm.length; i += 4) {
+    var v = bd.getFloat32(i, Endian.little);
+    if (!v.isFinite) {
+      v = 0.0;
+    } else if (v > 1.0) {
+      v = 1.0;
+    } else if (v < -1.0) {
+      v = -1.0;
+    }
+    outBd.setFloat32(i, v, Endian.little);
+  }
+  return out;
+}
+
 /// Appends interleaved PCM from [CapturedAudio] into a WAV file (sync I/O).
 class PcmWavWriter {
   PcmWavWriter(this._file);
@@ -56,8 +91,11 @@ class PcmWavWriter {
     }
 
     if (chunk.pcmData.isNotEmpty) {
-      _raf!.writeFromSync(chunk.pcmData);
-      _pcmBytes += chunk.pcmData.length;
+      final bytes = chunk.format == 'f32'
+          ? _coerceFiniteFloat32Pcm(chunk.pcmData)
+          : chunk.pcmData;
+      _raf!.writeFromSync(bytes);
+      _pcmBytes += bytes.length;
     }
   }
 

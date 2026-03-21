@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking**: Identifier extension types **`DisplayId`**, **`FilterId`**, **`ProcessId`**, and **`WindowId`** no longer define getters that duplicated the primary field (e.g. `filterId`, `displayId`). Use **`value`** for the underlying `int`, consistent with **`BundleId`** using **`value`** for the `String`.
+- **Breaking**: **`DisplayId`**, **`FilterId`**, and **`WindowId`** factories require **`value > 0`**; **`ProcessId`** requires **`value >= 0`**. Invalid values throw **`ArgumentError`**. These types are no longer **`const`**-constructible (use e.g. `DisplayId(1)`).
+- **`PixelRect`**: Factory validates **finite** `x`, `y`, `width`, `height` and **non-negative** `width`/`height`; throws **`ArgumentError`** otherwise.
+
+### Fixed
+
+- **macOS audio JSON (`_parseAudioJson`)**: When native sends **`format: raw`** (e.g. non–Linear PCM path in the bridge), the Dart layer now maps it to **`f32`** or **`s16`** using **`numSamples`**, **`channelCount`**, and PCM byte length so `CapturedAudio.format` is always a concrete label for interleaved PCM.
+- **Example `pcm_wav_writer`**: Float32 samples written to WAV are **sanitized** (non-finite values → `0`; amplitudes **clamped to [-1, 1]**) so **`record_display_with_audio`** can mux to AAC/MP4 with ffmpeg when microphone buffers contain extreme float magnitudes (which previously caused AAC encode failures).
 
 ## [0.0.5] - 2026-03-21
 

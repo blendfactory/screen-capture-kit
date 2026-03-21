@@ -946,6 +946,40 @@ String? _getNextMicrophoneJson(int streamId, int timeoutMs) {
   }
 }
 
+/// When native sends `format: raw` (e.g. non-LinearPCM path), infer `f32` or
+/// `s16` from buffer size and [numFrames] (`CMSampleBufferGetNumSamples`).
+String _normalizeCapturedAudioFormat({
+  required String format,
+  required int channelCount,
+  required Uint8List pcmData,
+  required int? numFrames,
+}) {
+  if (format != 'raw') {
+    return format;
+  }
+  if (pcmData.isEmpty || channelCount <= 0) {
+    return 'f32';
+  }
+  if (numFrames == null || numFrames <= 0) {
+    return 'f32';
+  }
+  final interleavedSamples = numFrames * channelCount;
+  if (interleavedSamples == 0) {
+    return 'f32';
+  }
+  if (pcmData.length % interleavedSamples != 0) {
+    return 'f32';
+  }
+  final bytesPerSample = pcmData.length ~/ interleavedSamples;
+  if (bytesPerSample == 4) {
+    return 'f32';
+  }
+  if (bytesPerSample == 2) {
+    return 's16';
+  }
+  return 'f32';
+}
+
 CapturedAudio? _parseAudioJson(String jsonStr) {
   final json = jsonDecode(jsonStr) as Map<String, dynamic>;
   if (json['error'] == true) {
@@ -957,8 +991,14 @@ CapturedAudio? _parseAudioJson(String jsonStr) {
       : Uint8List(0);
   final sampleRate = (json['sampleRate'] as num?)?.toDouble() ?? 0.0;
   final channelCount = (json['channelCount'] as num?)?.toInt() ?? 0;
-  final format = json['format'] as String? ?? 'raw';
+  final rawFormat = json['format'] as String? ?? 'raw';
   final frameCount = (json['numSamples'] as num?)?.toInt();
+  final format = _normalizeCapturedAudioFormat(
+    format: rawFormat,
+    channelCount: channelCount,
+    pcmData: pcmData,
+    numFrames: frameCount,
+  );
   final presentationTimeSeconds = (json['presentationTimeSeconds'] as num?)
       ?.toDouble();
   final durationSeconds = (json['durationSeconds'] as num?)?.toDouble();
