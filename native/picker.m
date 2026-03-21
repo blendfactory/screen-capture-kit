@@ -11,11 +11,11 @@
 static int64_t _pickerResultFilterId = 0;
 static int _pickerCancelled = 1;
 static id _pickerObserver = nil;
-/// Set to YES by observer when the modal event loop should stop (replaces CFRunLoopStop).
+/// Set to YES by observer when the sleep-polling loop should stop.
 static volatile BOOL _pickerEventLoopDone = NO;
 static BOOL _pickerDidFinishLaunching = NO;
 
-/// Async picker session: Dart must not block in FFI while main runs AppKit (deadlock).
+/// Async picker session state shared with Dart via picker_poll().
 static volatile int _pickerAsyncBusy = 0;
 static volatile int _pickerAsyncReady = 0;
 static char* _pickerAsyncResultJson = NULL;
@@ -35,6 +35,7 @@ API_AVAILABLE(macos(14.0))
     [(SCContentSharingPicker *)picker removeObserver:(id<SCContentSharingPickerObserver>)_pickerObserver];
     _pickerObserver = nil;
   }
+  __sync_synchronize();
   _pickerEventLoopDone = YES;
 }
 
@@ -45,6 +46,7 @@ API_AVAILABLE(macos(14.0))
     [(SCContentSharingPicker *)picker removeObserver:(id<SCContentSharingPickerObserver>)_pickerObserver];
     _pickerObserver = nil;
   }
+  __sync_synchronize();
   _pickerEventLoopDone = YES;
 }
 
@@ -57,6 +59,7 @@ API_AVAILABLE(macos(14.0))
     [p removeObserver:(id<SCContentSharingPickerObserver>)_pickerObserver];
     _pickerObserver = nil;
   }
+  __sync_synchronize();
   _pickerEventLoopDone = YES;
 }
 
@@ -107,11 +110,14 @@ static char* picker_make_result_json(void) {
   return NULL;
 }
 
-/// Starts the content-sharing picker. The modal session runs on the **calling thread** (no
-/// `dispatch_sync` to the main queue). `present` may show UI; `nextEventMatchingMask` is only
-/// documented for the main thread and can raise `NSInternalInconsistencyException` off it.
-/// Returns 0 on success, -1 if a session is already in progress.
-/// Blocks until the user dismisses the picker (or timeout). Requires macOS 14.0+ for the real picker.
+/// Starts the content-sharing picker asynchronously. Blocks the calling thread
+/// (sleep-polling) until the user dismisses the picker or the 5-minute timeout
+/// elapses. Returns 0 on success, -1 if a session is already in progress.
+/// Requires macOS 14.0+ for the real picker.
+///
+/// The observer callbacks are delivered by the system (via GCD), so the waiting
+/// loop uses a simple sleep instead of `-[NSApplication nextEventMatchingMask:…]`
+/// which is restricted to the main thread.
 int picker_start(const char* _Nullable allowed_modes_json) {
   if (@available(macOS 14.0, *)) {
     if (_pickerAsyncBusy) {
@@ -140,44 +146,31 @@ int picker_start(const char* _Nullable allowed_modes_json) {
     cfg.allowedPickerModes = modes;
     picker.defaultConfiguration = cfg;
 
-    void (^runPickerSession)(void) = ^{
-      NSApplication* app = [NSApplication sharedApplication];
-      if ([app activationPolicy] != NSApplicationActivationPolicyRegular) {
-        BOOL regularOk = [app setActivationPolicy:NSApplicationActivationPolicyRegular];
-        if (!regularOk) {
-          (void)[app setActivationPolicy:NSApplicationActivationPolicyAccessory];
-        }
+    NSApplication* app = [NSApplication sharedApplication];
+    if ([app activationPolicy] != NSApplicationActivationPolicyRegular) {
+      BOOL regularOk = [app setActivationPolicy:NSApplicationActivationPolicyRegular];
+      if (!regularOk) {
+        (void)[app setActivationPolicy:NSApplicationActivationPolicyAccessory];
       }
-      if (!_pickerDidFinishLaunching) {
-        [NSApp finishLaunching];
-        _pickerDidFinishLaunching = YES;
+    }
+    if (!_pickerDidFinishLaunching) {
+      [NSApp finishLaunching];
+      _pickerDidFinishLaunching = YES;
+    }
+    [app activateIgnoringOtherApps:YES];
+
+    picker.maximumStreamCount = @1;
+    picker.active = YES;
+    [picker present];
+
+    NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:300];
+    while (!_pickerEventLoopDone) {
+      if ([[NSDate date] compare:deadline] == NSOrderedDescending) {
+        _pickerCancelled = 1;
+        break;
       }
-      [app activateIgnoringOtherApps:YES];
-
-      picker.maximumStreamCount = @1;
-      picker.active = YES;
-      [picker present];
-
-      NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:300];
-      while (!_pickerEventLoopDone) {
-        if ([[NSDate date] compare:deadline] == NSOrderedDescending) {
-          _pickerCancelled = 1;
-          break;
-        }
-        @autoreleasepool {
-          NSDate* until = [NSDate dateWithTimeIntervalSinceNow:0.25];
-          NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                              untilDate:until
-                                                 inMode:NSDefaultRunLoopMode
-                                                dequeue:YES];
-          if (event) {
-            [NSApp sendEvent:event];
-          }
-        }
-      }
-    };
-
-    runPickerSession();
+      [NSThread sleepForTimeInterval:0.1];
+    }
     if (_pickerObserver != nil) {
       [picker removeObserver:(id<SCContentSharingPickerObserver>)_pickerObserver];
       _pickerObserver = nil;
