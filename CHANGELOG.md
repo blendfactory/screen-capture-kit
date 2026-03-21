@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-03-21
+
+First **stable** release under [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Prior **0.0.x** releases were pre-release; breaking API changes since **0.0.5** are summarized under **Changed** below.
+
 ### Added
 
 - **`CaptureResolution`** (`automatic`, `best`, `nominal`) and **`captureScreenshot(..., captureResolution:)`** — maps to [`SCStreamConfiguration.captureResolution`](https://developer.apple.com/documentation/screencapturekit/scstreamconfiguration/captureresolution) for [`SCScreenshotManager.captureImage`](https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager/captureimage(contentfilter:configuration:completionhandler:)) on macOS 14+.
@@ -121,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stub implementation on non-macOS platforms (throws `UnsupportedError`).
 - Dart SDK constraint `^3.10.0` and dependency set (code_assets, ffi, hooks, meta, native_toolchain_c; mocktail, test for dev).
 
-[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.5...HEAD
+[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.5...v1.0.0
 [0.0.5]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.4
 [0.0.3]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.3
