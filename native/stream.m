@@ -978,7 +978,7 @@ int stream_set_picker_configuration(int64_t stream_id, const char* _Nullable con
     }
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wobjc-method-access"
-    [[SCContentSharingPicker shared] setConfiguration:config forStream:stream];
+    [[SCContentSharingPicker sharedPicker] setConfiguration:config forStream:stream];
 #pragma clang diagnostic pop
   } else {
     return -1;
