@@ -43,10 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   requires for AppKit).
 
 - **`picker_present` scheduling (macOS)**: **`picker_start`** runs the modal picker
-  and `nextEventMatchingMask` loop on the **AppKit main thread** (`dispatch_sync`
-  to the main queue when the FFI thread is not already main). Calling those APIs
-  from a background thread raised `NSInternalInconsistencyException`. **`picker_poll`**
-  returns the result JSON after **`picker_start`** completes.
+  and event loop on the **FFI / calling thread** (no GCD `dispatch_sync` to the
+  main queue; main-queue `dispatch_sync` prevented the picker UI from appearing).
+  **`picker_poll`** returns the result JSON
+  after **`picker_start`** completes. Off-main `nextEventMatchingMask` can still
+  assert; see native comments in `picker.m`.
 
 - **Native content-sharing picker (macOS)**: Use Objective-C API `+[SCContentSharingPicker sharedPicker]` and `defaultConfiguration.allowedPickerModes` + `present` instead of nonexistent `+[SCContentSharingPicker shared]` and `presentUsing:` (Swift-only names), which caused `NSInvalidArgumentException` at runtime.
 

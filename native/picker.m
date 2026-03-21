@@ -107,8 +107,9 @@ static char* picker_make_result_json(void) {
   return NULL;
 }
 
-/// Starts the content-sharing picker. The modal session and `nextEventMatchingMask` run on the
-/// **AppKit main thread** (`dispatch_sync` when the caller is not already on that thread).
+/// Starts the content-sharing picker. The modal session runs on the **calling thread** (no
+/// `dispatch_sync` to the main queue). `present` may show UI; `nextEventMatchingMask` is only
+/// documented for the main thread and can raise `NSInternalInconsistencyException` off it.
 /// Returns 0 on success, -1 if a session is already in progress.
 /// Blocks until the user dismisses the picker (or timeout). Requires macOS 14.0+ for the real picker.
 int picker_start(const char* _Nullable allowed_modes_json) {
@@ -176,18 +177,10 @@ int picker_start(const char* _Nullable allowed_modes_json) {
       }
     };
 
-    void (^sessionAndCleanup)(void) = ^{
-      runPickerSession();
-      if (_pickerObserver != nil) {
-        [picker removeObserver:(id<SCContentSharingPickerObserver>)_pickerObserver];
-        _pickerObserver = nil;
-      }
-    };
-
-    if ([NSThread isMainThread]) {
-      sessionAndCleanup();
-    } else {
-      dispatch_sync(dispatch_get_main_queue(), sessionAndCleanup);
+    runPickerSession();
+    if (_pickerObserver != nil) {
+      [picker removeObserver:(id<SCContentSharingPickerObserver>)_pickerObserver];
+      _pickerObserver = nil;
     }
 
     char* json = picker_make_result_json();

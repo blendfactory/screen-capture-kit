@@ -104,9 +104,8 @@ class ScreenCaptureKit {
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/sccontentsharingpicker
   ///
-  /// **Threading:** Native runs the AppKit modal on the **main thread** via
-  /// GCD when the caller is not already on that thread (`dispatch_sync` to the
-  /// main queue in `picker_start`).
+  /// **Threading:** Native runs the picker session on the **calling isolate’s
+  /// thread** (see `picker_start` in `native/picker.m`).
   Future<FilterId?> presentContentSharingPicker({
     List<ContentSharingPickerMode>? allowedModes,
   }) {
