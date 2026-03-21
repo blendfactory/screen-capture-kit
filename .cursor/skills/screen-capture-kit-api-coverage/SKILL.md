@@ -73,7 +73,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | API | Status | Notes |
 |-----|--------|-------|
 | SCScreenshotManager.captureImage | ✅ | captureScreenshot, macOS 14+ |
-| SCScreenshotConfiguration | ✅ | width/height via captureScreenshot |
+| SCScreenshotConfiguration | ✅ | width/height via captureScreenshot; `captureResolution` via `SCStreamConfiguration` (see below) |
 
 ### System picker
 
@@ -123,11 +123,12 @@ Items from the framework spec that are not in the checklist above. Low priority 
 | Stream config | scalesToFit, destinationRect, preservesAspectRatio | ❌ | |
 | Stream config | colorMatrix, backgroundColor, shouldBeOpaque | ❌ | |
 | Stream config | capturesShadowsOnly, ignoreShadows*, ignoreGlobalClip* | ❌ | |
-| Stream config | captureResolution, sampleRate, channelCount | ❌ | sampleRate/channelCount from device; we don't set |
+| Stream config | captureResolution (live SCStream), sampleRate, channelCount | ❌ | Screenshot sets `captureResolution` via `captureScreenshot`; live stream does not. sampleRate/channelCount from device; we don't set |
 | Stream config | streamName, presenterOverlayPrivacyAlertSetting | ❌ | |
 | Stream | SCStreamDelegate | ❌ | Lifecycle callbacks not bridged to Dart |
 | Stream | SCStreamFrameInfo / SCFrameStatus | ⚠️ | Used internally; not exposed as Dart API |
-| Screenshot | SCScreenshotConfiguration (image quality) | ⚠️ | width/height only; image quality not exposed |
+| Screenshot | `SCStreamConfiguration.captureResolution` (screenshot path) | ✅ | `CaptureResolution` + `captureScreenshot(..., captureResolution:)`; macOS 14+ |
+| Screenshot | SCScreenshotConfiguration (macOS 26+ `captureScreenshotWithFilter:`) | ❌ | Separate API from `captureImage`; not bridged yet |
 
 ## Usage
 

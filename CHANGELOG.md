@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`CaptureResolution`** (`automatic`, `best`, `nominal`) and **`captureScreenshot(..., captureResolution:)`** — maps to [`SCStreamConfiguration.captureResolution`](https://developer.apple.com/documentation/screencapturekit/scstreamconfiguration/captureresolution) for [`SCScreenshotManager.captureImage`](https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager/captureimage(contentfilter:configuration:completionhandler:)) on macOS 14+.
+
 ### Changed
 
 - **Breaking**: Identifier extension types **`DisplayId`**, **`FilterId`**, **`ProcessId`**, and **`WindowId`** no longer define getters that duplicated the primary field (e.g. `filterId`, `displayId`). Use **`value`** for the underlying `int`, consistent with **`BundleId`** using **`value`** for the `String`.

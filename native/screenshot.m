@@ -17,7 +17,8 @@ static void ensureCoreGraphicsInit(void) {
 /// Returns a malloc'd JSON string. On success: {"error":false,"pngBase64":"..."}.
 /// On error: {"error":true,"domain":"...","code":N,"localizedDescription":"..."}.
 /// Caller must free with free().
-char* capture_screenshot(int64_t filter_id, int width, int height) {
+/// [capture_resolution] is SCCaptureResolutionType: 0 automatic, 1 best, 2 nominal (macOS 14+).
+char* capture_screenshot(int64_t filter_id, int width, int height, int capture_resolution) {
   ensureCoreGraphicsInit();
 
   SCContentFilter* filter = get_content_filter(filter_id);
@@ -40,6 +41,11 @@ char* capture_screenshot(int64_t filter_id, int width, int height) {
   if (width > 0 && height > 0) {
     config.width = width;
     config.height = height;
+  }
+  if (@available(macOS 14.0, *)) {
+    if (capture_resolution >= 0 && capture_resolution <= 2) {
+      config.captureResolution = (SCCaptureResolutionType)capture_resolution;
+    }
   }
 
   __block char* result = NULL;

@@ -10,6 +10,7 @@ import 'package:screen_capture_kit/src/domain/entities/running_application.dart'
 import 'package:screen_capture_kit/src/domain/entities/shareable_content.dart';
 import 'package:screen_capture_kit/src/domain/entities/window.dart';
 import 'package:screen_capture_kit/src/domain/errors/screen_capture_kit_exception.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/capture_resolution.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
@@ -70,11 +71,16 @@ external int _createContentFilterForDisplayExcludingWindows(
 external void _releaseContentFilter(int filterId);
 
 /// Captures a screenshot. Returns malloc'd JSON. Caller must free.
-@Native<Pointer<Utf8> Function(Int64, Int32, Int32)>(
+@Native<Pointer<Utf8> Function(Int64, Int32, Int32, Int32)>(
   symbol: 'capture_screenshot',
   assetId: 'package:screen_capture_kit/screen_capture_kit.dart',
 )
-external Pointer<Utf8> _captureScreenshot(int filterId, int width, int height);
+external Pointer<Utf8> _captureScreenshot(
+  int filterId,
+  int width,
+  int height,
+  int captureResolution,
+);
 
 @Native<
   Int64 Function(
@@ -463,6 +469,7 @@ void releaseFilterImpl(FilterId handle) {
 CapturedImage captureScreenshotImpl(
   FilterId filterHandle, {
   FrameSize frameSize = const FrameSize.zero(),
+  CaptureResolution captureResolution = CaptureResolution.automatic,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -475,6 +482,7 @@ CapturedImage captureScreenshotImpl(
     filterHandle.value,
     frameSize.width,
     frameSize.height,
+    captureResolution.index,
   );
   if (ptr == nullptr) {
     throw const ScreenCaptureKitException(

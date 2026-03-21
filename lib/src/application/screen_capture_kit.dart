@@ -4,6 +4,7 @@ import 'package:screen_capture_kit/src/domain/entities/display.dart';
 import 'package:screen_capture_kit/src/domain/entities/shareable_content.dart';
 import 'package:screen_capture_kit/src/domain/entities/window.dart';
 import 'package:screen_capture_kit/src/domain/errors/screen_capture_kit_exception.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/capture_resolution.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_audio.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
@@ -120,15 +121,22 @@ class ScreenCaptureKit {
   /// [frameSize] optionally sets output dimensions; use [FrameSize.zero] to
   /// let the native layer choose.
   ///
+  /// [captureResolution] sets
+  /// [`SCStreamConfiguration.captureResolution`](https://developer.apple.com/documentation/screencapturekit/scstreamconfiguration/captureresolution)
+  /// on the configuration passed to the screenshot API (macOS 14+). Ignored on
+  /// older systems where screenshot capture is unavailable.
+  ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager/captureimage(contentfilter:configuration:completionhandler:)
   Future<CapturedImage> captureScreenshot(
     FilterId filterHandle, {
     FrameSize frameSize = const FrameSize.zero(),
+    CaptureResolution captureResolution = CaptureResolution.automatic,
   }) {
     return Isolate.run(
       () => captureScreenshotImpl(
         filterHandle,
         frameSize: frameSize,
+        captureResolution: captureResolution,
       ),
     );
   }

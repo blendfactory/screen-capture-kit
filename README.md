@@ -13,7 +13,7 @@ It enables screen, window, and display capture on macOS with minimal overhead by
 - **Display capture** — Capture entire displays or regions
 - **Window capture** — Capture individual windows
 - **Region capture** — Crop to a specific area via `sourceRect`
-- **Screenshot** — Single-frame capture (macOS 14+)
+- **Screenshot** — Single-frame capture (macOS 14+), optional `captureResolution` (automatic / best / nominal)
 - **System picker** — Native content-sharing picker UI (macOS 14+)
 - **Audio capture** — System audio (macOS 13+), optional microphone (macOS 15+)
 - **Cursor capture** — Include or hide the system cursor

@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:screen_capture_kit/src/domain/entities/display.dart';
 import 'package:screen_capture_kit/src/domain/entities/shareable_content.dart';
 import 'package:screen_capture_kit/src/domain/entities/window.dart';
+import 'package:screen_capture_kit/src/domain/value_objects/capture/capture_resolution.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_frame.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/captured_image.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/content_sharing_picker_mode.dart';
@@ -89,6 +90,7 @@ Future<FilterId?> presentContentSharingPickerImpl({
 CapturedImage captureScreenshotImpl(
   FilterId filterHandle, {
   FrameSize frameSize = const FrameSize.zero(),
+  CaptureResolution captureResolution = CaptureResolution.automatic,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(

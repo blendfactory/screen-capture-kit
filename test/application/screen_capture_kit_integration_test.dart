@@ -41,7 +41,10 @@ void main() {
               );
           try {
             final image = await ScreenCaptureKit()
-                .captureScreenshot(handle)
+                .captureScreenshot(
+                  handle,
+                  captureResolution: CaptureResolution.best,
+                )
                 .timeout(
                   const Duration(seconds: 10),
                   onTimeout: () =>

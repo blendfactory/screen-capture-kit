@@ -48,7 +48,10 @@ Future<void> main(List<String> args) async {
     );
 
     filter = await kit.createDisplayFilter(display);
-    final image = await kit.captureScreenshot(filter);
+    final image = await kit.captureScreenshot(
+      filter,
+      captureResolution: parsed.captureResolution,
+    );
     final file = _writePng(parsed.outputDir, display, image);
     stdout.writeln('Wrote ${file.lengthSync()} bytes to ${file.path}');
   } on ScreenCaptureKitException catch (e) {
@@ -71,17 +74,21 @@ class _ParsedArgs {
   const _ParsedArgs({
     required this.outputDir,
     this.displayOneBased,
+    this.captureResolution = CaptureResolution.automatic,
   });
 
   final Directory outputDir;
 
   /// 1-based display index when provided; otherwise interactive selection.
   final int? displayOneBased;
+
+  final CaptureResolution captureResolution;
 }
 
 _ParsedArgs? _parseArgs(List<String> args) {
   Directory? outDir;
   int? displayOneBased;
+  var quality = CaptureResolution.automatic;
 
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
@@ -108,6 +115,26 @@ _ParsedArgs? _parseArgs(List<String> args) {
       }
       continue;
     }
+    if (a == '--quality' || a == '-q') {
+      if (i + 1 >= args.length) {
+        stderr.writeln('Missing value for $a');
+        return null;
+      }
+      final raw = args[++i].toLowerCase();
+      if (raw == 'automatic' || raw == 'auto') {
+        quality = CaptureResolution.automatic;
+      } else if (raw == 'best') {
+        quality = CaptureResolution.best;
+      } else if (raw == 'nominal') {
+        quality = CaptureResolution.nominal;
+      } else {
+        stderr.writeln(
+          'Invalid --quality (use automatic, best, or nominal).',
+        );
+        return null;
+      }
+      continue;
+    }
     if (a.startsWith('-')) {
       stderr.writeln('Unknown option: $a');
       return null;
@@ -125,7 +152,11 @@ _ParsedArgs? _parseArgs(List<String> args) {
     return null;
   }
 
-  return _ParsedArgs(outputDir: outDir, displayOneBased: displayOneBased);
+  return _ParsedArgs(
+    outputDir: outDir,
+    displayOneBased: displayOneBased,
+    captureResolution: quality,
+  );
 }
 
 void _printUsage() {
@@ -143,6 +174,8 @@ void _printUsage() {
     '(created if missing)\n'
     '  --display, -d <n>   1-based display index '
     '(omit to choose interactively)\n'
+    '  --quality, -q <m>   automatic|best|nominal '
+    '(SCStreamConfiguration.captureResolution; default automatic)\n'
     '  --help, -h          Show this help\n'
     '\n'
     'Requires macOS 14+ for captureScreenshot. '

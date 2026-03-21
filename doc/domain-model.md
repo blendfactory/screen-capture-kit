@@ -102,6 +102,7 @@ extension type FilterId._(int value) {
 |--------------|----------------|---------|
 | **FrameRate** | `(int fps)` | Target capture frame rate in FPS (`1..120`); invalid values throw [`ArgumentError`]. |
 | **QueueDepth** | `(int depth)` | Capture stream frame queue depth (`1..8`); invalid values throw [`ArgumentError`]. |
+| **CaptureResolution** | enum (`automatic`, `best`, `nominal`) | Screenshot output resolution / quality (`SCCaptureResolutionType` on `SCStreamConfiguration` for `captureScreenshot`, macOS 14+). |
 
 ### Capture result value objects (immutable classes)
 

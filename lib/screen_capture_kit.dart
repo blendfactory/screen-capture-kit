@@ -10,6 +10,7 @@ export 'src/domain/entities/running_application.dart';
 export 'src/domain/entities/shareable_content.dart';
 export 'src/domain/entities/window.dart';
 export 'src/domain/errors/screen_capture_kit_exception.dart';
+export 'src/domain/value_objects/capture/capture_resolution.dart';
 export 'src/domain/value_objects/capture/captured_audio.dart';
 export 'src/domain/value_objects/capture/captured_frame.dart';
 export 'src/domain/value_objects/capture/captured_image.dart';
