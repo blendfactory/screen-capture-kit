@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Example `record_picker_with_audio`**: CLI using `presentContentSharingPicker`
+  with FPS capped to display refresh (default 120), `--audio none|system|mic|both`,
+  and ffmpeg mux to MP4. Optional fixed `--width`/`--height`; otherwise AVI
+  dimensions follow the first captured frame (`deferDimensionsFromFirstFrame` on
+  the shared isolate AVI writer).
+
 - **Audio sample timestamps (macOS)**: Native JSON now includes optional
   `presentationTimeSeconds` and `durationSeconds` from each audio
   `CMSampleBuffer` (system + microphone). `CapturedAudio` exposes these for
@@ -28,6 +34,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the microphone queue.
 
 ### Fixed
+
+- **`presentContentSharingPicker` deadlock (macOS)**: The API was wrapped in
+  [Isolate.run], so native `picker_present` ran on a worker thread while the
+  bridge used `dispatch_sync(main_queue, …)` — the main isolate waited for the
+  worker and the worker waited for the main queue. The picker now runs
+  `presentContentSharingPickerImpl` on the calling isolate (same pattern as UI
+  requires for AppKit).
+
+- **`picker_present` scheduling (macOS)**: **`picker_start`** runs the modal picker
+  and `nextEventMatchingMask` loop on the **AppKit main thread** (`dispatch_sync`
+  to the main queue when the FFI thread is not already main). Calling those APIs
+  from a background thread raised `NSInternalInconsistencyException`. **`picker_poll`**
+  returns the result JSON after **`picker_start`** completes.
+
+- **Native content-sharing picker (macOS)**: Use Objective-C API `+[SCContentSharingPicker sharedPicker]` and `defaultConfiguration.allowedPickerModes` + `present` instead of nonexistent `+[SCContentSharingPicker shared]` and `presentUsing:` (Swift-only names), which caused `NSInvalidArgumentException` at runtime.
+
+- **SCContentSharingPicker UI (macOS)**: Set `picker.active = YES` before `present` (required by Apple’s header: the picker UI does not appear otherwise). Link **AppKit** and, for CLI tools, set `NSApplication` activation policy from `NSApplicationActivationPolicyProhibited` to **Accessory** and call `activateIgnoringOtherApps:` so Control Center can show the picker.
+
+- **Content-sharing picker deadlock (macOS)**: `picker_present` used `dispatch_async(main_queue)` plus `dispatch_semaphore_wait` on the same thread; Dart FFI calls from the **main** isolate never drained the main queue, so `present` never ran. Run `present` + `CFRunLoopRun` **inline on the main thread** (or `dispatch_sync` to main from a background thread) instead of async + semaphore.
+
+- **Content-sharing picker UI (macOS, follow-up)**: After the deadlock fix, some CLI runs still saw no UI: Apple documents that **`maximumStreamCount` must not be 0** when presenting without a stream (Swift default is 1 — set explicitly); **`CFRunLoopRun` alone may not pump AppKit** — use an `NSApplication` event loop (`nextEventMatchingMask` / `sendEvent`), **`finishLaunching`** once, and try **`NSApplicationActivationPolicyRegular`** before Accessory. Example README notes Control Center.
 
 - **Audio FFI `timeout_ms == 0` (macOS)**: `stream_get_next_audio` and
   `stream_get_next_microphone` treated `0` as a **5 second** wait instead of a
