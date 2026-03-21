@@ -34,10 +34,15 @@ dart run bin/screenshot_display.dart ./captures --display 2
 
 ### Display screen record to uncompressed AVI (CLI)
 
-`bin/record_display.dart` records a display with `startCaptureStream`, packs
+`bin/record_display.dart` records a display via **`startCaptureStreamWithUpdater`**
+(in `lib/avi_isolate_recorder.dart` as `recordDisplayToAviIsolate`), packs
 **BGRA** frames into an **uncompressed AVI** (RIFF / `movi` / `idx1`) using Dart
 only—no external encoder. Recording stops on **Ctrl+C** or `--duration` / `-t`;
 the tool may keep writing queued frames afterward.
+
+The shared helper passes **`captureResolution: CaptureResolution.best`** for the
+live stream (macOS 14+), matching the quality tier used in the other record
+CLIs below.
 
 Notes:
 
@@ -57,7 +62,8 @@ dart run bin/record_display.dart ./recordings --display 1 --duration 5 \
 
 `bin/record_display_with_audio.dart` captures a display with **system audio** and
 **microphone** (`startCaptureStreamWithUpdater` with `capturesAudio` and
-`captureMicrophone`), writes a temporary **BGRA AVI** and **two PCM WAV** files,
+`captureMicrophone`, **`captureResolution: CaptureResolution.best`** on macOS 14+),
+writes a temporary **BGRA AVI** and **two PCM WAV** files,
 then runs **ffmpeg** to produce **H.264 + AAC** MP4. Intermediate files are
 deleted unless you pass `--keep-temp`.
 
@@ -80,6 +86,7 @@ dart run bin/record_display_with_audio.dart ./recordings --keep-temp
 (`presentContentSharingPicker`), then records the chosen display, window, or app
 with **BGRA AVI** + optional **system audio** and/or **microphone**, and muxes
 to **H.264 + AAC** MP4 with ffmpeg (same pattern as `record_display_with_audio`).
+The stream uses **`captureResolution: CaptureResolution.best`** (macOS 14+).
 
 - **FPS**: defaults to **120** and is **capped** by the highest known display
   refresh rate from `ShareableContent` (same idea as the display record CLIs).

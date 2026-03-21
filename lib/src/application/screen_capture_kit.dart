@@ -167,6 +167,9 @@ class ScreenCaptureKit {
   /// and [CVPixelFormatType](https://developer.apple.com/documentation/corevideo/cvpixelformattype).
   /// [colorSpaceName] optional color space name (e.g. kCGColorSpaceSRGB);
   /// null = default.
+  /// [captureResolution] sets
+  /// [`SCStreamConfiguration.captureResolution`](https://developer.apple.com/documentation/screencapturekit/scstreamconfiguration/captureresolution)
+  /// for the live stream (macOS 14+), same as [captureScreenshot].
   /// Cancel the stream subscription to stop capture.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
@@ -185,6 +188,7 @@ class ScreenCaptureKit {
     bool captureMicrophone = false,
     int? pixelFormat,
     String? colorSpaceName,
+    CaptureResolution captureResolution = CaptureResolution.automatic,
   }) {
     return startCaptureStreamImpl(
       filterHandle,
@@ -201,6 +205,7 @@ class ScreenCaptureKit {
       captureMicrophone: captureMicrophone,
       pixelFormat: pixelFormat,
       colorSpaceName: colorSpaceName,
+      captureResolution: captureResolution,
     );
   }
 
@@ -215,7 +220,8 @@ class ScreenCaptureKit {
   /// the corresponding `SCStreamConfiguration` layout properties (see
   /// [startCaptureStream]).
   ///
-  /// [pixelFormat] and [colorSpaceName] match [startCaptureStream].
+  /// [pixelFormat], [colorSpaceName], and [captureResolution] match
+  /// [startCaptureStream].
   ///
   /// [emitDelegateEvents] when true, delivers [CaptureStream.delegateEvents]
   /// for [CaptureStreamDelegateEvent] values (Apple `SCStreamDelegate`;
@@ -238,6 +244,7 @@ class ScreenCaptureKit {
     bool captureMicrophone = false,
     int? pixelFormat,
     String? colorSpaceName,
+    CaptureResolution captureResolution = CaptureResolution.automatic,
     bool emitDelegateEvents = false,
   }) {
     return startCaptureStreamWithUpdaterImpl(
@@ -255,6 +262,7 @@ class ScreenCaptureKit {
       captureMicrophone: captureMicrophone,
       pixelFormat: pixelFormat,
       colorSpaceName: colorSpaceName,
+      captureResolution: captureResolution,
       emitDelegateEvents: emitDelegateEvents,
     );
   }

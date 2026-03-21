@@ -119,6 +119,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   bool captureMicrophone = false,
   int? pixelFormat,
   String? colorSpaceName,
+  CaptureResolution captureResolution = CaptureResolution.automatic,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -147,6 +148,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   bool captureMicrophone = false,
   int? pixelFormat,
   String? colorSpaceName,
+  CaptureResolution captureResolution = CaptureResolution.automatic,
   bool emitDelegateEvents = false,
 }) {
   if (!Platform.isMacOS) {

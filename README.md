@@ -14,6 +14,7 @@ It enables screen, window, and display capture on macOS with minimal overhead by
 - **Window capture** — Capture individual windows
 - **Region capture** — Crop to a specific area via `sourceRect`
 - **Screenshot** — Single-frame capture (macOS 14+), optional `captureResolution` (automatic / best / nominal)
+- **Live streams** — Same optional **`captureResolution`** on **`startCaptureStream`** / **`startCaptureStreamWithUpdater`** and **`StreamConfiguration`** (macOS 14+)
 - **System picker** — Native content-sharing picker UI (macOS 14+)
 - **Audio capture** — System audio (macOS 13+), optional microphone (macOS 15+)
 - **Stream delegate events (optional)** — `emitDelegateEvents: true` exposes `CaptureStream.delegateEvents` (`CaptureStreamDelegateEvent`: stop/error and video-effect start/stop on macOS 14+)
@@ -73,7 +74,7 @@ void main() async {
 
 1. **Get shareable content** — `getShareableContent()` returns displays, windows, and applications.
 2. **Create a content filter** — `createDisplayFilter()` or `createWindowFilter()` for the target.
-3. **Start capture** — `startCaptureStream()` for frames, or `startCaptureStreamWithUpdater()` for runtime config changes and audio.
+3. **Start capture** — `startCaptureStream()` for frames, or `startCaptureStreamWithUpdater()` for runtime config changes and audio. Optional **`captureResolution`** (macOS 14+) sets the same quality tier as screenshots on `SCStreamConfiguration`.
 4. **Release** — Call `releaseFilter(filter)` with the same `FilterId` you used for capture.
 
 For screenshots, use `captureScreenshot(filter)` (pass the `FilterId` from `createDisplayFilter` / `createWindowFilter` / the picker flow). For the system picker, use `presentContentSharingPicker()`.
@@ -103,7 +104,7 @@ See the `example/` directory for a full sample including display, window, region
 
 ## Roadmap
 
-Major capability areas are **implemented** and listed under [Features](#features): display/window capture, region crop via `sourceRect`, cursor visibility, system and microphone audio (where supported by macOS version), frame rate, multi-display, screenshot (macOS 14+), and the system content-sharing picker (macOS 14+).
+Major capability areas are **implemented** and listed under [Features](#features): display/window capture, region crop via `sourceRect`, cursor visibility, system and microphone audio (where supported by macOS version), frame rate, multi-display, screenshot and live-stream **`captureResolution`** (macOS 14+), and the system content-sharing picker (macOS 14+).
 
 **Partially exposed or not exposed** in the Dart API today includes: a **subset** of [`SCStreamDelegate`](https://developer.apple.com/documentation/screencapturekit/scstreamdelegate) via `emitDelegateEvents` / `CaptureStream.delegateEvents` (not the full delegate protocol); many other optional framework knobs (several advanced `SCStreamConfiguration` properties, include-only window filters). Maintainers track those gaps in the repository checklist [`.cursor/skills/screen-capture-kit-api-coverage/SKILL.md`](.cursor/skills/screen-capture-kit-api-coverage/SKILL.md).
 

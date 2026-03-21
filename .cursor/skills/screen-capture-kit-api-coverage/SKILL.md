@@ -68,6 +68,7 @@ Update status as implementation progresses. Use: ✅ Done | 🚧 In progress | �
 | excludesCurrentProcessAudio | ✅ | StreamConfiguration + native config; macOS 13+ |
 | captureMicrophone | ✅ | StreamConfiguration + native config; macOS 15+ |
 | pixelFormat, colorSpaceName | ✅ | StreamConfiguration + native config; optional CVPixelFormatType + color space name |
+| captureResolution | ✅ | `CaptureResolution` + `startCaptureStream*` / `StreamConfiguration` / `stream_update_configuration`; macOS 14+ |
 
 ### Screenshot
 
@@ -125,7 +126,7 @@ Items from the framework spec that are not in the checklist above. Low priority 
 | Stream config | scalesToFit, destinationRect, preservesAspectRatio | ✅ | Dart `StreamConfiguration` + `startCaptureStream*` forwards to `SCStreamConfiguration` |
 | Stream config | colorMatrix, backgroundColor, shouldBeOpaque | ❌ | |
 | Stream config | capturesShadowsOnly, ignoreShadows*, ignoreGlobalClip* | ❌ | |
-| Stream config | captureResolution (live SCStream), sampleRate, channelCount | ❌ | Screenshot sets `captureResolution` via `captureScreenshot`; live stream does not. sampleRate/channelCount from device; we don't set |
+| Stream config | sampleRate, channelCount | ❌ | From device; we don't set |
 | Stream config | streamName, presenterOverlayPrivacyAlertSetting | ❌ | |
 | Stream | SCStreamFrameInfo / SCFrameStatus | ⚠️ | Used internally; not exposed as Dart API |
 | Screenshot | `SCStreamConfiguration.captureResolution` (screenshot path) | ✅ | `CaptureResolution` + `captureScreenshot(..., captureResolution:)`; macOS 14+ |

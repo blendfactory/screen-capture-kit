@@ -226,6 +226,7 @@ Future<void> recordDisplayToAviIsolate({
     scalesToFit: scalesToFit,
     preservesAspectRatio: preservesAspectRatio,
     pixelFormat: cvPixelFormatType32Bgra,
+    captureResolution: CaptureResolution.best,
     emitDelegateEvents: true,
   );
 

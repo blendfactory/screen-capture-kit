@@ -105,6 +105,7 @@ Future<void> main(List<String> args) async {
       pixelFormat: cvPixelFormatType32Bgra,
       scalesToFit: parsed.scalesToFit,
       preservesAspectRatio: parsed.preservesAspectRatio,
+      captureResolution: CaptureResolution.best,
       capturesAudio: true,
       excludesCurrentProcessAudio: true,
       captureMicrophone: true,

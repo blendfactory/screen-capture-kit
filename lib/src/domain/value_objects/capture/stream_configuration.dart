@@ -1,4 +1,7 @@
-import 'package:screen_capture_kit/screen_capture_kit.dart' show FrameSize;
+/// @docImport 'package:screen_capture_kit/src/application/screen_capture_kit.dart';
+library;
+
+import 'package:screen_capture_kit/src/domain/value_objects/capture/capture_resolution.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/frame_rate.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/capture/queue_depth.dart';
 import 'package:screen_capture_kit/src/domain/value_objects/geometry/frame_size.dart';
@@ -23,6 +26,7 @@ class StreamConfiguration {
     this.preservesAspectRatio,
     this.pixelFormat,
     this.colorSpaceName,
+    this.captureResolution = CaptureResolution.automatic,
   });
 
   /// Capture output frame dimensions.
@@ -81,4 +85,10 @@ class StreamConfiguration {
   /// Optional color space name (e.g. kCGColorSpaceSRGB). null or empty =
   /// default.
   final String? colorSpaceName;
+
+  /// Output resolution / quality tier for the live stream.
+  ///
+  /// Maps to [`SCStreamConfiguration.captureResolution`](https://developer.apple.com/documentation/screencapturekit/scstreamconfiguration/captureresolution)
+  /// (macOS 14+). Same enum as [ScreenCaptureKit.captureScreenshot].
+  final CaptureResolution captureResolution;
 }

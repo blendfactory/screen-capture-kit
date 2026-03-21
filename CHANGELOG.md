@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **`CaptureResolution`** (`automatic`, `best`, `nominal`) and **`captureScreenshot(..., captureResolution:)`** — maps to [`SCStreamConfiguration.captureResolution`](https://developer.apple.com/documentation/screencapturekit/scstreamconfiguration/captureresolution) for [`SCScreenshotManager.captureImage`](https://developer.apple.com/documentation/screencapturekit/scscreenshotmanager/captureimage(contentfilter:configuration:completionhandler:)) on macOS 14+.
+- **Live `captureResolution`** — **`startCaptureStream`** / **`startCaptureStreamWithUpdater`** **`captureResolution:`** and **`StreamConfiguration.captureResolution`** set the same property on [`SCStreamConfiguration`](https://developer.apple.com/documentation/screencapturekit/scstreamconfiguration) for running streams (macOS 14+).
 - **`SCStreamDelegate` → Dart**: Optional **`emitDelegateEvents: true`** on **`startCaptureStream`** / **`startCaptureStreamWithUpdater`**; **`CaptureStream.delegateEvents`** delivers **`CaptureStreamDelegateEvent`** (`didStopWithError`, `outputVideoEffectDidStart`, `outputVideoEffectDidStop`) from the macOS native bridge.
 
 ### Changed
 
+- **Example record CLIs** (`record_display` via `avi_isolate_recorder`, `record_display_with_audio`, `record_picker_with_audio`): Live capture uses **`captureResolution: CaptureResolution.best`** (macOS 14+).
 - **macOS capture streams (internal)**: Video, audio, microphone, and delegate **`StreamController`** instances are owned by small wrappers with explicit **`close()`**, so lifecycle matches subscription teardown without relying on `// ignore: close_sinks` for the main capture setup path.
 - **Example CLIs (`screenshot_display`, `record_picker_with_audio`)**: When `--width`/`--height` are omitted, use the selected or reference **display pixel size** (`captureScreenshot` now passes **`FrameSize`** for the chosen display; **`record_picker_with_audio`** defaults to a reference display: highest known refresh rate, then largest area). **`record_display`** / **`record_display_with_audio`** already defaulted to the chosen display’s size when both are omitted.
 - **Breaking**: Identifier extension types **`DisplayId`**, **`FilterId`**, **`ProcessId`**, and **`WindowId`** no longer define getters that duplicated the primary field (e.g. `filterId`, `displayId`). Use **`value`** for the underlying `int`, consistent with **`BundleId`** using **`value`** for the `String`.

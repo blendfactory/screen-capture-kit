@@ -18,6 +18,7 @@ void main() {
       expect(config.capturesAudio, isFalse);
       expect(config.excludesCurrentProcessAudio, isFalse);
       expect(config.captureMicrophone, isFalse);
+      expect(config.captureResolution, CaptureResolution.automatic);
     });
 
     test('creates with custom values', () {
@@ -63,9 +64,11 @@ void main() {
       const config = StreamConfiguration(
         pixelFormat: 0x42475241, // kCVPixelFormatType_32BGRA
         colorSpaceName: 'kCGColorSpaceSRGB',
+        captureResolution: CaptureResolution.best,
       );
       expect(config.pixelFormat, 0x42475241);
       expect(config.colorSpaceName, 'kCGColorSpaceSRGB');
+      expect(config.captureResolution, CaptureResolution.best);
     });
   });
 }

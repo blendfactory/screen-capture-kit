@@ -799,6 +799,7 @@ static void ensureStreamRegistry(void) {
 /// pixel_format: CVPixelFormatType (OSType); 0 = default. All kCVPixelFormatType_*:
 /// https://developer.apple.com/documentation/corevideo/pixel-format-identifiers
 /// color_space_name: optional color space name (e.g. kCGColorSpaceSRGB); NULL = default.
+/// capture_resolution: SCCaptureResolutionType 0 automatic, 1 best, 2 nominal (macOS 14+).
 /// Returns stream_id on success, 0 on error.
 int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                                 int frame_rate,
@@ -811,7 +812,8 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                                 int shows_cursor, int queue_depth,
                                 int captures_audio, int excludes_current_process_audio,
                                 int capture_microphone,
-                                uint32_t pixel_format, const char* color_space_name) {
+                                uint32_t pixel_format, const char* color_space_name,
+                                int capture_resolution) {
   ensureCoreGraphicsInit();
   ensureStreamRegistry();
 
@@ -860,6 +862,11 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
     NSString* name = [NSString stringWithUTF8String:color_space_name];
     if (name) {
       config.colorSpaceName = (__bridge CFStringRef)name;
+    }
+  }
+  if (@available(macOS 14.0, *)) {
+    if (capture_resolution >= 0 && capture_resolution <= 2) {
+      config.captureResolution = (SCCaptureResolutionType)capture_resolution;
     }
   }
 
@@ -964,7 +971,8 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
                                 int shows_cursor, int queue_depth,
                                 int captures_audio, int excludes_current_process_audio,
                                 int capture_microphone,
-                                uint32_t pixel_format, const char* color_space_name) {
+                                uint32_t pixel_format, const char* color_space_name,
+                                int capture_resolution) {
   if (stream_id <= 0 || _streamRegistry == nil) {
     setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
                                   @"Invalid stream id.");
@@ -1016,6 +1024,11 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
     NSString* name = [NSString stringWithUTF8String:color_space_name];
     if (name) {
       config.colorSpaceName = (__bridge CFStringRef)name;
+    }
+  }
+  if (@available(macOS 14.0, *)) {
+    if (capture_resolution >= 0 && capture_resolution <= 2) {
+      config.captureResolution = (SCCaptureResolutionType)capture_resolution;
     }
   }
 

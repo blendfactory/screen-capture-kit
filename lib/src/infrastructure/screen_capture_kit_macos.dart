@@ -106,6 +106,7 @@ external Pointer<Utf8> _captureScreenshot(
     Int32,
     Uint32,
     Pointer<Utf8>,
+    Int32,
   )
 >(
   symbol: 'stream_create_and_start',
@@ -133,6 +134,7 @@ external int _streamCreateAndStart(
   int captureMicrophone,
   int pixelFormat,
   Pointer<Utf8> colorSpaceName,
+  int captureResolution,
 );
 
 @Native<Pointer<Void> Function(Int64, Int64)>(
@@ -196,6 +198,7 @@ external Pointer<Utf8> _streamGetLastError();
     Int32,
     Uint32,
     Pointer<Utf8>,
+    Int32,
   )
 >(
   symbol: 'stream_update_configuration',
@@ -223,6 +226,7 @@ external int _streamUpdateConfiguration(
   int captureMicrophone,
   int pixelFormat,
   Pointer<Utf8> colorSpaceName,
+  int captureResolution,
 );
 
 @Native<Int32 Function(Int64, Int64)>(
@@ -1315,6 +1319,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   bool captureMicrophone = false,
   int? pixelFormat,
   String? colorSpaceName,
+  CaptureResolution captureResolution = CaptureResolution.automatic,
 }) {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
@@ -1355,6 +1360,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
       captureMicrophone ? 1 : 0,
       pixelFormat ?? 0,
       colorSpacePtr,
+      captureResolution.index,
     );
     if (streamId <= 0) {
       final ptr = _streamGetLastError();
@@ -1446,6 +1452,7 @@ void streamUpdateConfigurationImpl(int streamId, StreamConfiguration options) {
       options.captureMicrophone ? 1 : 0,
       options.pixelFormat ?? 0,
       colorSpacePtr,
+      options.captureResolution.index,
     );
     if (result != 0) {
       final ptr = _streamGetLastError();
@@ -1534,6 +1541,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   bool captureMicrophone = false,
   int? pixelFormat,
   String? colorSpaceName,
+  CaptureResolution captureResolution = CaptureResolution.automatic,
   bool emitDelegateEvents = false,
 }) {
   if (!Platform.isMacOS) {
@@ -1575,6 +1583,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
       captureMicrophone ? 1 : 0,
       pixelFormat ?? 0,
       colorSpacePtr,
+      captureResolution.index,
     );
     if (streamId <= 0) {
       final ptr = _streamGetLastError();
