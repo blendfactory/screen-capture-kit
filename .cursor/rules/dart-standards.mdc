@@ -50,13 +50,17 @@ Ref: https://raw.githubusercontent.com/flutter/flutter/refs/heads/main/docs/rule
 
 ### Doc imports (`@docImport`)
 
-Use this when doc comments reference types you **do not** import in code (e.g. another layer), so `dart doc` can resolve `[TypeName]` links.
+Per the Dart language team, `@docImport` lets you reference symbols in `///` comments **without** adding a runtime `import`, so `dart doc` and the analyzer can resolve `[TypeName]` links (IDE rename/find references also work for those references).
 
-**File order (required):**
+**Placement (required):** put `@docImport` in a doc comment **immediately above** a `library` directive (typically unnamed `library;`). Do **not** place it after `import` / `export` lines.
 
-1. **First line(s) of the file:** one or more `/// @docImport '...';` comments (URI of the library that defines the symbol).
-2. **Immediately next:** `library;` (unnamed library directive).
-3. **Then:** normal `import` / `export` directives and the rest of the code.
+**File order:**
+
+1. One or more `/// @docImport '...';` lines (same URI forms as normal imports: `dart:`, `package:`, relative).
+2. `library;`
+3. Normal `import` / `export` directives and the rest of the file.
+
+**Limitations (official):** doc imports support the same URI styles as regular imports, but they **cannot** use `deferred`, `as`, `show`, or `hide`.
 
 Example:
 
@@ -71,10 +75,9 @@ import 'package:meta/meta.dart';
 class Example {}
 ```
 
-- Do **not** put `@docImport` after `import` lines; it belongs at the **very start** of the file.
-- After adding doc imports, use bracket references (e.g. `[StreamConfiguration]`) in `///` comments.
+- Prefer **bracket references** like `[StreamConfiguration]` for linkable types; avoid switching to backticks solely to silence unresolved references—add `@docImport` for the defining library instead.
 
-Ref: [`dart doc`](https://dart.dev/tools/dart-doc) and [documentation comments](https://dart.dev/language/comments#documentation-comments).
+Ref: [Documentation comment references — Doc imports](https://dart.dev/tools/doc-comments/references#doc-imports), [`dart doc`](https://dart.dev/tools/dart-doc), [documentation comments](https://dart.dev/language/comments#documentation-comments).
 
 ## Lint Rules
 
