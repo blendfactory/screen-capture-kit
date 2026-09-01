@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Use-after-free in audio capture from apps whose calling thread drains its
+  autorelease pool (e.g. Flutter): handler `_queue` ivars were assigned
+  autoreleased arrays without a retain under MRC ([#1]).
+- Memory leak of one JSON string per delivered audio buffer; queue pops now
+  retain before removal so `strdup` never reads a deallocated string ([#1]).
+- Failed or timed-out `startCaptureWithCompletionHandler` now tears the stream
+  down (`removeStreamOutput` + `stopCapture`) instead of leaking a running
+  capture; the start wait also grew from 5 s to 30 s to survive permission
+  dialogs ([#1]).
+- Registry lookups in the polling getters are now synchronized with the
+  writers ([#1]).
+
+[#1]: https://github.com/blendfactory/screen-capture-kit/issues/1
+
 ## [1.0.0] - 2026-03-21
 
 First **stable** release under [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Prior **0.0.x** releases were pre-release; breaking API changes since **0.0.5** are summarized under **Changed** below.
