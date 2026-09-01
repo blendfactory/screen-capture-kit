@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dialogs ([#1]).
 - Registry lookups in the polling getters are now synchronized with the
   writers ([#1]).
+- Delegate-registry removal uses the same `@synchronized(_streamRegistry)`
+  lock as the other registry writers, so start-failure teardown cannot
+  race a concurrent drain.
 
 [#1]: https://github.com/blendfactory/screen-capture-kit/issues/1
 

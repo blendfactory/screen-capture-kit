@@ -980,7 +980,7 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
     stream_stop_and_release(streamId);
     // No Dart consumer ever sees this streamId, so nothing will drain
     // delegate events; drop the handler stream_stop_and_release keeps.
-    @synchronized(_delegateHandlerRegistry) {
+    @synchronized(_streamRegistry) {
       [_delegateHandlerRegistry removeObjectForKey:@(streamId)];
     }
     return 0;
@@ -1382,7 +1382,7 @@ char* stream_get_next_delegate_event(int64_t stream_id, int64_t timeout_ms) {
     BOOL empty = handler.queue.count == 0;
     [handler.lock unlock];
     if (handler.stopped && empty) {
-      @synchronized(_delegateHandlerRegistry) {
+      @synchronized(_streamRegistry) {
         if (_delegateHandlerRegistry) {
           [_delegateHandlerRegistry removeObjectForKey:@(stream_id)];
         }
