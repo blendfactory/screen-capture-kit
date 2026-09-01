@@ -54,7 +54,9 @@ static void ensureCoreGraphicsInit(void) {
   self = [super init];
   if (self) {
     _streamId = streamId;
-    _queue = [NSMutableArray array];
+    // MRC: ivar assignment does not retain; an autoreleased array here
+    // dangles once the creating thread's autorelease pool drains.
+    _queue = [[NSMutableArray alloc] init];
     _lock = [[NSLock alloc] init];
     _semaphore = dispatch_semaphore_create(0);
     _stopped = NO;
@@ -74,6 +76,7 @@ static void ensureCoreGraphicsInit(void) {
   [self.lock lock];
   [self.queue addObject:jsonStr];
   [self.lock unlock];
+  [jsonStr release];  // MRC: the queue holds the only reference now
   dispatch_semaphore_signal(self.semaphore);
 }
 
@@ -431,7 +434,9 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _queue = [NSMutableArray array];
+    // MRC: ivar assignment does not retain; an autoreleased array here
+    // dangles once the creating thread's autorelease pool drains.
+    _queue = [[NSMutableArray alloc] init];
     _lock = [[NSLock alloc] init];
     _semaphore = dispatch_semaphore_create(0);
     _stopped = NO;
@@ -531,6 +536,7 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
   [_lock lock];
   [_queue addObject:jsonStr];
   [_lock unlock];
+  [jsonStr release];  // MRC: the queue holds the only reference now
   dispatch_semaphore_signal(_semaphore);
 }
 @end
@@ -546,7 +552,9 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _queue = [NSMutableArray array];
+    // MRC: ivar assignment does not retain; an autoreleased array here
+    // dangles once the creating thread's autorelease pool drains.
+    _queue = [[NSMutableArray alloc] init];
     _lock = [[NSLock alloc] init];
     _semaphore = dispatch_semaphore_create(0);
     _stopped = NO;
@@ -696,6 +704,7 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
   [_lock lock];
   [_queue addObject:jsonStr];
   [_lock unlock];
+  [jsonStr release];  // MRC: the queue holds the only reference now
   dispatch_semaphore_signal(_semaphore);
 }
 @end
@@ -704,6 +713,9 @@ static NSMutableDictionary<NSNumber*, SCStream*>* _streamRegistry = nil;
 static NSMutableDictionary<NSNumber*, StreamFrameHandler*>* _handlerRegistry = nil;
 static NSMutableDictionary<NSNumber*, StreamAudioHandler*>* _audioHandlerRegistry = nil;
 static NSMutableDictionary<NSNumber*, StreamMicrophoneHandler*>* _microphoneHandlerRegistry = nil;
+
+// Defined below; the failure path of stream_create_and_start reuses it.
+void stream_stop_and_release(int64_t stream_id);
 static NSMutableDictionary<NSNumber*, StreamDelegateHandler*>* _delegateHandlerRegistry = nil;
 static int64_t _nextStreamId = 1;
 
@@ -929,21 +941,14 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
     }
   }
 
-  __block BOOL startSuccess = NO;
-  __block NSError* startError = nil;
-  dispatch_semaphore_t sem = dispatch_semaphore_create(0);
-  [stream startCaptureWithCompletionHandler:^(NSError* _Nullable error) {
-    startSuccess = (error == nil);
-    startError = error;
-    dispatch_semaphore_signal(sem);
-  }];
-  dispatch_semaphore_wait(sem,
-                         dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
-  if (!startSuccess) {
-    setLastStreamError(startError);
-    return 0;
-  }
-
+  // Register BEFORE startCapture. If start times out or fails after the
+  // capture pipeline has (or later gets) spun up, SCStream keeps delivering
+  // sample buffers to the output handlers. Registering first keeps the
+  // handlers alive through that window; the failure path below then tears
+  // everything down via stream_stop_and_release (removeStreamOutput +
+  // stopCapture) instead of letting ARC free live callback targets, which
+  // caused use-after-free crashes in stream_get_next_audio /
+  // -[StreamAudioHandler stream:didOutputSampleBuffer:ofType:].
   @synchronized(_streamRegistry) {
     _streamRegistry[@(streamId)] = stream;
     _handlerRegistry[@(streamId)] = handler;
@@ -955,6 +960,32 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
       _microphoneHandlerRegistry[@(streamId)] = microphoneHandler;
     }
   }
+
+  __block BOOL startSuccess = NO;
+  __block NSError* startError = nil;
+  dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+  [stream startCaptureWithCompletionHandler:^(NSError* _Nullable error) {
+    startSuccess = (error == nil);
+    startError = error;
+    dispatch_semaphore_signal(sem);
+  }];
+  // Permission dialogs (microphone / screen-recording re-approval) can hold
+  // the start completion far longer than the old 5 s window.
+  dispatch_semaphore_wait(sem,
+                         dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
+  if (!startSuccess) {
+    setLastStreamError(startError);
+    // Full teardown: disconnect outputs, stop capture, drop registry refs.
+    // A late-succeeding start keeps delivering otherwise.
+    stream_stop_and_release(streamId);
+    // No Dart consumer ever sees this streamId, so nothing will drain
+    // delegate events; drop the handler stream_stop_and_release keeps.
+    @synchronized(_streamRegistry) {
+      [_delegateHandlerRegistry removeObjectForKey:@(streamId)];
+    }
+    return 0;
+  }
+
   return streamId;
 }
 
@@ -979,7 +1010,10 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
     return -1;
   }
 
-  SCStream* stream = _streamRegistry[@(stream_id)];
+  SCStream* stream = nil;
+  @synchronized(_streamRegistry) {
+    stream = _streamRegistry[@(stream_id)];
+  }
   if (!stream) {
     setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
                                   @"Stream not found or already stopped.");
@@ -1058,7 +1092,10 @@ int stream_update_content_filter(int64_t stream_id, int64_t filter_id) {
     return -1;
   }
 
-  SCStream* stream = _streamRegistry[@(stream_id)];
+  SCStream* stream = nil;
+  @synchronized(_streamRegistry) {
+    stream = _streamRegistry[@(stream_id)];
+  }
   if (!stream) {
     setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
                                   @"Stream not found or already stopped.");
@@ -1115,7 +1152,10 @@ int stream_set_picker_configuration(int64_t stream_id, const char* _Nullable con
   if (stream_id <= 0 || _streamRegistry == nil) {
     return -1;
   }
-  SCStream* stream = _streamRegistry[@(stream_id)];
+  SCStream* stream = nil;
+  @synchronized(_streamRegistry) {
+    stream = _streamRegistry[@(stream_id)];
+  }
   if (!stream) {
     return -1;
   }
@@ -1179,7 +1219,10 @@ void* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
     return NULL;
   }
 
-  StreamFrameHandler* handler = _handlerRegistry[@(stream_id)];
+  StreamFrameHandler* handler = nil;
+  @synchronized(_streamRegistry) {
+    handler = _handlerRegistry[@(stream_id)];
+  }
   if (!handler) {
     if (STREAM_DEBUG) fprintf(stderr, "[SCStream] handler not found\n");
     return NULL;
@@ -1220,7 +1263,10 @@ char* stream_get_next_audio(int64_t stream_id, int64_t timeout_ms) {
     return NULL;
   }
 
-  StreamAudioHandler* handler = _audioHandlerRegistry[@(stream_id)];
+  StreamAudioHandler* handler = nil;
+  @synchronized(_streamRegistry) {
+    handler = _audioHandlerRegistry[@(stream_id)];
+  }
   if (!handler) {
     return NULL;
   }
@@ -1240,15 +1286,19 @@ char* stream_get_next_audio(int64_t stream_id, int64_t timeout_ms) {
   NSString* jsonStr = nil;
   [handler.lock lock];
   if (handler.queue.count > 0) {
-    jsonStr = handler.queue.firstObject;
+    // MRC: retain before removal; the queue holds the only reference.
+    jsonStr = [handler.queue.firstObject retain];
     [handler.queue removeObjectAtIndex:0];
   }
   [handler.lock unlock];
 
   if (!jsonStr || jsonStr.length == 0) {
+    [jsonStr release];
     return NULL;
   }
-  return strdup(jsonStr.UTF8String);
+  char* out = strdup(jsonStr.UTF8String);
+  [jsonStr release];
+  return out;
 }
 
 /// Returns malloc'd JSON string for next microphone buffer, or NULL on timeout/error.
@@ -1258,7 +1308,10 @@ char* stream_get_next_microphone(int64_t stream_id, int64_t timeout_ms) {
     return NULL;
   }
 
-  StreamMicrophoneHandler* handler = _microphoneHandlerRegistry[@(stream_id)];
+  StreamMicrophoneHandler* handler = nil;
+  @synchronized(_streamRegistry) {
+    handler = _microphoneHandlerRegistry[@(stream_id)];
+  }
   if (!handler) {
     return NULL;
   }
@@ -1275,15 +1328,19 @@ char* stream_get_next_microphone(int64_t stream_id, int64_t timeout_ms) {
   NSString* jsonStr = nil;
   [handler.lock lock];
   if (handler.queue.count > 0) {
-    jsonStr = handler.queue.firstObject;
+    // MRC: retain before removal; the queue holds the only reference.
+    jsonStr = [handler.queue.firstObject retain];
     [handler.queue removeObjectAtIndex:0];
   }
   [handler.lock unlock];
 
   if (!jsonStr || jsonStr.length == 0) {
+    [jsonStr release];
     return NULL;
   }
-  return strdup(jsonStr.UTF8String);
+  char* out = strdup(jsonStr.UTF8String);
+  [jsonStr release];
+  return out;
 }
 
 /// Returns malloc'd JSON for the next [SCStreamDelegate] event, or NULL.
@@ -1293,7 +1350,10 @@ char* stream_get_next_delegate_event(int64_t stream_id, int64_t timeout_ms) {
     return NULL;
   }
 
-  StreamDelegateHandler* handler = _delegateHandlerRegistry[@(stream_id)];
+  StreamDelegateHandler* handler = nil;
+  @synchronized(_streamRegistry) {
+    handler = _delegateHandlerRegistry[@(stream_id)];
+  }
   if (!handler) {
     return NULL;
   }
@@ -1310,17 +1370,19 @@ char* stream_get_next_delegate_event(int64_t stream_id, int64_t timeout_ms) {
   NSString* jsonStr = nil;
   [handler.lock lock];
   if (handler.queue.count > 0) {
-    jsonStr = handler.queue.firstObject;
+    // MRC: retain before removal; the queue holds the only reference.
+    jsonStr = [handler.queue.firstObject retain];
     [handler.queue removeObjectAtIndex:0];
   }
   [handler.lock unlock];
 
   if (!jsonStr || jsonStr.length == 0) {
+    [jsonStr release];
     [handler.lock lock];
     BOOL empty = handler.queue.count == 0;
     [handler.lock unlock];
     if (handler.stopped && empty) {
-      @synchronized(_delegateHandlerRegistry) {
+      @synchronized(_streamRegistry) {
         if (_delegateHandlerRegistry) {
           [_delegateHandlerRegistry removeObjectForKey:@(stream_id)];
         }
@@ -1328,7 +1390,9 @@ char* stream_get_next_delegate_event(int64_t stream_id, int64_t timeout_ms) {
     }
     return NULL;
   }
-  return strdup(jsonStr.UTF8String);
+  char* out = strdup(jsonStr.UTF8String);
+  [jsonStr release];
+  return out;
 }
 
 /// Stops and releases a stream.
