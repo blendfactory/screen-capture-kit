@@ -183,7 +183,7 @@ void main() {
                     throw TimeoutException('createDisplayFilter timed out'),
               );
           try {
-            final stream = ScreenCaptureKit().startCaptureStream(
+            final stream = await ScreenCaptureKit().startCaptureStream(
               handle,
               frameSize: FrameSize(width: 64, height: 64),
               frameRate: FrameRate(10),
@@ -240,12 +240,13 @@ void main() {
                     throw TimeoutException('createDisplayFilter timed out'),
               );
           try {
-            final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
-              handle,
-              frameSize: FrameSize(width: 64, height: 64),
-              frameRate: FrameRate(10),
-              queueDepth: QueueDepth(3),
-            );
+            final capture = await ScreenCaptureKit()
+                .startCaptureStreamWithUpdater(
+                  handle,
+                  frameSize: FrameSize(width: 64, height: 64),
+                  frameRate: FrameRate(10),
+                  queueDepth: QueueDepth(3),
+                );
             expect(capture, isA<CaptureStream>());
             expect(capture.stream, isA<Stream<CapturedFrame>>());
 
@@ -301,13 +302,14 @@ void main() {
                     throw TimeoutException('createDisplayFilter timed out'),
               );
           try {
-            final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
-              handle,
-              frameSize: FrameSize(width: 64, height: 64),
-              frameRate: FrameRate(10),
-              queueDepth: QueueDepth(3),
-              capturesAudio: true,
-            );
+            final capture = await ScreenCaptureKit()
+                .startCaptureStreamWithUpdater(
+                  handle,
+                  frameSize: FrameSize(width: 64, height: 64),
+                  frameRate: FrameRate(10),
+                  queueDepth: QueueDepth(3),
+                  capturesAudio: true,
+                );
             expect(capture.audioStream, isNotNull);
             final videoSub = capture.stream.listen(
               (_) {},
@@ -359,12 +361,13 @@ void main() {
               );
           FilterId? handle2;
           try {
-            final capture = ScreenCaptureKit().startCaptureStreamWithUpdater(
-              handle1,
-              frameSize: FrameSize(width: 64, height: 64),
-              frameRate: FrameRate(10),
-              queueDepth: QueueDepth(3),
-            );
+            final capture = await ScreenCaptureKit()
+                .startCaptureStreamWithUpdater(
+                  handle1,
+                  frameSize: FrameSize(width: 64, height: 64),
+                  frameRate: FrameRate(10),
+                  queueDepth: QueueDepth(3),
+                );
             handle2 = await ScreenCaptureKit()
                 .createDisplayFilter(display)
                 .timeout(

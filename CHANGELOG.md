@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** `startCaptureStream` and `startCaptureStreamWithUpdater` now
+  return `Future`s. Native start can wait up to 30 seconds for a permission
+  dialog; that wait runs in `Isolate.run` so the calling isolate (for
+  example a Flutter UI isolate) is not blocked.
+
 ### Fixed
 
 - Use-after-free in audio capture from apps whose calling thread drains its
@@ -23,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Delegate-registry removal uses the same `@synchronized(_streamRegistry)`
   lock as the other registry writers, so start-failure teardown cannot
   race a concurrent drain.
+- Audio, microphone, and delegate handler queues and locks allocated under
+  MRC are released in `dealloc`.
 
 [#1]: https://github.com/blendfactory/screen-capture-kit/issues/1
 

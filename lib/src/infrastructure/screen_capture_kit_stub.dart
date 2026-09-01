@@ -104,7 +104,7 @@ CapturedImage captureScreenshotImpl(
   );
 }
 
-Stream<CapturedFrame> startCaptureStreamImpl(
+Future<Stream<CapturedFrame>> startCaptureStreamImpl(
   FilterId filterHandle, {
   FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),
@@ -133,7 +133,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   );
 }
 
-CaptureStream startCaptureStreamWithUpdaterImpl(
+Future<CaptureStream> startCaptureStreamWithUpdaterImpl(
   FilterId filterHandle, {
   FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),

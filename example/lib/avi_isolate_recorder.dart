@@ -224,7 +224,7 @@ Future<void> recordDisplayToAviIsolate({
     '(see emitDelegateEvents in startCaptureStreamWithUpdater).',
   );
 
-  final capture = kit.startCaptureStreamWithUpdater(
+  final capture = await kit.startCaptureStreamWithUpdater(
     filter,
     frameSize: FrameSize(width: width, height: height),
     frameRate: FrameRate(fps),

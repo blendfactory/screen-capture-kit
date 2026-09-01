@@ -113,7 +113,7 @@ Future<void> main(List<String> args) async {
       );
     }
 
-    final capture = kit.startCaptureStreamWithUpdater(
+    final capture = await kit.startCaptureStreamWithUpdater(
       filter!,
       frameSize: frameSize,
       frameRate: FrameRate(fps),

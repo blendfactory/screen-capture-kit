@@ -114,6 +114,12 @@ static void ensureCoreGraphicsInit(void) {
   }
   [self _enqueueJSON:@{@"type" : @"outputVideoEffectDidStop"}];
 }
+
+- (void)dealloc {
+  [_queue release];
+  [_lock release];
+  [super dealloc];
+}
 @end
 
 @implementation StreamFrameHandler
@@ -444,6 +450,12 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
   return self;
 }
 
+- (void)dealloc {
+  [_queue release];
+  [_lock release];
+  [super dealloc];
+}
+
 - (void)stream:(SCStream*)stream
     didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
                    ofType:(SCStreamOutputType)type {
@@ -560,6 +572,12 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
     _stopped = NO;
   }
   return self;
+}
+
+- (void)dealloc {
+  [_queue release];
+  [_lock release];
+  [super dealloc];
 }
 
 - (void)stream:(SCStream*)stream
