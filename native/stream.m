@@ -803,13 +803,14 @@ char* stream_get_last_error(void) {
 }
 
 static void ensureStreamRegistry(void) {
-  if (_streamRegistry == nil) {
+  static dispatch_once_t once;
+  dispatch_once(&once, ^{
     _streamRegistry = [[NSMutableDictionary alloc] init];
     _handlerRegistry = [[NSMutableDictionary alloc] init];
     _audioHandlerRegistry = [[NSMutableDictionary alloc] init];
     _microphoneHandlerRegistry = [[NSMutableDictionary alloc] init];
     _delegateHandlerRegistry = [[NSMutableDictionary alloc] init];
-  }
+  });
 }
 
 /// Creates and starts a capture stream.
@@ -922,6 +923,10 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                      error:&addError];
   if (addError) {
     setLastStreamError(addError);
+    [stream release];
+    [handler release];
+    [delegateHandler release];
+    [config release];
     return 0;
   }
 
@@ -937,6 +942,11 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                          error:&addError];
       if (addError) {
         setLastStreamError(addError);
+        [stream release];
+        [handler release];
+        [delegateHandler release];
+        [audioHandler release];
+        [config release];
         return 0;
       }
     }
@@ -954,19 +964,21 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                          error:&addError];
       if (addError) {
         setLastStreamError(addError);
+        [stream release];
+        [handler release];
+        [delegateHandler release];
+        [audioHandler release];
+        [microphoneHandler release];
+        [config release];
         return 0;
       }
     }
   }
 
-  // Register BEFORE startCapture. If start times out or fails after the
-  // capture pipeline has (or later gets) spun up, SCStream keeps delivering
-  // sample buffers to the output handlers. Registering first keeps the
-  // handlers alive through that window; the failure path below then tears
-  // everything down via stream_stop_and_release (removeStreamOutput +
-  // stopCapture) instead of letting ARC free live callback targets, which
-  // caused use-after-free crashes in stream_get_next_audio /
-  // -[StreamAudioHandler stream:didOutputSampleBuffer:ofType:].
+  // Register BEFORE startCapture so stream_stop_and_release can find the
+  // stream if start fails or times out. Dictionary insertion retains; release
+  // the creating +1 so stop can drop the last owner and dealloc can run.
+  // Keep `stream` at +1 until startCapture returns — we still message it.
   @synchronized(_streamRegistry) {
     _streamRegistry[@(streamId)] = stream;
     _handlerRegistry[@(streamId)] = handler;
@@ -978,6 +990,11 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
       _microphoneHandlerRegistry[@(streamId)] = microphoneHandler;
     }
   }
+  [handler release];
+  [delegateHandler release];
+  [audioHandler release];
+  [microphoneHandler release];
+  [config release];
 
   __block BOOL startSuccess = NO;
   __block NSError* startError = nil;
@@ -1001,9 +1018,11 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
     @synchronized(_streamRegistry) {
       [_delegateHandlerRegistry removeObjectForKey:@(streamId)];
     }
+    [stream release];
     return 0;
   }
 
+  [stream release];
   return streamId;
 }
 
@@ -1030,7 +1049,7 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
 
   SCStream* stream = nil;
   @synchronized(_streamRegistry) {
-    stream = _streamRegistry[@(stream_id)];
+    stream = [_streamRegistry[@(stream_id)] retain];
   }
   if (!stream) {
     setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
@@ -1097,8 +1116,12 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
   if (!success) {
     setLastStreamError(updateError);
+    [config release];
+    [stream release];
     return -1;
   }
+  [config release];
+  [stream release];
   return 0;
 }
 
@@ -1112,7 +1135,7 @@ int stream_update_content_filter(int64_t stream_id, int64_t filter_id) {
 
   SCStream* stream = nil;
   @synchronized(_streamRegistry) {
-    stream = _streamRegistry[@(stream_id)];
+    stream = [_streamRegistry[@(stream_id)] retain];
   }
   if (!stream) {
     setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
@@ -1124,6 +1147,7 @@ int stream_update_content_filter(int64_t stream_id, int64_t filter_id) {
   if (!filter) {
     setLastStreamErrorFromStrings(@"com.screencapturekit.bridge", -1,
                                   @"Invalid or released content filter.");
+    [stream release];
     return -1;
   }
 
@@ -1140,8 +1164,10 @@ int stream_update_content_filter(int64_t stream_id, int64_t filter_id) {
                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
   if (!success) {
     setLastStreamError(updateError);
+    [stream release];
     return -1;
   }
+  [stream release];
   return 0;
 }
 
@@ -1172,7 +1198,7 @@ int stream_set_picker_configuration(int64_t stream_id, const char* _Nullable con
   }
   SCStream* stream = nil;
   @synchronized(_streamRegistry) {
-    stream = _streamRegistry[@(stream_id)];
+    stream = [_streamRegistry[@(stream_id)] retain];
   }
   if (!stream) {
     return -1;
@@ -1216,9 +1242,12 @@ int stream_set_picker_configuration(int64_t stream_id, const char* _Nullable con
 #pragma clang diagnostic ignored "-Wobjc-method-access"
     [[SCContentSharingPicker sharedPicker] setConfiguration:config forStream:stream];
 #pragma clang diagnostic pop
+    [config release];
   } else {
+    [stream release];
     return -1;
   }
+  [stream release];
   return 0;
 }
 
@@ -1239,7 +1268,7 @@ void* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
 
   StreamFrameHandler* handler = nil;
   @synchronized(_streamRegistry) {
-    handler = _handlerRegistry[@(stream_id)];
+    handler = [_handlerRegistry[@(stream_id)] retain];
   }
   if (!handler) {
     if (STREAM_DEBUG) fprintf(stderr, "[SCStream] handler not found\n");
@@ -1254,6 +1283,7 @@ void* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
 
   if (waitResult != 0) {
     if (STREAM_DEBUG) fprintf(stderr, "[SCStream] wait timeout\n");
+    [handler release];
     return NULL;
   }
 
@@ -1268,6 +1298,7 @@ void* stream_get_next_frame(int64_t stream_id, int64_t timeout_ms) {
   }
   [handler.lock unlock];
 
+  [handler release];
   return result;
 }
 
@@ -1283,7 +1314,7 @@ char* stream_get_next_audio(int64_t stream_id, int64_t timeout_ms) {
 
   StreamAudioHandler* handler = nil;
   @synchronized(_streamRegistry) {
-    handler = _audioHandlerRegistry[@(stream_id)];
+    handler = [_audioHandlerRegistry[@(stream_id)] retain];
   }
   if (!handler) {
     return NULL;
@@ -1298,6 +1329,7 @@ char* stream_get_next_audio(int64_t stream_id, int64_t timeout_ms) {
   long waitResult = dispatch_semaphore_wait(handler.semaphore, waitDeadline);
 
   if (waitResult != 0) {
+    [handler release];
     return NULL;
   }
 
@@ -1312,10 +1344,12 @@ char* stream_get_next_audio(int64_t stream_id, int64_t timeout_ms) {
 
   if (!jsonStr || jsonStr.length == 0) {
     [jsonStr release];
+    [handler release];
     return NULL;
   }
   char* out = strdup(jsonStr.UTF8String);
   [jsonStr release];
+  [handler release];
   return out;
 }
 
@@ -1328,7 +1362,7 @@ char* stream_get_next_microphone(int64_t stream_id, int64_t timeout_ms) {
 
   StreamMicrophoneHandler* handler = nil;
   @synchronized(_streamRegistry) {
-    handler = _microphoneHandlerRegistry[@(stream_id)];
+    handler = [_microphoneHandlerRegistry[@(stream_id)] retain];
   }
   if (!handler) {
     return NULL;
@@ -1340,6 +1374,7 @@ char* stream_get_next_microphone(int64_t stream_id, int64_t timeout_ms) {
   long waitResult = dispatch_semaphore_wait(handler.semaphore, waitDeadline);
 
   if (waitResult != 0) {
+    [handler release];
     return NULL;
   }
 
@@ -1354,10 +1389,12 @@ char* stream_get_next_microphone(int64_t stream_id, int64_t timeout_ms) {
 
   if (!jsonStr || jsonStr.length == 0) {
     [jsonStr release];
+    [handler release];
     return NULL;
   }
   char* out = strdup(jsonStr.UTF8String);
   [jsonStr release];
+  [handler release];
   return out;
 }
 
@@ -1370,7 +1407,7 @@ char* stream_get_next_delegate_event(int64_t stream_id, int64_t timeout_ms) {
 
   StreamDelegateHandler* handler = nil;
   @synchronized(_streamRegistry) {
-    handler = _delegateHandlerRegistry[@(stream_id)];
+    handler = [_delegateHandlerRegistry[@(stream_id)] retain];
   }
   if (!handler) {
     return NULL;
@@ -1382,6 +1419,7 @@ char* stream_get_next_delegate_event(int64_t stream_id, int64_t timeout_ms) {
   long waitResult = dispatch_semaphore_wait(handler.semaphore, waitDeadline);
 
   if (waitResult != 0) {
+    [handler release];
     return NULL;
   }
 
@@ -1406,10 +1444,12 @@ char* stream_get_next_delegate_event(int64_t stream_id, int64_t timeout_ms) {
         }
       }
     }
+    [handler release];
     return NULL;
   }
   char* out = strdup(jsonStr.UTF8String);
   [jsonStr release];
+  [handler release];
   return out;
 }
 
@@ -1425,11 +1465,11 @@ void stream_stop_and_release(int64_t stream_id) {
   StreamMicrophoneHandler* microphoneHandler = nil;
   StreamDelegateHandler* delegateHandler = nil;
   @synchronized(_streamRegistry) {
-    stream = _streamRegistry[@(stream_id)];
-    handler = _handlerRegistry[@(stream_id)];
-    audioHandler = _audioHandlerRegistry[@(stream_id)];
-    microphoneHandler = _microphoneHandlerRegistry[@(stream_id)];
-    delegateHandler = _delegateHandlerRegistry[@(stream_id)];
+    stream = [_streamRegistry[@(stream_id)] retain];
+    handler = [_handlerRegistry[@(stream_id)] retain];
+    audioHandler = [_audioHandlerRegistry[@(stream_id)] retain];
+    microphoneHandler = [_microphoneHandlerRegistry[@(stream_id)] retain];
+    delegateHandler = [_delegateHandlerRegistry[@(stream_id)] retain];
     [_streamRegistry removeObjectForKey:@(stream_id)];
     [_handlerRegistry removeObjectForKey:@(stream_id)];
     [_audioHandlerRegistry removeObjectForKey:@(stream_id)];
@@ -1497,4 +1537,10 @@ void stream_stop_and_release(int64_t stream_id) {
     delegateHandler.stopped = YES;
     dispatch_semaphore_signal(delegateHandler.semaphore);
   }
+
+  [stream release];
+  [handler release];
+  [audioHandler release];
+  [microphoneHandler release];
+  [delegateHandler release];
 }

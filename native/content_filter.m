@@ -10,9 +10,10 @@ static NSMutableDictionary<NSNumber*, SCContentFilter*>* _filterRegistry = nil;
 static int64_t _nextFilterId = 1;
 
 static void ensureFilterRegistry(void) {
-  if (_filterRegistry == nil) {
+  static dispatch_once_t once;
+  dispatch_once(&once, ^{
     _filterRegistry = [[NSMutableDictionary alloc] init];
-  }
+  });
 }
 
 /// Ensures Core Graphics is initialized. Required before SCContentFilter init in CLI apps.

@@ -30,8 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Delegate-registry removal uses the same `@synchronized(_streamRegistry)`
   lock as the other registry writers, so start-failure teardown cannot
   race a concurrent drain.
-- Audio, microphone, and delegate handler queues and locks allocated under
-  MRC are released in `dealloc`.
+- Stream registries initialize once (`dispatch_once`). After registry
+  insert, creating retains are released so MRC `dealloc` on audio,
+  microphone, and delegate handlers can run on stop. Polling getters and
+  teardown retain objects under the registry lock ([#1]).
 
 [#1]: https://github.com/blendfactory/screen-capture-kit/issues/1
 
