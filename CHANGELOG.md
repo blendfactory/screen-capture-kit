@@ -34,6 +34,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   insert, creating retains are released so MRC `dealloc` on audio,
   microphone, and delegate handlers can run on stop. Polling getters and
   teardown retain objects under the registry lock ([#1]).
+- Last stream error is stored in thread-local storage and JSON copies are
+  released after `strdup`, matching Dart's same-isolate get-after-fail
+  pattern without a racy process-wide lock.
+- `get_content_filter` returns a retained filter; stream start/update and
+  screenshot release it after use. `__block NSError*` from start/update
+  completions is retained until copied into last-error.
+- `stream_stop_and_release` drops the delegate handler after stop (Dart
+  already cancelled polling), drains sample-handler queues, and signals
+  audio/microphone waiters so `dealloc` can run. Frame/audio/mic handlers
+  `dispatch_release` their GCD objects.
 
 [#1]: https://github.com/blendfactory/screen-capture-kit/issues/1
 

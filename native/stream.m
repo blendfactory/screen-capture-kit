@@ -38,6 +38,7 @@ static void ensureCoreGraphicsInit(void) {
 @property (nonatomic, strong) dispatch_semaphore_t frameSemaphore;
 @property (nonatomic, assign) BOOL stopped;
 @property (nonatomic, strong) NSLock* lock;
+@property (nonatomic, assign) dispatch_queue_t sampleHandlerQueue;
 @end
 
 /// Forwards [SCStreamDelegate] lifecycle events to Dart via a JSON queue.
@@ -118,6 +119,9 @@ static void ensureCoreGraphicsInit(void) {
 - (void)dealloc {
   [_queue release];
   [_lock release];
+  if (_semaphore) {
+    dispatch_release(_semaphore);
+  }
   [super dealloc];
 }
 @end
@@ -138,6 +142,13 @@ static void ensureCoreGraphicsInit(void) {
 - (void)dealloc {
   for (int i = 0; i < _frameQueueCount; i++) {
     free(_frameQueue[i]);
+  }
+  [_lock release];
+  if (_frameSemaphore) {
+    dispatch_release(_frameSemaphore);
+  }
+  if (_sampleHandlerQueue) {
+    dispatch_release(_sampleHandlerQueue);
   }
   [super dealloc];
 }
@@ -434,6 +445,7 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
 @property (nonatomic, strong) NSLock* lock;
 @property (nonatomic, strong) dispatch_semaphore_t semaphore;
 @property (nonatomic, assign) BOOL stopped;
+@property (nonatomic, assign) dispatch_queue_t sampleHandlerQueue;
 @end
 
 @implementation StreamAudioHandler
@@ -453,6 +465,12 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
 - (void)dealloc {
   [_queue release];
   [_lock release];
+  if (_semaphore) {
+    dispatch_release(_semaphore);
+  }
+  if (_sampleHandlerQueue) {
+    dispatch_release(_sampleHandlerQueue);
+  }
   [super dealloc];
 }
 
@@ -558,6 +576,7 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
 @property (nonatomic, strong) NSLock* lock;
 @property (nonatomic, strong) dispatch_semaphore_t semaphore;
 @property (nonatomic, assign) BOOL stopped;
+@property (nonatomic, assign) dispatch_queue_t sampleHandlerQueue;
 @end
 
 @implementation StreamMicrophoneHandler
@@ -577,6 +596,12 @@ static void SCRootAddSampleTiming(NSMutableDictionary* root,
 - (void)dealloc {
   [_queue release];
   [_lock release];
+  if (_semaphore) {
+    dispatch_release(_semaphore);
+  }
+  if (_sampleHandlerQueue) {
+    dispatch_release(_sampleHandlerQueue);
+  }
   [super dealloc];
 }
 
@@ -737,53 +762,52 @@ void stream_stop_and_release(int64_t stream_id);
 static NSMutableDictionary<NSNumber*, StreamDelegateHandler*>* _delegateHandlerRegistry = nil;
 static int64_t _nextStreamId = 1;
 
-/// Last stream error (set when stream_create_and_start fails). Cleared when read.
-static NSString* _lastStreamErrorDomain = nil;
-static NSInteger _lastStreamErrorCode = 0;
-static NSString* _lastStreamErrorDescription = nil;
-static NSLock* _lastStreamErrorLock = nil;
+/// Last stream error for this FFI thread. Dart reads it on the same Isolate.run
+/// worker that called start/update, so a process-wide lock is unnecessary.
+static _Thread_local NSString* _lastStreamErrorDomain = nil;
+static _Thread_local NSInteger _lastStreamErrorCode = 0;
+static _Thread_local NSString* _lastStreamErrorDescription = nil;
+
+static void replaceCopiedTlsString(NSString** slot, NSString* value) {
+  NSString* next = [(value ?: @"") copy];
+  NSString* old = *slot;
+  *slot = next;
+  [old release];
+}
 
 static void setLastStreamError(NSError* _Nullable error) {
-  if (_lastStreamErrorLock == nil) {
-    _lastStreamErrorLock = [[NSLock alloc] init];
-  }
-  [_lastStreamErrorLock lock];
   if (error) {
-    _lastStreamErrorDomain = [error.domain copy];
+    replaceCopiedTlsString(&_lastStreamErrorDomain, error.domain);
     _lastStreamErrorCode = error.code;
-    _lastStreamErrorDescription = [error.localizedDescription copy];
+    replaceCopiedTlsString(&_lastStreamErrorDescription, error.localizedDescription);
   } else {
-    _lastStreamErrorDomain = @"";
+    replaceCopiedTlsString(&_lastStreamErrorDomain, @"");
     _lastStreamErrorCode = 0;
-    _lastStreamErrorDescription = @"";
+    replaceCopiedTlsString(&_lastStreamErrorDescription, @"");
   }
-  [_lastStreamErrorLock unlock];
 }
 
 static void setLastStreamErrorFromStrings(NSString* domain, NSInteger code, NSString* description) {
-  if (_lastStreamErrorLock == nil) {
-    _lastStreamErrorLock = [[NSLock alloc] init];
-  }
-  [_lastStreamErrorLock lock];
-  _lastStreamErrorDomain = domain ? [domain copy] : @"";
+  replaceCopiedTlsString(&_lastStreamErrorDomain, domain);
   _lastStreamErrorCode = code;
-  _lastStreamErrorDescription = description ? [description copy] : @"";
-  [_lastStreamErrorLock unlock];
+  replaceCopiedTlsString(&_lastStreamErrorDescription, description);
+}
+
+static void drainSampleHandlerQueue(dispatch_queue_t queue) {
+  if (queue) {
+    dispatch_sync(queue, ^{
+    });
+  }
 }
 
 /// Returns malloc'd JSON string for last stream error, or NULL if none. Caller must free. Clears the stored error.
 char* stream_get_last_error(void) {
-  if (_lastStreamErrorLock == nil) {
-    return NULL;
-  }
-  [_lastStreamErrorLock lock];
   NSString* domain = _lastStreamErrorDomain;
   NSString* desc = _lastStreamErrorDescription;
   NSInteger code = _lastStreamErrorCode;
   _lastStreamErrorDomain = nil;
   _lastStreamErrorCode = 0;
   _lastStreamErrorDescription = nil;
-  [_lastStreamErrorLock unlock];
 
   if (domain == nil && desc == nil) {
     return NULL;
@@ -795,11 +819,15 @@ char* stream_get_last_error(void) {
     @"localizedDescription" : desc ?: @""
   };
   NSData* data = [NSJSONSerialization dataWithJSONObject:errDict options:0 error:nil];
+  [domain release];
+  [desc release];
   if (!data || data.length == 0) {
     return NULL;
   }
   NSString* jsonStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-  return strdup(jsonStr.UTF8String);
+  char* out = jsonStr ? strdup(jsonStr.UTF8String) : NULL;
+  [jsonStr release];
+  return out;
 }
 
 static void ensureStreamRegistry(void) {
@@ -913,6 +941,7 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
       [[SCStream alloc] initWithFilter:filter
                         configuration:config
                              delegate:delegateHandler];
+  [filter release];
 
   NSError* addError = nil;
   dispatch_queue_t queue =
@@ -923,12 +952,14 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                      error:&addError];
   if (addError) {
     setLastStreamError(addError);
+    dispatch_release(queue);
     [stream release];
     [handler release];
     [delegateHandler release];
     [config release];
     return 0;
   }
+  handler.sampleHandlerQueue = queue;
 
   StreamAudioHandler* audioHandler = nil;
   if (captures_audio) {
@@ -942,6 +973,7 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                          error:&addError];
       if (addError) {
         setLastStreamError(addError);
+        dispatch_release(audioQueue);
         [stream release];
         [handler release];
         [delegateHandler release];
@@ -949,6 +981,7 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
         [config release];
         return 0;
       }
+      audioHandler.sampleHandlerQueue = audioQueue;
     }
   }
 
@@ -964,6 +997,7 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
                          error:&addError];
       if (addError) {
         setLastStreamError(addError);
+        dispatch_release(micQueue);
         [stream release];
         [handler release];
         [delegateHandler release];
@@ -972,6 +1006,7 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
         [config release];
         return 0;
       }
+      microphoneHandler.sampleHandlerQueue = micQueue;
     }
   }
 
@@ -1001,27 +1036,30 @@ int64_t stream_create_and_start(int64_t filter_id, int width, int height,
   dispatch_semaphore_t sem = dispatch_semaphore_create(0);
   [stream startCaptureWithCompletionHandler:^(NSError* _Nullable error) {
     startSuccess = (error == nil);
-    startError = error;
+    [startError release];
+    startError = [error retain];
     dispatch_semaphore_signal(sem);
   }];
   // Permission dialogs (microphone / screen-recording re-approval) can hold
   // the start completion far longer than the old 5 s window.
   dispatch_semaphore_wait(sem,
                          dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
+  dispatch_release(sem);
   if (!startSuccess) {
     setLastStreamError(startError);
+    NSError* retained = startError;
+    startError = nil;
+    [retained release];
     // Full teardown: disconnect outputs, stop capture, drop registry refs.
     // A late-succeeding start keeps delivering otherwise.
     stream_stop_and_release(streamId);
-    // No Dart consumer ever sees this streamId, so nothing will drain
-    // delegate events; drop the handler stream_stop_and_release keeps.
-    @synchronized(_streamRegistry) {
-      [_delegateHandlerRegistry removeObjectForKey:@(streamId)];
-    }
     [stream release];
     return 0;
   }
 
+  NSError* retainedStart = startError;
+  startError = nil;
+  [retainedStart release];
   [stream release];
   return streamId;
 }
@@ -1109,17 +1147,25 @@ int stream_update_configuration(int64_t stream_id, int width, int height,
   [stream updateConfiguration:config
           completionHandler:^(NSError* _Nullable error) {
     success = (error == nil);
-    updateError = error;
+    [updateError release];
+    updateError = [error retain];
     dispatch_semaphore_signal(sem);
   }];
   dispatch_semaphore_wait(sem,
                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_release(sem);
   if (!success) {
     setLastStreamError(updateError);
+    NSError* retained = updateError;
+    updateError = nil;
+    [retained release];
     [config release];
     [stream release];
     return -1;
   }
+  NSError* retainedUpdate = updateError;
+  updateError = nil;
+  [retainedUpdate release];
   [config release];
   [stream release];
   return 0;
@@ -1157,16 +1203,25 @@ int stream_update_content_filter(int64_t stream_id, int64_t filter_id) {
   [stream updateContentFilter:filter
           completionHandler:^(NSError* _Nullable error) {
     success = (error == nil);
-    updateError = error;
+    [updateError release];
+    updateError = [error retain];
     dispatch_semaphore_signal(sem);
   }];
   dispatch_semaphore_wait(sem,
                          dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+  dispatch_release(sem);
+  [filter release];
   if (!success) {
     setLastStreamError(updateError);
+    NSError* retained = updateError;
+    updateError = nil;
+    [retained release];
     [stream release];
     return -1;
   }
+  NSError* retainedUpdate = updateError;
+  updateError = nil;
+  [retainedUpdate release];
   [stream release];
   return 0;
 }
@@ -1474,9 +1529,9 @@ void stream_stop_and_release(int64_t stream_id) {
     [_handlerRegistry removeObjectForKey:@(stream_id)];
     [_audioHandlerRegistry removeObjectForKey:@(stream_id)];
     [_microphoneHandlerRegistry removeObjectForKey:@(stream_id)];
-    // Keep StreamDelegateHandler in _delegateHandlerRegistry until Dart drains
-    // delegate events (see stream_get_next_delegate_event). Setting stopped
-    // before stopCapture would drop didStopWithError and block Dart polling.
+    // Delegate stays until stopCapture finishes so didStopWithError can enqueue.
+    // Dart's onCancel stops polling before this call, so the handler is dropped
+    // after stop rather than waiting for a drain that never happens.
   }
 
   if (handler) {
@@ -1487,7 +1542,6 @@ void stream_stop_and_release(int64_t stream_id) {
     }
     handler->_frameQueueCount = 0;
     [handler.lock unlock];
-    dispatch_semaphore_signal(handler.frameSemaphore);
   }
   if (audioHandler) {
     audioHandler.stopped = YES;
@@ -1502,6 +1556,7 @@ void stream_stop_and_release(int64_t stream_id) {
       NSError* err = nil;
       [stream removeStreamOutput:handler type:SCStreamOutputTypeScreen error:&err];
       (void)err;
+      drainSampleHandlerQueue(handler.sampleHandlerQueue);
     }
     if (audioHandler) {
       if (@available(macos 13.0, *)) {
@@ -1509,6 +1564,7 @@ void stream_stop_and_release(int64_t stream_id) {
         [stream removeStreamOutput:audioHandler type:SCStreamOutputTypeAudio error:&err];
         (void)err;
       }
+      drainSampleHandlerQueue(audioHandler.sampleHandlerQueue);
     }
     if (microphoneHandler) {
       if (@available(macos 15.0, *)) {
@@ -1518,9 +1574,11 @@ void stream_stop_and_release(int64_t stream_id) {
                               error:&err];
         (void)err;
       }
+      drainSampleHandlerQueue(microphoneHandler.sampleHandlerQueue);
     }
     dispatch_semaphore_t stopSem = dispatch_semaphore_create(0);
     [stream stopCaptureWithCompletionHandler:^(NSError* _Nullable error) {
+      (void)error;
       dispatch_semaphore_signal(stopSem);
     }];
     // Stop cleanup can lag behind when the Dart side is concurrently
@@ -1529,6 +1587,17 @@ void stream_stop_and_release(int64_t stream_id) {
       stopSem,
       dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC)
     );
+    dispatch_release(stopSem);
+  }
+
+  if (handler) {
+    dispatch_semaphore_signal(handler.frameSemaphore);
+  }
+  if (audioHandler) {
+    dispatch_semaphore_signal(audioHandler.semaphore);
+  }
+  if (microphoneHandler) {
+    dispatch_semaphore_signal(microphoneHandler.semaphore);
   }
 
   // After capture stops, allow no further delegate callbacks and wake Dart so
@@ -1536,6 +1605,9 @@ void stream_stop_and_release(int64_t stream_id) {
   if (delegateHandler) {
     delegateHandler.stopped = YES;
     dispatch_semaphore_signal(delegateHandler.semaphore);
+  }
+  @synchronized(_streamRegistry) {
+    [_delegateHandlerRegistry removeObjectForKey:@(stream_id)];
   }
 
   [stream release];

@@ -194,13 +194,14 @@ int64_t create_content_filter_for_display_excluding_windows(int64_t display_id,
   return filterId;
 }
 
-/// Returns the SCContentFilter for the given filter id, or nil if not found.
+/// Returns a retained SCContentFilter for the given filter id, or nil if not
+/// found. Caller must release the returned object.
 SCContentFilter* get_content_filter(int64_t filter_id) {
   if (filter_id <= 0 || _filterRegistry == nil) {
     return nil;
   }
   @synchronized (_filterRegistry) {
-    return _filterRegistry[@(filter_id)];
+    return [_filterRegistry[@(filter_id)] retain];
   }
 }
 
