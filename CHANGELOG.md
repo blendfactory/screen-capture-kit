@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-02
+
 ### Changed
 
 - **Breaking:** `startCaptureStream` and `startCaptureStreamWithUpdater` now
@@ -165,7 +167,8 @@ First **stable** release under [Semantic Versioning](https://semver.org/spec/v2.
 - Stub implementation on non-macOS platforms (throws `UnsupportedError`).
 - Dart SDK constraint `^3.10.0` and dependency set (code_assets, ffi, hooks, meta, native_toolchain_c; mocktail, test for dev).
 
-[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/blendfactory/screen-capture-kit/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/blendfactory/screen-capture-kit/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.5...v1.0.0
 [0.0.5]: https://github.com/blendfactory/screen-capture-kit/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/blendfactory/screen-capture-kit/releases/tag/v0.0.4
