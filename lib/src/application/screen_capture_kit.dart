@@ -146,6 +146,10 @@ class ScreenCaptureKit {
 
   /// Starts a capture stream yielding [CapturedFrame]s (BGRA pixel data).
   ///
+  /// Completes when the native stream has started. Permission dialogs can
+  /// hold that wait for up to 30 seconds; the wait runs in [Isolate.run]
+  /// so the calling isolate is not blocked.
+  ///
   /// [frameRate] sets the target fps (1–120).
   /// [sourceRect] optionally crops to a region (x, y, width, height) in screen
   /// points. Use with display filter for region capture.
@@ -173,7 +177,7 @@ class ScreenCaptureKit {
   /// Cancel the stream subscription to stop capture.
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream
-  Stream<CapturedFrame> startCaptureStream(
+  Future<Stream<CapturedFrame>> startCaptureStream(
     FilterId filterHandle, {
     FrameSize frameSize = const FrameSize.zero(),
     FrameRate frameRate = const FrameRate.fps60(),
@@ -212,6 +216,10 @@ class ScreenCaptureKit {
   /// Starts a capture stream and returns a [CaptureStream] that supports
   /// [CaptureStream.updateConfiguration] for changing config at runtime.
   ///
+  /// Completes when the native stream has started. Permission dialogs can
+  /// hold that wait for up to 30 seconds; the wait runs in [Isolate.run]
+  /// so the calling isolate is not blocked.
+  ///
   /// Use [CaptureStream.stream] for frames. When [capturesAudio] is true,
   /// [CaptureStream.audioStream] yields [CapturedAudio] buffers. Cancel the
   /// video subscription to stop capture.
@@ -229,7 +237,7 @@ class ScreenCaptureKit {
   /// https://developer.apple.com/documentation/screencapturekit/scstreamdelegate
   ///
   /// Ref: https://developer.apple.com/documentation/screencapturekit/scstream/3944914-updateconfiguration
-  CaptureStream startCaptureStreamWithUpdater(
+  Future<CaptureStream> startCaptureStreamWithUpdater(
     FilterId filterHandle, {
     FrameSize frameSize = const FrameSize.zero(),
     FrameRate frameRate = const FrameRate.fps60(),

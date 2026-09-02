@@ -32,7 +32,9 @@ char* capture_screenshot(int64_t filter_id, int width, int height, int capture_r
     NSData* errData = [NSJSONSerialization dataWithJSONObject:errDict options:0 error:nil];
     if (errData) {
       NSString* errStr = [[NSString alloc] initWithData:errData encoding:NSUTF8StringEncoding];
-      return strdup(errStr.UTF8String);
+      char* out = strdup(errStr.UTF8String);
+      [errStr release];
+      return out;
     }
     return NULL;
   }
@@ -66,6 +68,7 @@ char* capture_screenshot(int64_t filter_id, int width, int height, int capture_r
       if (errData) {
         NSString* errStr = [[NSString alloc] initWithData:errData encoding:NSUTF8StringEncoding];
         result = strdup(errStr.UTF8String);
+        [errStr release];
       }
       dispatch_semaphore_signal(sem);
       return;
@@ -100,6 +103,7 @@ char* capture_screenshot(int64_t filter_id, int width, int height, int capture_r
     if (data) {
       NSString* str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
       result = strdup(str.UTF8String);
+      [str release];
     }
     dispatch_semaphore_signal(sem);
   }];
@@ -114,12 +118,16 @@ char* capture_screenshot(int64_t filter_id, int width, int height, int capture_r
     if (errData) {
       NSString* errStr = [[NSString alloc] initWithData:errData encoding:NSUTF8StringEncoding];
       result = strdup(errStr.UTF8String);
+      [errStr release];
     }
     dispatch_semaphore_signal(sem);
   }
 
   const int64_t timeoutNsec = 10LL * NSEC_PER_SEC;
   dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, timeoutNsec));
+  dispatch_release(sem);
+  [filter release];
+  [config release];
 
   if (!result) {
     NSDictionary* errDict = @{
@@ -132,6 +140,7 @@ char* capture_screenshot(int64_t filter_id, int width, int height, int capture_r
     if (errData) {
       NSString* errStr = [[NSString alloc] initWithData:errData encoding:NSUTF8StringEncoding];
       result = strdup(errStr.UTF8String);
+      [errStr release];
     }
   }
 

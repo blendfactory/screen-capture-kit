@@ -6,7 +6,8 @@
 
 #import <ScreenCaptureKit/ScreenCaptureKit.h>
 
-/// Returns the SCContentFilter for the given filter id, or nil if not found.
+/// Returns a retained SCContentFilter for the given filter id, or nil.
+/// Caller must release the returned object.
 SCContentFilter* _Nullable get_content_filter(int64_t filter_id);
 
 /// Registers an existing SCContentFilter (e.g. from picker) and returns a new filter id.

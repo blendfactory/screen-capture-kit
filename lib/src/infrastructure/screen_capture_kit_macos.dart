@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io' show Platform;
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -371,6 +372,151 @@ String _buildStreamErrorMessage({
 
   return 'Failed to start capture stream. '
       '[native: $domain ($code) $description]';
+}
+
+Never _throwLastStreamError({required String fallback}) {
+  final ptr = _streamGetLastError();
+  if (ptr != nullptr) {
+    try {
+      final jsonStr = ptr.toDartString();
+      final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+      if (json['error'] == true) {
+        final domain = json['domain'] as String? ?? '';
+        final code = (json['code'] as num?)?.toInt() ?? 0;
+        final desc = json['localizedDescription'] as String? ?? '';
+        final message = _buildStreamErrorMessage(
+          domain: domain,
+          code: code,
+          description: desc,
+        );
+        throw ScreenCaptureKitException(
+          message,
+          domain: domain,
+          code: code,
+        );
+      }
+    } finally {
+      malloc.free(ptr);
+    }
+  }
+  throw ScreenCaptureKitException(fallback);
+}
+
+int _createAndStartNativeStream({
+  required int filterId,
+  required int width,
+  required int height,
+  required int frameRate,
+  required double srcX,
+  required double srcY,
+  required double srcWidth,
+  required double srcHeight,
+  required int scalesToFitParam,
+  required double destX,
+  required double destY,
+  required double destWidth,
+  required double destHeight,
+  required int preservesAspectRatioParam,
+  required int showsCursor,
+  required int queueDepth,
+  required int capturesAudio,
+  required int excludesCurrentProcessAudio,
+  required int captureMicrophone,
+  required int pixelFormat,
+  required String? colorSpaceName,
+  required int captureResolution,
+}) {
+  final colorSpacePtr = _allocColorSpaceName(colorSpaceName);
+  try {
+    final streamId = _streamCreateAndStart(
+      filterId,
+      width,
+      height,
+      frameRate,
+      srcX,
+      srcY,
+      srcWidth,
+      srcHeight,
+      scalesToFitParam,
+      destX,
+      destY,
+      destWidth,
+      destHeight,
+      preservesAspectRatioParam,
+      showsCursor,
+      queueDepth,
+      capturesAudio,
+      excludesCurrentProcessAudio,
+      captureMicrophone,
+      pixelFormat,
+      colorSpacePtr,
+      captureResolution,
+    );
+    if (streamId <= 0) {
+      _throwLastStreamError(
+        fallback:
+            'Failed to start capture stream. '
+            'Check Screen Recording permission.',
+      );
+    }
+    return streamId;
+  } finally {
+    if (colorSpacePtr != nullptr) {
+      malloc.free(colorSpacePtr);
+    }
+  }
+}
+
+Future<int> _createAndStartNativeStreamOffCallerIsolate({
+  required int filterId,
+  required int width,
+  required int height,
+  required int frameRate,
+  required double srcX,
+  required double srcY,
+  required double srcWidth,
+  required double srcHeight,
+  required int scalesToFitParam,
+  required double destX,
+  required double destY,
+  required double destWidth,
+  required double destHeight,
+  required int preservesAspectRatioParam,
+  required int showsCursor,
+  required int queueDepth,
+  required int capturesAudio,
+  required int excludesCurrentProcessAudio,
+  required int captureMicrophone,
+  required int pixelFormat,
+  required String? colorSpaceName,
+  required int captureResolution,
+}) {
+  return Isolate.run(
+    () => _createAndStartNativeStream(
+      filterId: filterId,
+      width: width,
+      height: height,
+      frameRate: frameRate,
+      srcX: srcX,
+      srcY: srcY,
+      srcWidth: srcWidth,
+      srcHeight: srcHeight,
+      scalesToFitParam: scalesToFitParam,
+      destX: destX,
+      destY: destY,
+      destWidth: destWidth,
+      destHeight: destHeight,
+      preservesAspectRatioParam: preservesAspectRatioParam,
+      showsCursor: showsCursor,
+      queueDepth: queueDepth,
+      capturesAudio: capturesAudio,
+      excludesCurrentProcessAudio: excludesCurrentProcessAudio,
+      captureMicrophone: captureMicrophone,
+      pixelFormat: pixelFormat,
+      colorSpaceName: colorSpaceName,
+      captureResolution: captureResolution,
+    ),
+  );
 }
 
 ShareableContent _parseShareableContent(Map<String, dynamic> json) {
@@ -1304,7 +1450,7 @@ Pointer<Utf8> _allocColorSpaceName(String? name) {
   return ptr.cast<Utf8>();
 }
 
-Stream<CapturedFrame> startCaptureStreamImpl(
+Future<Stream<CapturedFrame>> startCaptureStreamImpl(
   FilterId filterHandle, {
   FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),
@@ -1320,7 +1466,7 @@ Stream<CapturedFrame> startCaptureStreamImpl(
   int? pixelFormat,
   String? colorSpaceName,
   CaptureResolution captureResolution = CaptureResolution.automatic,
-}) {
+}) async {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
       'screen_capture_kit only supports macOS. '
@@ -1335,68 +1481,30 @@ Stream<CapturedFrame> startCaptureStreamImpl(
       : (preservesAspectRatio ? 1 : 0);
   final dst = destinationRect;
   final depth = queueDepth;
-  final colorSpacePtr = _allocColorSpaceName(colorSpaceName);
-  int streamId;
-  try {
-    streamId = _streamCreateAndStart(
-      filterHandle.value,
-      frameSize.width,
-      frameSize.height,
-      frameRate.value,
-      src?.x ?? 0,
-      src?.y ?? 0,
-      src?.width ?? 0,
-      src?.height ?? 0,
-      scalesToFitParam,
-      dst?.x ?? 0,
-      dst?.y ?? 0,
-      dst?.width ?? 0,
-      dst?.height ?? 0,
-      preservesAspectRatioParam,
-      showsCursor ? 1 : 0,
-      depth.value,
-      capturesAudio ? 1 : 0,
-      excludesCurrentProcessAudio ? 1 : 0,
-      captureMicrophone ? 1 : 0,
-      pixelFormat ?? 0,
-      colorSpacePtr,
-      captureResolution.index,
-    );
-    if (streamId <= 0) {
-      final ptr = _streamGetLastError();
-      if (ptr != nullptr) {
-        try {
-          final jsonStr = ptr.toDartString();
-          final json = jsonDecode(jsonStr) as Map<String, dynamic>;
-          if (json['error'] == true) {
-            final domain = json['domain'] as String? ?? '';
-            final code = (json['code'] as num?)?.toInt() ?? 0;
-            final desc = json['localizedDescription'] as String? ?? '';
-            final message = _buildStreamErrorMessage(
-              domain: domain,
-              code: code,
-              description: desc,
-            );
-            throw ScreenCaptureKitException(
-              message,
-              domain: domain,
-              code: code,
-            );
-          }
-        } finally {
-          malloc.free(ptr);
-        }
-      }
-      throw const ScreenCaptureKitException(
-        'Failed to start capture stream. '
-        'Check Screen Recording permission.',
-      );
-    }
-  } finally {
-    if (colorSpacePtr != nullptr) {
-      malloc.free(colorSpacePtr);
-    }
-  }
+  final streamId = await _createAndStartNativeStreamOffCallerIsolate(
+    filterId: filterHandle.value,
+    width: frameSize.width,
+    height: frameSize.height,
+    frameRate: frameRate.value,
+    srcX: src?.x ?? 0,
+    srcY: src?.y ?? 0,
+    srcWidth: src?.width ?? 0,
+    srcHeight: src?.height ?? 0,
+    scalesToFitParam: scalesToFitParam,
+    destX: dst?.x ?? 0,
+    destY: dst?.y ?? 0,
+    destWidth: dst?.width ?? 0,
+    destHeight: dst?.height ?? 0,
+    preservesAspectRatioParam: preservesAspectRatioParam,
+    showsCursor: showsCursor ? 1 : 0,
+    queueDepth: depth.value,
+    capturesAudio: capturesAudio ? 1 : 0,
+    excludesCurrentProcessAudio: excludesCurrentProcessAudio ? 1 : 0,
+    captureMicrophone: captureMicrophone ? 1 : 0,
+    pixelFormat: pixelFormat ?? 0,
+    colorSpaceName: colorSpaceName,
+    captureResolution: captureResolution.index,
+  );
 
   late final StreamController<CapturedFrame> controller;
   controller = StreamController<CapturedFrame>(
@@ -1526,7 +1634,7 @@ void streamUpdateContentFilterImpl(
   }
 }
 
-CaptureStream startCaptureStreamWithUpdaterImpl(
+Future<CaptureStream> startCaptureStreamWithUpdaterImpl(
   FilterId filterHandle, {
   FrameSize frameSize = const FrameSize.zero(),
   FrameRate frameRate = const FrameRate.fps60(),
@@ -1543,7 +1651,7 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
   String? colorSpaceName,
   CaptureResolution captureResolution = CaptureResolution.automatic,
   bool emitDelegateEvents = false,
-}) {
+}) async {
   if (!Platform.isMacOS) {
     throw UnsupportedError(
       'screen_capture_kit only supports macOS. '
@@ -1558,68 +1666,30 @@ CaptureStream startCaptureStreamWithUpdaterImpl(
       : (preservesAspectRatio ? 1 : 0);
   final dst = destinationRect;
   final depth = queueDepth;
-  final colorSpacePtr = _allocColorSpaceName(colorSpaceName);
-  int streamId;
-  try {
-    streamId = _streamCreateAndStart(
-      filterHandle.value,
-      frameSize.width,
-      frameSize.height,
-      frameRate.value,
-      src?.x ?? 0,
-      src?.y ?? 0,
-      src?.width ?? 0,
-      src?.height ?? 0,
-      scalesToFitParam,
-      dst?.x ?? 0,
-      dst?.y ?? 0,
-      dst?.width ?? 0,
-      dst?.height ?? 0,
-      preservesAspectRatioParam,
-      showsCursor ? 1 : 0,
-      depth.value,
-      capturesAudio ? 1 : 0,
-      excludesCurrentProcessAudio ? 1 : 0,
-      captureMicrophone ? 1 : 0,
-      pixelFormat ?? 0,
-      colorSpacePtr,
-      captureResolution.index,
-    );
-    if (streamId <= 0) {
-      final ptr = _streamGetLastError();
-      if (ptr != nullptr) {
-        try {
-          final jsonStr = ptr.toDartString();
-          final json = jsonDecode(jsonStr) as Map<String, dynamic>;
-          if (json['error'] == true) {
-            final domain = json['domain'] as String? ?? '';
-            final code = (json['code'] as num?)?.toInt() ?? 0;
-            final desc = json['localizedDescription'] as String? ?? '';
-            final message = _buildStreamErrorMessage(
-              domain: domain,
-              code: code,
-              description: desc,
-            );
-            throw ScreenCaptureKitException(
-              message,
-              domain: domain,
-              code: code,
-            );
-          }
-        } finally {
-          malloc.free(ptr);
-        }
-      }
-      throw const ScreenCaptureKitException(
-        'Failed to start capture stream. '
-        'Check Screen Recording permission.',
-      );
-    }
-  } finally {
-    if (colorSpacePtr != nullptr) {
-      malloc.free(colorSpacePtr);
-    }
-  }
+  final streamId = await _createAndStartNativeStreamOffCallerIsolate(
+    filterId: filterHandle.value,
+    width: frameSize.width,
+    height: frameSize.height,
+    frameRate: frameRate.value,
+    srcX: src?.x ?? 0,
+    srcY: src?.y ?? 0,
+    srcWidth: src?.width ?? 0,
+    srcHeight: src?.height ?? 0,
+    scalesToFitParam: scalesToFitParam,
+    destX: dst?.x ?? 0,
+    destY: dst?.y ?? 0,
+    destWidth: dst?.width ?? 0,
+    destHeight: dst?.height ?? 0,
+    preservesAspectRatioParam: preservesAspectRatioParam,
+    showsCursor: showsCursor ? 1 : 0,
+    queueDepth: depth.value,
+    capturesAudio: capturesAudio ? 1 : 0,
+    excludesCurrentProcessAudio: excludesCurrentProcessAudio ? 1 : 0,
+    captureMicrophone: captureMicrophone ? 1 : 0,
+    pixelFormat: pixelFormat ?? 0,
+    colorSpaceName: colorSpaceName,
+    captureResolution: captureResolution.index,
+  );
 
   _BroadcastSink<CaptureStreamDelegateEvent>? delegateSink;
   if (emitDelegateEvents) {
